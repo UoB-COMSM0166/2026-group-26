@@ -30,10 +30,15 @@ GROUP PHOTO.
 
 
 -Meb1：Li Ka Fai; Email: gavins092590@gmail.com; Role：
+
 -Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：
+
 -Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：
+
 -Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：
+
 -Meb5：FuQiuting; Email：rm25551@bristol.ac.uk; Role：
+
 -Meb6：Jizhe Jin; Email：hy25163@bristol.ac.uk;  Role：
 
 ## Project Report
