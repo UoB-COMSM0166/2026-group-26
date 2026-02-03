@@ -41,7 +41,7 @@ We proposed four distinct directions:
     1.  Repair Kit Restores Health Points (HP) but cannot exceed the maximum HP cap.
     2.  Shield Generator Provides a temporary barrier that negates damage from one collision with the Chaser. The shield breaks immediately after use.
 - Win Condition: Survival. The player must avoid the Chaser and keep their HP above zero for 10 minutes.
-
+[🎬 Play Video](./video/IMG_3466.mov)
 
 
 2: Ricochet Space Arena (Multiplayer Shooter)
