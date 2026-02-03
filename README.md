@@ -16,12 +16,14 @@ You will be developing your game using [P5.js](https://p5js.org) a javascript li
 ## Inspiration & Initial Idea
 
 ### Inspiration
+
 Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
 - Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
 - Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
 
 ### Initial Idea
+
 We proposed four distinct directions:
 1.  Text-Based Adventure: A narrative-heavy game focusing on choices and story.
 2.  Simulation/Construction Game: A "Design Game" allowing players to build structures or manage resources.
@@ -31,6 +33,7 @@ We proposed four distinct directions:
 
 ## Two paper prototype ideas
 ### Chase & Evasion:
+
 1: Top-Down Vehicle Survival (Chase & Evasion)
 - Role: The player acts as the Evader.
 - Controls The player navigates a vehicle using directional keys (Up/Down/Left/Right) and a Braking mechanic to control momentum and make tight turns.
@@ -38,6 +41,7 @@ We proposed four distinct directions:
     1.  Repair Kit Restores Health Points (HP) but cannot exceed the maximum HP cap.
     2.  Shield Generator Provides a temporary barrier that negates damage from one collision with the Chaser. The shield breaks immediately after use.
 - Win Condition: Survival. The player must avoid the Chaser and keep their HP above zero for 10 minutes.
+
 
 
 2: Ricochet Space Arena (Multiplayer Shooter)
@@ -55,13 +59,15 @@ We proposed four distinct directions:
 ## Hotline Escape
 
 ### Final idea
+
 Our final idea is a vehicle-based chase and evasion game featuring asymmetric gameplay. Players can choose to play as either the Chaser or the Evader.
 
 #### Role: The Evader
+
 The Evader's goal is to survive while being hunted.
 - Health System: The Evader has a limited number of lives (HP). Each collision with the Chaser results in -1 HP. If HP drops to zero, the game ends.
 - Victory Condition:  We are currently discussing whether the win condition should be based on surviving for a set duration or collecting a specific number of items.
-- Power-ups: The Evader can collect items in the game environment to gain temporary buffs, such as:
+-  Power-ups: The Evader can collect items in the game environment to gain temporary buffs, such as:
   - Speed Boost: Increases movement speed.
   - Shield: Negates the damage from the next collision.
   - Repair: Restores 1 HP (up to the maximum limit).
