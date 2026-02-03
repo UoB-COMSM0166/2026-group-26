@@ -21,7 +21,7 @@ Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted.
 - Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
 - Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
-
+---
 ### Initial Idea
 
 We proposed four distinct directions:
@@ -41,9 +41,9 @@ We proposed four distinct directions:
     1.  Repair Kit Restores Health Points (HP) but cannot exceed the maximum HP cap.
     2.  Shield Generator Provides a temporary barrier that negates damage from one collision with the Chaser. The shield breaks immediately after use.
 - Win Condition: Survival. The player must avoid the Chaser and keep their HP above zero for 10 minutes.
-[🎬 Play Video](./video/IMG_3466.mov)
+- [🎬 Play Video](./video/IMG_3466.mov)
 
-
+---
 2: Ricochet Space Arena (Multiplayer Shooter)
 - Setup: Four players each control a spaceship within their own designated quadrant of the map.
 - Combat Mechanics:
@@ -54,7 +54,7 @@ We proposed four distinct directions:
     2. When a player reaches 0 HP, they are eliminated, and their quadrant is permanently closed.
     3. Closed quadrants become solid walls, further reducing the play area and increasing the frequency of bullet reflections.
 - Win Condition: Battle Royale style—the last surviving player wins.
-
+[🎬 Play Video](./video/IMG_3470.mov)
 
 ## Hotline Escape
 
@@ -71,7 +71,7 @@ The Evader's goal is to survive while being hunted.
   - Speed Boost: Increases movement speed.
   - Shield: Negates the damage from the next collision.
   - Repair: Restores 1 HP (up to the maximum limit).
-
+---
 #### Role: The Chaser
 The Chaser's goal is to destroy the Evader within the time limit.
 - Mechanics: The Chaser is invulnerable (no HP limit).
