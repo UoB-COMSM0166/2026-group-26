@@ -35,6 +35,7 @@ The Chaser's goal is to destroy the Evader within the time limit.
 - Power-ups: We are currently discussing whether the Chaser will also have access to specific power-ups to aid in the pursuit.
 
 #### Paper prototype
+![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)
 
 
 ## Your Group
