@@ -29,6 +29,27 @@ We proposed four distinct directions:
 4.  Chase & Evasion: A fast-paced action game focusing on reaction speed and movement.
 ![99d9df15929ce33a47a437c35f938bcf](https://github.com/user-attachments/assets/d0e35714-b8f4-446c-a7a6-94ee79cab433)
 
+## Two paper prototype ideas
+### Chase & Evasion:
+1: Top-Down Vehicle Survival (Chase & Evasion)
+- Role: The player acts as the Evader.
+- Controls The player navigates a vehicle using directional keys (Up/Down/Left/Right) and a Braking mechanic to control momentum and make tight turns.
+- Item System:
+    1.  Repair Kit Restores Health Points (HP) but cannot exceed the maximum HP cap.
+    2.  Shield Generator Provides a temporary barrier that negates damage from one collision with the Chaser. The shield breaks immediately after use.
+- Win Condition: Survival. The player must avoid the Chaser and keep their HP above zero for 10 minutes.
+
+
+2: Ricochet Space Arena (Multiplayer Shooter)
+- Setup: Four players each control a spaceship within their own designated quadrant of the map.
+- Combat Mechanics:
+    1. Players shoot projectiles that ricochet (bounce) off map boundaries.
+    2. Escalating Difficulty: Projectile speed increases over time, making the arena progressively more dangerous.
+- Elimination System:
+    1. Each player starts with 3 HP. Being hit reduces HP by 1.
+    2. When a player reaches 0 HP, they are eliminated, and their quadrant is permanently closed.
+    3. Closed quadrants become solid walls, further reducing the play area and increasing the frequency of bullet reflections.
+- Win Condition: Battle Royale style—the last surviving player wins.
 
 
 ## Hotline Escape
