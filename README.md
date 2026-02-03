@@ -25,14 +25,21 @@ VIDEO. Include a demo video of your game here (you don't have to wait until the 
 
 ## Your Group
 
-GROUP PHOTO. Add a group photo here.
+GROUP PHOTO. 
+<img width="1707" height="1280" alt="image" src="https://github.com/user-attachments/assets/ac7c8d00-a52d-4c9e-89f2-0bc5ce44d51c" />
 
-- Group member 1, name, email, role
-- Group member 2, name, email, role
-- Group member 3, name, email, role
-- Group member 4, name, email, role
-- Group member 5, name, email, role
-- Group member 6, name, email, role
+
+-Meb1：Li Ka Fai; Email: gavins092590@gmail.com; Role：
+
+-Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：
+
+-Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：
+
+-Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：
+
+-Meb5：FuQiuting; Email：rm25551@bristol.ac.uk; Role：
+
+-Meb6：Jizhe Jin; Email：hy25163@bristol.ac.uk;  Role：
 
 ## Project Report
 
