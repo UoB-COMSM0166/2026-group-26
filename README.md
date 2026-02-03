@@ -27,7 +27,8 @@ We proposed four distinct directions:
 2.  Simulation/Construction Game: A "Design Game" allowing players to build structures or manage resources.
 3.  Top-Down Stealth: A slow-paced strategy game focusing on vision cones and sneaking.
 4.  Chase & Evasion: A fast-paced action game focusing on reaction speed and movement.
-![cb39fd109080e014d2e1259e499df0ba](https://github.com/user-attachments/assets/25f1447e-d824-4d21-b505-1be1adca5c4c)
+![99d9df15929ce33a47a437c35f938bcf](https://github.com/user-attachments/assets/d0e35714-b8f4-446c-a7a6-94ee79cab433)
+
 
 
 ## Hotline Escape
