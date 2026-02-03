@@ -54,7 +54,7 @@ We proposed four distinct directions:
     2. When a player reaches 0 HP, they are eliminated, and their quadrant is permanently closed.
     3. Closed quadrants become solid walls, further reducing the play area and increasing the frequency of bullet reflections.
 - Win Condition: Battle Royale style—the last surviving player wins.
-[🎬 Play Video](./video/IMG_3470.mov)
+- [🎬 Play Video](./video/IMG_3470.mov)
 
 ## Hotline Escape
 
