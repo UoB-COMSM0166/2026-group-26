@@ -13,6 +13,22 @@ You will be developing your game using [P5.js](https://p5js.org) a javascript li
 - [P5.js tutorials](https://p5js.org/tutorials/) 
 - [Coding Train P5.js](https://thecodingtrain.com/tracks/code-programming-with-p5-js) course - go here for enthusiastic video tutorials from Dan Shiffman (recommended!)
 
+## Inspiration & Initial Idea
+
+### Inspiration
+Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
+- Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
+- Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
+
+
+### Initial Idea
+We proposed four distinct directions:
+1.  Text-Based Adventure: A narrative-heavy game focusing on choices and story.
+2.  Simulation/Construction Game: A "Design Game" allowing players to build structures or manage resources.
+3.  Top-Down Stealth: A slow-paced strategy game focusing on vision cones and sneaking.
+4.  Chase & Evasion: A fast-paced action game focusing on reaction speed and movement.
+
+
 ## Hotline Escape
 
 ### Final idea
