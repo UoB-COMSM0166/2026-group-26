@@ -13,15 +13,29 @@ You will be developing your game using [P5.js](https://p5js.org) a javascript li
 - [P5.js tutorials](https://p5js.org/tutorials/) 
 - [Coding Train P5.js](https://thecodingtrain.com/tracks/code-programming-with-p5-js) course - go here for enthusiastic video tutorials from Dan Shiffman (recommended!)
 
-## Your Game (change to title of your game)
+## Hotline Escape
 
-STRAPLINE. Add an exciting one sentence description of your game here.
+### Final idea
+Our final idea is a vehicle-based chase and evasion game featuring asymmetric gameplay. Players can choose to play as either the Chaser or the Evader.
 
-IMAGE. Add an image of your game here, keep this updated with a snapshot of your latest development.
+#### Role: The Evader
+The Evader's goal is to survive while being hunted.
+- Health System: The Evader has a limited number of lives (HP). Each collision with the Chaser results in -1 HP. If HP drops to zero, the game ends.
+- Victory Condition:  We are currently discussing whether the win condition should be based on surviving for a set duration or collecting a specific number of items.
+- Power-ups: The Evader can collect items in the game environment to gain temporary buffs, such as:
+  - Speed Boost: Increases movement speed.
+  - Shield: Negates the damage from the next collision.
+  - Repair: Restores 1 HP (up to the maximum limit).
 
-LINK. Add a link here to your deployed game, you can also make the image above link to your game if you wish. Your game lives in the [/docs](/docs) folder, and is published using Github pages. 
+#### Role: The Chaser
+The Chaser's goal is to destroy the Evader within the time limit.
+- Mechanics: The Chaser is invulnerable (no HP limit).
+- Objective: The primary goal is to collide with the Evader. Successfully reducing the Evader's HP to zero results in Victory.
+- Defeat Condition: If the time limit expires before the Evader is destroyed, the Chaser loses.
+- Power-ups: We are currently discussing whether the Chaser will also have access to specific power-ups to aid in the pursuit.
 
-VIDEO. Include a demo video of your game here (you don't have to wait until the end, you can insert a work in progress video)
+#### Paper prototype
+
 
 ## Your Group
 
