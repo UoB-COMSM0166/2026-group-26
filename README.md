@@ -81,7 +81,35 @@ The Chaser's goal is to destroy the Evader within the time limit.
 
 #### Paper prototype
 ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)
+---
 
+## Requirements
+
+### List of Stakeholders
+
+- Game Designers
+
+- Players
+
+
+### Epics and User Stories
+
+1. Epic: 
+  Vehicle Locomotion System 
+
+- User Story:
+  As a Game Designer, I want to implement the vehicle steering logic (Vehicle Class), So that the player receives correct directional feedback when making a turn.
+
+
+2. Epic: 
+  Strategic Environment Interaction
+
+- User Story:
+  As a Player, I want to interact with map elements (e.g., doors, traps), So that I can create obstacles for pursuers and gain a strategic advantage.
+
+### Reflection
+
+---
 
 ## Your Group
 
