@@ -1,3 +1,5 @@
+Play the game here: https://uob-comsm0166.github.io/2026-group-26/
+
 # 2026-group-26
 2026 COMSM0166 group 26
 
