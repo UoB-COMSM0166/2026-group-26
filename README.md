@@ -36,7 +36,7 @@ We proposed four distinct directions:
 ## Two paper prototype ideas
 ### Chase & Evasion:
 
-1: Top-Down Vehicle Survival (Chase & Evasion)
+1: **Top-Down Vehicle Survival (Chase & Evasion)**
 - Role: The player acts as the Evader.
 - Controls The player navigates a vehicle using directional keys (Up/Down/Left/Right) and a Braking mechanic to control momentum and make tight turns.
 - Item System:
@@ -46,7 +46,7 @@ We proposed four distinct directions:
 - [🎬 Play Video](./video/IMG_3466.mov)
 
 ---
-2: Ricochet Space Arena (Multiplayer Shooter)
+2: **Ricochet Space Arena (Multiplayer Shooter)**
 - Setup: Four players each control a spaceship within their own designated quadrant of the map.
 - Combat Mechanics:
     1. Players shoot projectiles that ricochet (bounce) off map boundaries.
@@ -83,6 +83,38 @@ The Chaser's goal is to destroy the Evader within the time limit.
 
 #### Paper prototype
 ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)
+
+
+## Requirements
+
+### List of Stakeholders
+
+- **Game Designers**
+
+- **Players**
+
+
+### Epics and User Stories
+
+1. **Epic:** 
+  Vehicle Locomotion System 
+- **User Story:**
+  As a Game Designer, I want to implement the vehicle steering logic (Vehicle Class), So that the player receives correct directional feedback when making a turn.
+
+
+2. **Epic:**
+  Strategic Environment Interaction
+- **User Story:**
+  As a Player, I want to interact with map elements (e.g., doors, traps), So that I can create obstacles for pursuers and gain a strategic advantage.
+
+### Reflection
+**Epics and User Stories:**
+- We learned that Epics serve as necessary high-level anchors that prevent us from getting lost in details too early. Initially, we struggled to separate abstract ideas from code tasks. However, by breaking down our core "Chase & Evasion" concept into specific User Stories, we realized that development becomes more efficient when viewed strictly from a Stakeholder’s perspective. For instance, instead of simply listing "add car physics," writing stories from the "Evader's" point of view helped us prioritize mechanics that directly enhance the thrill of the chase, ensuring technical features always serve the player's experience.
+
+
+**Acceptance Criteria:**  
+- The most challenging lesson involved defining Acceptance Criteria. We discovered that while User Stories describe what is needed, Acceptance Criteria define when it is finished. As a team, we found it difficult to apply measurable metrics to subjective qualities like "game feel" or "maintenance hours." This struggle taught us that vague criteria lead to vague implementation. We learned that rigorous, quantifiable criteria are essential to bridge the gap between a design concept and a testable software deliverable.
+
 
 
 ## Your Group
