@@ -25,8 +25,15 @@ class Vehicle {
 
   display() {
     push();
-    translate(this.pos.x, this.pos.y);
-    rotate(this.heading);
+    // Project position to Iso
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
+    
+    // Project heading to Iso angle
+    let headingVec = p5.Vector.fromAngle(this.heading);
+    let isoHeadingVec = projectIsoVector(headingVec.x, headingVec.y);
+    let isoAngle = isoHeadingVec.heading();
+    rotate(isoAngle);
     
     // Car Body
     fill(this.color);

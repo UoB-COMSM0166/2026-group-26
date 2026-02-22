@@ -49,7 +49,7 @@ class Player extends Vehicle {
     // Reverse / Brake (S key)
     if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) { // Down or S
        let force = p5.Vector.fromAngle(this.heading);
-       force.mult(-0.5); // Stronger reverse/brake force as requested
+       force.mult(-0.8); // Increased reverse speed as requested
        this.applyForce(force);
     }
 
@@ -99,6 +99,40 @@ class Player extends Vehicle {
         if (frameCount % 3 === 0) { // Don't add every frame to save performance
             particles.push(new Particle(rear.x + random(-5, 5), rear.y + random(-5, 5), color(220, 220, 220, 100)));
         }
+    }
+
+    // Mud Splash on Grass
+    let tileX = floor(this.pos.x / tileSize);
+    let tileY = floor(this.pos.y / tileSize);
+
+    if (typeof mapCols !== 'undefined' && tileX >= 0 && tileX < mapCols && tileY >= 0 && tileY < mapRows) {
+         let tile = tileMap[tileY][tileX];
+         // If on grass and moving fast enough
+         if (tile && tile.type === 'grass' && this.vel.mag() > 2) {
+             // Emit mud particles
+             if (frameCount % 4 === 0) { // Throttle
+                 let rear = p5.Vector.fromAngle(this.heading);
+                 rear.mult(-this.length/2);
+                 rear.add(this.pos);
+                 
+                 // Create a few particles for a "splash" effect
+                 for(let i=0; i<2; i++) {
+                     // Earthy/Muddy colors
+                     let mudColor = color(101 + random(-20,20), 67 + random(-20,20), 33, 200);
+                     let p = new Particle(rear.x + random(-5, 5), rear.y + random(-5, 5), mudColor);
+                     
+                     // Velocity: Opposite to heading + wide spread
+                     let splashVel = p5.Vector.fromAngle(this.heading + PI + random(-0.8, 0.8));
+                     splashVel.mult(random(2, 6)); // Faster, splatter-like
+                     p.vel = splashVel;
+                     
+                     p.lifespan = 150; // Shorter lived than smoke
+                     p.r = random(2, 5); // Varying chunks
+                     
+                     particles.push(p);
+                 }
+             }
+         }
     }
   }
   

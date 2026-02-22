@@ -10,15 +10,17 @@ class Particle {
   }
 
   update() {
+    this.vel.add(this.acc);
     this.vel.mult(0.95);
     this.pos.add(this.vel);
     this.lifespan -= 5;
   }
 
   display() {
+    let isoPos = projectIso(this.pos.x, this.pos.y);
     noStroke();
     fill(red(this.color), green(this.color), blue(this.color), this.lifespan);
-    ellipse(this.pos.x, this.pos.y, this.r * 2);
+    ellipse(isoPos.x, isoPos.y, this.r * 2);
   }
 
   isDead() {

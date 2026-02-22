@@ -31,14 +31,16 @@ class Projectile {
 
   display() {
     push();
-    translate(this.pos.x, this.pos.y);
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
     
     if (this.type === 'laser') {
-        // Draw laser trail
+        // Draw laser trail projected to Iso
         stroke(this.color);
         strokeWeight(2);
-        let tail = p5.Vector.mult(this.vel, -2); // Length of tail
-        line(0, 0, tail.x, tail.y);
+        let tail = p5.Vector.mult(this.vel, -2); // Length of tail in World Units
+        let isoTail = projectIsoVector(tail.x, tail.y);
+        line(0, 0, isoTail.x, isoTail.y);
         
         fill(255);
         noStroke();
