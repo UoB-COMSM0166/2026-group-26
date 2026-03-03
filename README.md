@@ -150,7 +150,10 @@ GROUP PHOTO.
 ### Design
 
 - 15% ~750 words 
-- System architecture. Class diagrams, behavioural diagrams. 
+- System architecture. Class diagrams, behavioural diagrams.
+  inheritance diagram
+  <img width="1080" height="540" alt="hotline escape inheritance diagram" src="https://github.com/user-attachments/assets/1e6b849c-182b-4c24-bcc7-5ea3be0742b6" />
+
 
 ### Implementation
 
