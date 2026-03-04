@@ -1,3 +1,10 @@
+const CAR_CATALOG = {
+  starter: { name: 'Starter', color: [0, 255, 0], maxSpeed: 12, turnSpeed: 0.05, friction: 0.96, maxHp: 5, maxAmmo: 10, price: 0 },
+  speedster: { name: 'Speedster', color: [0, 180, 255], maxSpeed: 16, turnSpeed: 0.06, friction: 0.97, maxHp: 4, maxAmmo: 10, price: 120 },
+  tank: { name: 'Tank', color: [255, 140, 0], maxSpeed: 8, turnSpeed: 0.04, friction: 0.95, maxHp: 8, maxAmmo: 12, price: 150 },
+  drifter: { name: 'Drifter', color: [180, 80, 255], maxSpeed: 13, turnSpeed: 0.08, friction: 0.94, maxHp: 5, maxAmmo: 10, price: 110 }
+};
+
 class Vehicle {
   constructor(x, y, color) {
     this.pos = createVector(x, y);

@@ -1,15 +1,35 @@
 class Player extends Vehicle {
   constructor(x, y) {
-    super(x, y, color(0, 255, 0));
-    this.maxSpeed = 12; // Set a high but controllable max speed
-    this.friction = 0.96; // Slightly less friction than 0.95 to maintain speed better
-    this.turnSpeed = 0.05; 
+    let carData = CAR_CATALOG ? CAR_CATALOG.starter : { color: [0, 255, 0], maxSpeed: 12, turnSpeed: 0.05, friction: 0.96, maxHp: 5, maxAmmo: 10 };
+    super(x, y, color(carData.color[0], carData.color[1], carData.color[2]));
+    this.carType = 'starter';
+    this.bonusMaxHp = 0;
+    this.bonusMaxAmmo = 0;
+    this.coins = 0;
+    this.maxSpeed = carData.maxSpeed;
+    this.friction = carData.friction;
+    this.turnSpeed = carData.turnSpeed; 
     this.isBraking = false;
-    this.xp = 0;
-    this.hp = 5; // Start with 5 HP
-    this.ammo = 5; // Start with 5 ammo
-    this.maxAmmo = 10; // Max ammo limit
-    this.currentWeapon = 'pistol'; // pistol, shotgun, laser
+    this.maxHp = carData.maxHp;
+    this.hp = this.maxHp;
+    this.maxAmmo = carData.maxAmmo;
+    this.ammo = this.maxAmmo;
+    this.currentWeapon = 'pistol';
+    this.hasShield = false;
+  }
+
+  applyCarType(carId) {
+    if (!CAR_CATALOG || !CAR_CATALOG[carId]) return;
+    let data = CAR_CATALOG[carId];
+    this.carType = carId;
+    this.color = color(data.color[0], data.color[1], data.color[2]);
+    this.maxSpeed = data.maxSpeed;
+    this.turnSpeed = data.turnSpeed;
+    this.friction = data.friction;
+    this.maxHp = data.maxHp + this.bonusMaxHp;
+    this.maxAmmo = data.maxAmmo + this.bonusMaxAmmo;
+    this.hp = min(this.hp, this.maxHp);
+    this.ammo = min(this.ammo, this.maxAmmo);
   }
 
   update() {

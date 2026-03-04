@@ -1,8 +1,9 @@
 class PowerUp {
   constructor(x, y, type) {
     this.pos = createVector(x, y);
-    this.type = type; // 'speed', 'shield', 'health'
+    this.type = type; // 'speed', 'shield', 'health', 'coin'
     this.r = 10;
+    this.value = type === 'coin' ? 10 : 0;
   }
 
   display() {
@@ -32,6 +33,7 @@ class PowerUp {
     noStroke();
     if (this.type === 'speed') fill(255, 255, 0, 100);
     else if (this.type === 'shield') fill(0, 255, 255, 100);
+    else if (this.type === 'coin') fill(255, 215, 0, 120);
     else fill(255, 50, 50, 100);
     ellipse(0, 0, pulse, pulse);
 
@@ -94,6 +96,13 @@ class PowerUp {
       noStroke();
       rect(0, 1, 8, 14); // Vertical bar
       rect(0, 1, 14, 8); // Horizontal bar
+    } else if (this.type === 'coin') {
+      fill(255, 215, 0);
+      stroke(200, 150, 0);
+      ellipse(0, 0, 22, 22);
+      noStroke();
+      fill(255, 240, 180);
+      ellipse(-4, -4, 6, 6);
     }
     pop();
   }

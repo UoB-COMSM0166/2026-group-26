@@ -4,7 +4,7 @@ let powerups = [];
 let particles = [];
 let buildings = [];
 let projectiles = [];
-let gameState = 'MENU'; // MENU, PLAY, PAUSED, GAMEOVER, WIN, SHOP
+let gameState = 'MENU'; // MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP
 let shopBuilding = null; // Store which building opened the shop
 let lastShotTime = 0; // For weapon cooldown
 let startTime;
@@ -14,6 +14,12 @@ let lastPowerUpSpawnTime = 0;
 let shakeAmount = 0;
 let hospitalImg;
 let armoryImg;
+let gameCoverImg;
+let gameCoverVideo;
+let startBtnImg;
+let exitBtnImg;
+let shopBtnImg;
+let lastCoverRect = null;
 
 // Game Settings
 let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
@@ -50,10 +56,25 @@ let tileMap = []; // 2D array of tiles
 let tileSize = 100; // Size of each tile (pixels)
 let mapCols, mapRows;
 let roadCenters = [];
+const SHOP_CAR_ORDER = ['starter', 'speedster', 'tank', 'drifter'];
+const SHOP_WEAPONS = [
+  { key: '5', id: 'shotgun', name: 'Shotgun', price: 80 },
+  { key: '6', id: 'laser', name: 'Laser Cannon', price: 140 },
+  { key: '7', id: 'ricochet', name: 'Ricochet', price: 200 }
+];
+const SHOP_UPGRADES = [
+  { key: '8', id: 'maxHp', name: 'Max HP +1', price: 60 },
+  { key: '9', id: 'maxAmmo', name: 'Max Ammo +10', price: 50 }
+];
 
 function preload() {
   hospitalImg = loadImage('icon/BUILDING/hospital.png');
   armoryImg = loadImage('icon/BUILDING/arms.png');
+  
+  gameCoverImg = loadImage('icon/game_cover.png');
+  startBtnImg = loadImage('icon/start.png');
+  exitBtnImg = loadImage('icon/exit.png');
+  shopBtnImg = loadImage('icon/BUILDING/supermarket.png');
   
   // Load terrain and environment assets
   images.grass = loadImage('icon/grass_1.png');
@@ -167,12 +188,24 @@ function setup() {
   
   // Create Visuals from TileMap
   createMapGraphics();
+
+  gameCoverVideo = createVideo('icon/game_cover_video.mp4');
+  gameCoverVideo.volume(0);
+  gameCoverVideo.elt.muted = true;
+  gameCoverVideo.elt.playsInline = true;
+  gameCoverVideo.loop();
+  gameCoverVideo.hide();
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
   gameWidth = windowWidth;
   gameHeight = windowHeight - statusHeight;
+  
+  // Re-create map graphics if necessary or just let it scale
+  // Ideally, if map size is constant, we don't need to recreate.
+  // But if the canvas resize affects how we want to see things, we might.
+  // For now, mapGraphics is independent of screen size, so we are good.
 }
 
 function projectIso(x, y) {
@@ -216,13 +249,14 @@ function resetGame(keepProgress = false) {
   player = new Player(mapWidth / 2, mapHeight / 2); // Start in middle of large map
   
   if (keepProgress && oldPlayer) {
-      player.xp = oldPlayer.xp;
-      player.hp = oldPlayer.hp;
-      player.maxAmmo = oldPlayer.maxAmmo;
-      player.ammo = oldPlayer.ammo;
+      player.coins = oldPlayer.coins;
+      player.bonusMaxHp = oldPlayer.bonusMaxHp;
+      player.bonusMaxAmmo = oldPlayer.bonusMaxAmmo;
       player.currentWeapon = oldPlayer.currentWeapon;
       player.hasShield = oldPlayer.hasShield;
-      player.maxSpeed = oldPlayer.maxSpeed;
+      player.applyCarType(oldPlayer.carType);
+      player.hp = min(oldPlayer.hp, player.maxHp);
+      player.ammo = min(oldPlayer.ammo, player.maxAmmo);
   }
 
   enemies = [];
@@ -244,6 +278,13 @@ function resetGame(keepProgress = false) {
       survivalTime = 90;
   } else if (difficulty === 'HARD') {
       survivalTime = 120;
+  }
+  
+  if (!tileMap || tileMap.length === 0) {
+      generateTileMap();
+      createMapGraphics();
+  } else if (!mapGraphics) {
+      createMapGraphics();
   }
   
   // Level Generation (Vary based on currentLevel if desired)
@@ -434,6 +475,7 @@ function getRoadImage(x, y) {
 
 function createMapGraphics() {
   // Use standard renderer (P2D) instead of WEBGL for simpler 2D composition
+  if (mapGraphics) mapGraphics.remove(); // Clear old buffer if exists
   mapGraphics = createGraphics(mapWidth, mapHeight); 
   mapGraphics.imageMode(CENTER);
   
@@ -681,6 +723,20 @@ function generateCity() {
 }
 
 function draw() {
+  // 0. Menu Handling (Full Screen, No Camera/Status Bar Offset)
+  if (gameState === 'MENU') {
+      drawMainMenu();
+      return; // Stop drawing anything else
+  } else if (gameState === 'DIFFICULTY_SELECT') {
+      drawDifficultySelect();
+      return; // Stop drawing anything else
+  } else if (gameState === 'MENU_SHOP') {
+      drawShopMenu();
+      return;
+  }
+
+  imageMode(CENTER);
+
   // 1. Background
   background(34, 139, 34); // Forest Green
 
@@ -707,6 +763,13 @@ function draw() {
     if (shakeAmount < 0.5) shakeAmount = 0;
   }
 
+  if (!mapGraphics) {
+    if (!tileMap || tileMap.length === 0) {
+      generateTileMap();
+    }
+    createMapGraphics();
+  }
+
   // Map
   if (mapGraphics) {
     image(mapGraphics, mapWidth/2, mapHeight/2);
@@ -729,9 +792,7 @@ function draw() {
   push();
   translate(0, statusHeight);
   
-  if (gameState === 'MENU') {
-      drawMenu();
-  } else if (gameState === 'PAUSED') {
+  if (gameState === 'PAUSED') {
       if (boundaryWarningAlpha > 0) drawBoundaryWarning();
       drawPaused();
   } else if (gameState === 'SHOP') {
@@ -819,50 +880,229 @@ function drawMiniMap() {
     pop();
 }
 
-function drawMenu() {
-  fill(0, 0, 0, 150);
-  rectMode(CENTER);
-  rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+function getCoverRect() {
+  let source = null;
+  let sourceW = 0;
+  let sourceH = 0;
   
-  fill(255);
-  textSize(60);
-  textStyle(BOLD);
-  text("HOTLINE ESCAPE", gameWidth / 2, gameHeight / 4);
-  textStyle(NORMAL);
+  if (gameCoverVideo && gameCoverVideo.elt && gameCoverVideo.elt.videoWidth > 0) {
+      source = gameCoverVideo;
+      sourceW = gameCoverVideo.elt.videoWidth;
+      sourceH = gameCoverVideo.elt.videoHeight;
+  } else if (gameCoverImg) {
+      source = gameCoverImg;
+      sourceW = gameCoverImg.width;
+      sourceH = gameCoverImg.height;
+  }
   
-  textSize(20);
-  text("Objective: Survive and Escape the City", gameWidth / 2, gameHeight / 3);
+  let rect = { x: 0, y: 0, w: width, h: height, source };
   
-  // Difficulty Selection
-  textSize(24);
-  text("Select Difficulty:", gameWidth / 2, gameHeight / 2 - 40);
-  
-  let diffs = ['EASY', 'NORMAL', 'HARD'];
-  let startY = gameHeight / 2;
-  
-  for (let i = 0; i < diffs.length; i++) {
-      let d = diffs[i];
-      if (difficulty === d) {
-          fill(0, 255, 0);
-          textSize(32);
-          text("> " + d + " <", gameWidth / 2, startY + i * 50);
+  if (source) {
+      let imgAspect = sourceW / sourceH;
+      let screenAspect = width / height;
+      let drawW, drawH, offX, offY;
+      let useContain = source === gameCoverVideo;
+      
+      if (useContain) {
+          if (screenAspect > imgAspect) {
+              drawH = height;
+              drawW = height * imgAspect;
+              offX = (width - drawW) / 2;
+              offY = 0;
+          } else {
+              drawW = width;
+              drawH = width / imgAspect;
+              offX = 0;
+              offY = (height - drawH) / 2;
+          }
       } else {
-          fill(150);
-          textSize(24);
-          text(d, gameWidth / 2, startY + i * 50);
+          if (screenAspect > imgAspect) {
+              drawW = width;
+              drawH = width / imgAspect;
+              offX = 0;
+              offY = (height - drawH) / 2;
+          } else {
+              drawH = height;
+              drawW = height * imgAspect;
+              offX = (width - drawW) / 2;
+              offY = 0;
+          }
+      }
+      
+      rect.x = offX;
+      rect.y = offY;
+      rect.w = drawW;
+      rect.h = drawH;
+  }
+  
+  return rect;
+}
+
+function drawCoverBackground(dimValue = 255) {
+  let rect = getCoverRect();
+  lastCoverRect = rect;
+  
+  if (rect.source) {
+      imageMode(CORNER);
+      if (dimValue !== 255) tint(dimValue);
+      if (rect.source === gameCoverVideo && gameCoverVideo.elt && gameCoverVideo.elt.paused) gameCoverVideo.loop();
+      
+      image(rect.source, rect.x, rect.y, rect.w, rect.h);
+      
+      if (dimValue !== 255) noTint();
+  } else {
+      background(0);
+  }
+}
+
+function getMenuButtonLayout() {
+  let rect = lastCoverRect || getCoverRect();
+  let iconSize = min(150, rect.h * 0.22);
+  let hoverRadius = iconSize / 2;
+  let leftMargin = rect.w * 0.18;
+  let bottomMargin = rect.h * 0.08 + iconSize / 2;
+  let gap = rect.h * 0.22;
+  
+  let exitX = rect.x + leftMargin;
+  let exitY = rect.y + rect.h - bottomMargin;
+  let startX = exitX;
+  let startY = exitY - gap;
+  let shopX = exitX;
+  let shopY = startY - gap;
+  let labelOffsetX = 100;
+  
+  return { shopX, shopY, startX, startY, exitX, exitY, iconSize, hoverRadius, labelOffsetX };
+}
+
+function drawMainMenu() {
+  drawCoverBackground();
+  let layout = getMenuButtonLayout();
+  
+  imageMode(CENTER);
+  
+  let shopX = layout.shopX;
+  let shopY = layout.shopY;
+  let startX = layout.startX;
+  let startY = layout.startY;
+  let exitX = layout.exitX;
+  let exitY = layout.exitY;
+  let iconSize = layout.iconSize;
+  let hoverRadius = layout.hoverRadius;
+  let labelOffsetX = layout.labelOffsetX;
+  
+  if (shopBtnImg) {
+      let s = 1.0;
+      if (dist(mouseX, mouseY, shopX, shopY) < hoverRadius) s = 1.1;
+      
+      push();
+      translate(shopX, shopY);
+      scale(s);
+      image(shopBtnImg, 0, 0, iconSize, iconSize);
+      pop();
+      
+      if (dist(mouseX, mouseY, shopX, shopY) < hoverRadius) {
+          fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
+          text("SHOP", shopX + labelOffsetX, shopY);
       }
   }
   
-  fill(255);
-  textSize(16);
-  text("Click or use UP/DOWN to select difficulty", gameWidth / 2, gameHeight * 0.7);
+  if (startBtnImg) {
+      let s = 1.0;
+      if (dist(mouseX, mouseY, startX, startY) < hoverRadius) s = 1.1;
+      
+      push();
+      translate(startX, startY);
+      scale(s);
+      image(startBtnImg, 0, 0, iconSize, iconSize); 
+      pop();
+      
+      if (dist(mouseX, mouseY, startX, startY) < hoverRadius) {
+          fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
+          text("START", startX + labelOffsetX, startY);
+      }
+  } else {
+      fill(0, 255, 0); rect(startX, startY, 150, 60, 10);
+      fill(0); textAlign(CENTER, CENTER); text("START", startX, startY);
+  }
   
-  // Start Button
-  fill(0, 200, 255);
-  rect(gameWidth/2, gameHeight * 0.8, 200, 60, 10);
+  if (exitBtnImg) {
+      let s = 1.0;
+      if (dist(mouseX, mouseY, exitX, exitY) < hoverRadius) s = 1.1;
+      
+      push();
+      translate(exitX, exitY);
+      scale(s);
+      image(exitBtnImg, 0, 0, iconSize, iconSize);
+      pop();
+      
+      if (dist(mouseX, mouseY, exitX, exitY) < hoverRadius) {
+          fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
+          text("EXIT", exitX + labelOffsetX, exitY);
+      }
+  } else {
+      fill(255, 0, 0); rect(exitX, exitY, 150, 60, 10);
+      fill(255); text("EXIT", exitX, exitY);
+  }
+}
+
+function drawDifficultySelect() {
+  drawCoverBackground(100);
+  
+  // 2. Panel
+  rectMode(CENTER);
+  fill(30, 30, 30, 220);
+  stroke(255);
+  strokeWeight(2);
+  rect(width/2, height/2, 400, 400, 15);
+  
+  // 3. Header
   fill(255);
-  textSize(30);
-  text("START GAME", gameWidth/2, gameHeight * 0.8);
+  noStroke();
+  textSize(32);
+  textAlign(CENTER, TOP);
+  text("SELECT DIFFICULTY", width/2, height/2 - 150);
+  
+  // 4. Options
+  let diffs = ['EASY', 'NORMAL', 'HARD'];
+  let startY = height/2 - 50;
+  let gap = 80;
+  
+  for (let i = 0; i < diffs.length; i++) {
+      let d = diffs[i];
+      let btnY = startY + i * gap;
+      
+      // Hover check
+      let isHover = abs(mouseX - width/2) < 120 && abs(mouseY - btnY) < 30;
+      
+      if (isHover) {
+          fill(255, 215, 0); // Gold hover
+          stroke(255);
+          strokeWeight(3);
+          rect(width/2, btnY, 240, 60, 10);
+          
+          fill(0);
+          noStroke();
+          textSize(28);
+          textStyle(BOLD);
+          text(d, width/2, btnY);
+          textStyle(NORMAL);
+      } else {
+          fill(50);
+          stroke(150);
+          strokeWeight(1);
+          rect(width/2, btnY, 240, 60, 10);
+          
+          fill(200);
+          noStroke();
+          textSize(24);
+          text(d, width/2, btnY);
+      }
+  }
+  
+  // Back instruction
+  fill(150);
+  textSize(16);
+  text("Press ESC to Back", width/2, height/2 + 160);
 }
 
 function drawPaused() {
@@ -931,9 +1171,8 @@ function playGame() {
     gameState = 'WIN';
   }
 
-  // Passive XP gain (survival) - Scale with difficulty?
-  if (frameCount % 60 === 0) { // Every second
-      player.xp += (difficulty === 'EASY' ? 2 : 1);
+  if (frameCount % 60 === 0) {
+      player.coins += (difficulty === 'EASY' ? 3 : 2);
   }
 
   // Spawning Enemies
@@ -950,8 +1189,8 @@ function playGame() {
   }
 
   // Spawning PowerUps
-  if (millis() - lastPowerUpSpawnTime > 3000) { // Increased spawn rate: Every 3 seconds
-    let types = ['speed', 'shield', 'health'];
+  if (millis() - lastPowerUpSpawnTime > 2500) {
+    let types = ['speed', 'shield', 'health', 'coin', 'coin'];
     let type = random(types);
     
     let px = random(100, mapWidth - 100);
@@ -1128,7 +1367,7 @@ function drawGameObjects() {
                 
                 createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 15);
                 enemies.splice(i, 1);
-                player.xp += 5; 
+                player.coins += 5; 
                 shakeAmount = 5;
                 break; 
             }
@@ -1162,108 +1401,116 @@ function drawGameObjects() {
   }
 }
 
-function drawShop() {
-    // Darken background
+function ensurePlayerProfile() {
+    if (!player) {
+        player = new Player(mapWidth / 2, mapHeight / 2);
+    }
+}
+
+function buyCar(carId) {
+    if (!CAR_CATALOG || !CAR_CATALOG[carId]) return;
+    let data = CAR_CATALOG[carId];
+    if (player.coins < data.price) return;
+    player.coins -= data.price;
+    player.applyCarType(carId);
+}
+
+function buyWeapon(weaponId, price) {
+    if (player.coins < price) return;
+    if (player.currentWeapon === weaponId) return;
+    player.coins -= price;
+    player.currentWeapon = weaponId;
+}
+
+function buyUpgrade(type, price) {
+    if (player.coins < price) return;
+    player.coins -= price;
+    if (type === 'maxHp') {
+        player.bonusMaxHp += 1;
+        player.maxHp += 1;
+        player.hp = min(player.hp, player.maxHp);
+    } else if (type === 'maxAmmo') {
+        player.bonusMaxAmmo += 10;
+        player.maxAmmo += 10;
+        player.ammo = min(player.ammo, player.maxAmmo);
+    }
+}
+
+function drawShopContent(areaW, areaH, centerX, centerY, footerText) {
     fill(0, 0, 0, 200);
     rectMode(CORNER);
-    rect(0, 0, gameWidth, gameHeight);
+    rect(0, 0, areaW, areaH);
     
-    // Shop Panel
     rectMode(CENTER);
+    let panelW = min(720, areaW * 0.85);
+    let panelH = min(520, areaH * 0.85);
     fill(50);
     stroke(255);
     strokeWeight(2);
-    rect(gameWidth/2, gameHeight/2, 600, 400, 10);
+    rect(centerX, centerY, panelW, panelH, 10);
     
-    // Header
     fill(255);
     noStroke();
     textSize(32);
     textAlign(CENTER, TOP);
-    let title = shopBuilding.type === 'hospital' ? "HOSPITAL" : "ARMORY";
-    text(title, gameWidth/2, gameHeight/2 - 180);
+    text("SHOP", centerX, centerY - panelH/2 + 20);
     
-    // Player Stats in Shop
-    textSize(16);
-    textAlign(CENTER, TOP); // Changed to center
+    textSize(18);
+    textAlign(CENTER, TOP);
+    text(`Coins: ${player.coins}`, centerX, centerY - panelH/2 + 60);
+    text(`Car: ${CAR_CATALOG[player.carType].name} | Weapon: ${player.currentWeapon.toUpperCase()}`, centerX, centerY - panelH/2 + 85);
+    text(`Max HP: ${player.maxHp} | Max Ammo: ${player.maxAmmo}`, centerX, centerY - panelH/2 + 110);
     
-    // Conditional display based on shop type
-    if (shopBuilding.type === 'hospital') {
-        text(`XP Available: ${player.xp}`, gameWidth/2, gameHeight/2 - 130);
-        text(`Current HP: ${player.hp}/5`, gameWidth/2, gameHeight/2 - 110);
-        // Hide Ammo and Weapon for Hospital
-    } else { // Armory
-        text(`XP Available: ${player.xp}`, gameWidth/2, gameHeight/2 - 130);
-        // Hide HP for Armory
-        text(`Ammo: ${player.ammo}/${player.maxAmmo}`, gameWidth/2, gameHeight/2 - 110);
-        text(`Weapon: ${player.currentWeapon.toUpperCase()}`, gameWidth/2, gameHeight/2 - 90);
+    let col1X = centerX - panelW/2 + 30;
+    let col2X = centerX + 20;
+    let listY = centerY - panelH/2 + 150;
+    
+    textAlign(LEFT, TOP);
+    textSize(18);
+    text("CARS", col1X, listY);
+    text("WEAPONS", col2X, listY);
+    
+    let carY = listY + 30;
+    for (let i = 0; i < SHOP_CAR_ORDER.length; i++) {
+        let id = SHOP_CAR_ORDER[i];
+        let data = CAR_CATALOG[id];
+        let key = String(i + 1);
+        let owned = player.carType === id ? "OWNED" : `${data.price}`;
+        text(`[${key}] ${data.name} - ${owned}`, col1X, carY);
+        text(`SPD ${data.maxSpeed} | HP ${data.maxHp}`, col1X, carY + 18);
+        carY += 40;
     }
     
-    // Options
+    let weaponY = listY + 30;
+    for (let i = 0; i < SHOP_WEAPONS.length; i++) {
+        let w = SHOP_WEAPONS[i];
+        let owned = player.currentWeapon === w.id ? "OWNED" : `${w.price}`;
+        text(`[${w.key}] ${w.name} - ${owned}`, col2X, weaponY);
+        weaponY += 30;
+    }
+    
+    let upgradeY = weaponY + 10;
+    text("UPGRADES", col2X, upgradeY);
+    upgradeY += 30;
+    for (let i = 0; i < SHOP_UPGRADES.length; i++) {
+        let u = SHOP_UPGRADES[i];
+        text(`[${u.key}] ${u.name} - ${u.price}`, col2X, upgradeY);
+        upgradeY += 30;
+    }
+    
     textAlign(CENTER, CENTER);
-    let options = [];
-    
-    if (shopBuilding.type === 'hospital') {
-        options = [
-            { key: '1', label: "Heal 1 HP (10 XP)", action: () => {
-                if (player.xp >= 10 && player.hp < 5) {
-                    player.xp -= 10;
-                    player.hp++;
-                }
-            }},
-            { key: '2', label: "Full Heal (40 XP)", action: () => {
-                if (player.xp >= 40 && player.hp < 5) {
-                    player.xp -= 40;
-                    player.hp = 5;
-                }
-            }}
-        ];
-    } else {
-        options = [
-            { key: '1', label: "Buy Ammo x10 (5 XP)", action: () => {
-                if (player.xp >= 5 && player.ammo < player.maxAmmo) {
-                    player.xp -= 5;
-                    player.ammo = min(player.ammo + 10, player.maxAmmo);
-                }
-            }},
-            { key: '2', label: "Shotgun (50 XP)", action: () => {
-                if (player.xp >= 50 && player.currentWeapon !== 'shotgun') {
-                    player.xp -= 50;
-                    player.currentWeapon = 'shotgun';
-                }
-            }},
-            { key: '3', label: "Laser Cannon (100 XP)", action: () => {
-                if (player.xp >= 100 && player.currentWeapon !== 'laser') {
-                    player.xp -= 100;
-                    player.currentWeapon = 'laser';
-                }
-            }},
-            { key: '4', label: "Ricochet (150 XP)", action: () => {
-                if (player.xp >= 150 && player.currentWeapon !== 'ricochet') {
-                    player.xp -= 150;
-                    player.currentWeapon = 'ricochet';
-                }
-            }}
-        ];
-    }
-    
-    let startY = gameHeight/2 - 70;
-    for (let i = 0; i < options.length; i++) {
-        let opt = options[i];
-        fill(80);
-        stroke(200);
-        rect(gameWidth/2, startY + i * 55, 400, 45, 5);
-        
-        fill(255);
-        noStroke();
-        textSize(18);
-        text(`[${opt.key}] ${opt.label}`, gameWidth/2, startY + i * 55);
-    }
-    
-    // Close instruction
-    fill(200);
     textSize(14);
-    text("Press ESC or F to Close", gameWidth/2, gameHeight/2 + 180);
+    text(footerText, centerX, centerY + panelH/2 - 20);
+}
+
+function drawShopMenu() {
+    ensurePlayerProfile();
+    drawCoverBackground();
+    drawShopContent(width, height, width/2, height/2, "Press ESC to Back");
+}
+
+function drawShop() {
+    drawShopContent(gameWidth, gameHeight, gameWidth/2, gameHeight/2, "Press ESC or F to Close");
 }
 
 function createExplosion(x, y, col, count) {
@@ -1279,11 +1526,15 @@ function applyPowerUp(p) {
   } else if (p.type === 'shield') {
     player.hasShield = true;
   } else if (p.type === 'health') {
-    player.hp++;
+    player.hp = min(player.hp + 1, player.maxHp);
+  } else if (p.type === 'coin') {
+    player.coins += p.value || 5;
   }
 }
 
 function drawStatusBar() {
+  if (gameState === 'MENU' || gameState === 'DIFFICULTY_SELECT' || gameState === 'MENU_SHOP') return;
+
   // Background
   fill(30);
   noStroke();
@@ -1342,14 +1593,14 @@ function drawStatusBar() {
       pop();
   }
   
-  // --- Middle Right: XP ---
+  // --- Middle Right: COINS ---
   fill(200);
   noStroke();
-  text("XP", 500, 25);
+  text("COINS", 500, 25);
   
-  fill(0, 200, 255); // Cyan
+  fill(255, 215, 0);
   textSize(32);
-  text(player.xp, 500, 55);
+  text(player.coins, 500, 55);
 
   // --- Right Section: Time ---
   fill(200);
@@ -1420,8 +1671,8 @@ function drawWin() {
 
 function keyPressed() {
   if (keyCode === ENTER) {
-    if (gameState === 'MENU' || gameState === 'GAMEOVER') {
-      resetGame();
+    if (gameState === 'GAMEOVER') {
+      resetGame(true);
       gameState = 'PLAY';
     } else if (gameState === 'WIN') {
       gameState = 'MENU'; // Go back to menu from Win
@@ -1435,57 +1686,27 @@ function keyPressed() {
       else if (gameState === 'PAUSED') gameState = 'PLAY';
   } else if (key === 'r' || key === 'R') {
       if (gameState === 'PAUSED') {
-          resetGame();
+          resetGame(true);
           gameState = 'PLAY';
       }
-  } else if (gameState === 'MENU') {
-      // Difficulty Selection
-      if (keyCode === UP_ARROW) {
-          if (difficulty === 'NORMAL') difficulty = 'EASY';
-          else if (difficulty === 'HARD') difficulty = 'NORMAL';
-      } else if (keyCode === DOWN_ARROW) {
-          if (difficulty === 'EASY') difficulty = 'NORMAL';
-          else if (difficulty === 'NORMAL') difficulty = 'HARD';
+  } else if (gameState === 'DIFFICULTY_SELECT') {
+      if (keyCode === ESCAPE) {
+          gameState = 'MENU';
       }
-  } else if (gameState === 'SHOP') {
-      if (keyCode === ESCAPE || keyCode === 70) { // ESC or F to close
-          gameState = 'PLAY';
+  } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+      if (keyCode === ESCAPE || (gameState === 'SHOP' && keyCode === 70)) {
+          gameState = gameState === 'SHOP' ? 'PLAY' : 'MENU';
           shopBuilding = null;
-      } else {
-          // Shop interactions
-          if (shopBuilding.type === 'hospital') {
-              if (key === '1') { // Heal 1
-                  if (player.xp >= 10 && player.hp < 5) {
-                      player.xp -= 10;
-                      player.hp++;
-                  }
-              } else if (key === '2') { // Full Heal
-                  if (player.xp >= 40 && player.hp < 5) {
-                      player.xp -= 40;
-                      player.hp = 5;
-                  }
+      } else if (player) {
+          if (key >= '1' && key <= '4') {
+              let carId = SHOP_CAR_ORDER[int(key) - 1];
+              if (carId) buyCar(carId);
+          } else {
+              for (let i = 0; i < SHOP_WEAPONS.length; i++) {
+                  if (SHOP_WEAPONS[i].key === key) buyWeapon(SHOP_WEAPONS[i].id, SHOP_WEAPONS[i].price);
               }
-          } else if (shopBuilding.type === 'armory') {
-              if (key === '1') { // Buy Ammo
-                  if (player.xp >= 5 && player.ammo < player.maxAmmo) {
-                      player.xp -= 5;
-                      player.ammo = min(player.ammo + 10, player.maxAmmo);
-                  }
-              } else if (key === '2') { // Buy Shotgun
-                  if (player.xp >= 50 && player.currentWeapon !== 'shotgun') {
-                      player.xp -= 50;
-                      player.currentWeapon = 'shotgun';
-                  }
-              } else if (key === '3') { // Buy Laser
-                  if (player.xp >= 100 && player.currentWeapon !== 'laser') {
-                      player.xp -= 100;
-                      player.currentWeapon = 'laser';
-                  }
-              } else if (key === '4') { // Buy Ricochet
-                  if (player.xp >= 150 && player.currentWeapon !== 'ricochet') {
-                      player.xp -= 150;
-                      player.currentWeapon = 'ricochet';
-                  }
+              for (let i = 0; i < SHOP_UPGRADES.length; i++) {
+                  if (SHOP_UPGRADES[i].key === key) buyUpgrade(SHOP_UPGRADES[i].id, SHOP_UPGRADES[i].price);
               }
           }
       }
@@ -1494,22 +1715,47 @@ function keyPressed() {
 
 function mousePressed() {
     if (gameState === 'MENU') {
-        // Simple click detection for difficulty
-        // Approx coordinates from drawMenu
-        let startY = gameHeight / 2;
-        let dE = dist(mouseX, mouseY, gameWidth/2, startY);
-        let dN = dist(mouseX, mouseY, gameWidth/2, startY + 50);
-        let dH = dist(mouseX, mouseY, gameWidth/2, startY + 100);
+        let layout = getMenuButtonLayout();
+        let shopX = layout.shopX;
+        let shopY = layout.shopY;
+        let startX = layout.startX;
+        let startY = layout.startY;
+        let exitX = layout.exitX;
+        let exitY = layout.exitY;
+        let hoverRadius = layout.hoverRadius;
         
-        if (mouseY > startY - 20 && mouseY < startY + 20) difficulty = 'EASY';
-        if (mouseY > startY + 30 && mouseY < startY + 70) difficulty = 'NORMAL';
-        if (mouseY > startY + 80 && mouseY < startY + 120) difficulty = 'HARD';
+        if (dist(mouseX, mouseY, shopX, shopY) < hoverRadius) {
+             ensurePlayerProfile();
+             gameState = 'MENU_SHOP';
+        }
         
-        // Start Button
-        if (mouseX > gameWidth/2 - 100 && mouseX < gameWidth/2 + 100 &&
-            mouseY > gameHeight * 0.8 - 30 && mouseY < gameHeight * 0.8 + 30) {
-            resetGame();
-            gameState = 'PLAY';
+        if (dist(mouseX, mouseY, startX, startY) < hoverRadius) {
+             gameState = 'DIFFICULTY_SELECT';
+        }
+        
+        if (dist(mouseX, mouseY, exitX, exitY) < hoverRadius) {
+             noLoop();
+             background(0);
+             fill(255);
+             textAlign(CENTER, CENTER);
+             textSize(32);
+             text("Game Exited. Please close the tab.", width/2, height/2);
+        }
+    } else if (gameState === 'DIFFICULTY_SELECT') {
+        let diffs = ['EASY', 'NORMAL', 'HARD'];
+        let startY = height/2 - 50;
+        let gap = 80;
+        
+        for (let i = 0; i < diffs.length; i++) {
+            let d = diffs[i];
+            let btnY = startY + i * gap;
+            
+            // Check click on difficulty button
+            if (abs(mouseX - width/2) < 120 && abs(mouseY - btnY) < 30) {
+                difficulty = d;
+                resetGame(true);
+                gameState = 'PLAY';
+            }
         }
     } else if (gameState === 'PLAY') {
         // Adjust click check for top status bar
