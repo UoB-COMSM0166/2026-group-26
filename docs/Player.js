@@ -8,7 +8,7 @@ class Player extends Vehicle {
     this.xp = 0;
     this.hp = 5; // Start with 5 HP
     this.ammo = 5; // Start with 5 ammo
-    this.maxAmmo = 30; // Max ammo limit
+    this.maxAmmo = 10; // Max ammo limit
     this.currentWeapon = 'pistol'; // pistol, shotgun, laser
   }
 
@@ -140,11 +140,29 @@ class Player extends Vehicle {
     super.display();
     if (this.hasShield) {
         push();
-        translate(this.pos.x, this.pos.y);
+        let isoPos = projectIso(this.pos.x, this.pos.y);
+        translate(isoPos.x, isoPos.y);
+        
+        // Pulsing effect
+        let pulse = sin(frameCount * 0.1) * 5;
+        // Increase size to fully enclose the car (Car length ~36)
+        let sW = this.r * 5 + pulse; // ~80 + pulse
+        let sH = sW * 0.5; // Isometric aspect ratio 2:1 for ground circle
+        
+        // Draw Ground Ring
         noFill();
         stroke(0, 255, 255);
         strokeWeight(2);
-        ellipse(0, 0, this.r * 3, this.r * 3);
+        ellipse(0, 0, sW, sH);
+        
+        // Draw "Bubble" (Sphere-like)
+        // Adjust offset to cover the car height
+        fill(0, 255, 255, 40); // Slightly more opaque
+        noStroke();
+        // Shift up to center the sphere over the car body
+        // Moved down by 20px (accumulated) as requested to better fit the car
+        ellipse(0, -this.r * 1.5 + 20, sW, sW * 0.9); 
+        
         pop();
     }
   }

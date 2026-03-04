@@ -21,6 +21,12 @@ class Projectile {
         this.color = color(0, 255, 255);
         this.r = 5;
         this.lifespan = 60;
+    } else if (this.type === 'ricochet') {
+        this.vel.mult(14);
+        this.color = color(255, 0, 255); // Purple
+        this.r = 5;
+        this.lifespan = 180; // Longer life for bouncing
+        this.bounces = 3; // Number of times it can bounce
     }
   }
 
@@ -45,6 +51,13 @@ class Projectile {
         fill(255);
         noStroke();
         ellipse(0, 0, this.r * 2);
+    } else if (this.type === 'ricochet') {
+        // Pulsing purple ball
+        fill(this.color);
+        noStroke();
+        ellipse(0, 0, this.r * 2.5);
+        fill(255, 200, 255);
+        ellipse(0, 0, this.r);
     } else {
         fill(this.color);
         noStroke();

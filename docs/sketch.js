@@ -4,7 +4,7 @@ let powerups = [];
 let particles = [];
 let buildings = [];
 let projectiles = [];
-let gameState = 'MENU'; // MENU, PLAY, GAMEOVER, WIN, SHOP
+let gameState = 'MENU'; // MENU, PLAY, PAUSED, GAMEOVER, WIN, SHOP
 let shopBuilding = null; // Store which building opened the shop
 let lastShotTime = 0; // For weapon cooldown
 let startTime;
@@ -15,10 +15,16 @@ let shakeAmount = 0;
 let hospitalImg;
 let armoryImg;
 
+// Game Settings
+let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
+let currentLevel = 1;
+let isPaused = false;
+let boundaryWarningAlpha = 0;
+
 // Layout Constants
-let gameWidth = 900;
-let gameHeight = 600;
-let statusHeight = 100;
+let gameWidth;
+let gameHeight;
+let statusHeight = 130;
 
 // Map & Camera
 let mapWidth = 3200;
@@ -140,6 +146,9 @@ function preload() {
 let mapOffsetX, mapOffsetY;
 
 function setup() {
+  gameWidth = windowWidth;
+  gameHeight = windowHeight - statusHeight;
+  
   createCanvas(gameWidth, gameHeight + statusHeight);
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
@@ -158,6 +167,12 @@ function setup() {
   
   // Create Visuals from TileMap
   createMapGraphics();
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  gameWidth = windowWidth;
+  gameHeight = windowHeight - statusHeight;
 }
 
 function projectIso(x, y) {
@@ -195,8 +210,21 @@ function projectIsoVector(x, y) {
 
 
 
-function resetGame() {
+function resetGame(keepProgress = false) {
+  let oldPlayer = player;
+  
   player = new Player(mapWidth / 2, mapHeight / 2); // Start in middle of large map
+  
+  if (keepProgress && oldPlayer) {
+      player.xp = oldPlayer.xp;
+      player.hp = oldPlayer.hp;
+      player.maxAmmo = oldPlayer.maxAmmo;
+      player.ammo = oldPlayer.ammo;
+      player.currentWeapon = oldPlayer.currentWeapon;
+      player.hasShield = oldPlayer.hasShield;
+      player.maxSpeed = oldPlayer.maxSpeed;
+  }
+
   enemies = [];
   powerups = [];
   particles = [];
@@ -207,7 +235,19 @@ function resetGame() {
   lastEnemySpawnTime = millis();
   lastPowerUpSpawnTime = millis();
   shakeAmount = 0;
+  boundaryWarningAlpha = 0;
   
+  // Difficulty Adjustments
+  if (difficulty === 'EASY') {
+      survivalTime = 60;
+  } else if (difficulty === 'NORMAL') {
+      survivalTime = 90;
+  } else if (difficulty === 'HARD') {
+      survivalTime = 120;
+  }
+  
+  // Level Generation (Vary based on currentLevel if desired)
+  // For now, just regenerate the city
   generateCity();
   
   // Initial enemy
@@ -392,8 +432,6 @@ function getRoadImage(x, y) {
     return pickVariant(images.roadHVariants, x, y);
 }
 
-// drawIsoTile function removed as it is no longer used with the new sprite-based Iso rendering
-
 function createMapGraphics() {
   // Use standard renderer (P2D) instead of WEBGL for simpler 2D composition
   mapGraphics = createGraphics(mapWidth, mapHeight); 
@@ -447,13 +485,6 @@ function createMapGraphics() {
 // Helper to draw entities in Iso view
 function drawIsoImage(img, x, y, w, h) {
     let pos = projectIso(x, y);
-    // If w/h are provided, we might need to adjust? 
-    // Standard image() draws w/h in screen pixels.
-    // If w/h are in World Units, we might need to scale them?
-    // For now, let's assume w/h are screen pixels for sprites.
-    // But buildings have w/h in World Units (100x80).
-    // We should probably just draw the sprite centered at pos.
-    
     image(img, pos.x, pos.y, w, h);
 }
 
@@ -558,11 +589,6 @@ function generateCity() {
           }
       }
       
-      // Also check if there's an obstacle here?
-      // We already placed obstacles. This is bad.
-      // We should have separated them.
-      // Let's just remove obstacles that are in this spot.
-      
       if (!occupied) {
           // Check neighbors to ensure we don't block roads or overlap weirdly
           // Ensure we are not placing ON a road (already checked by tile.type)
@@ -618,16 +644,36 @@ function generateCity() {
       }
   }
 
+  // Shuffle potential spots to avoid bias
+  shuffle(potentialObstacleSpots, true);
+
   for (let spot of potentialObstacleSpots) {
       let canPlace = true;
       let obstacleSize = spot.type === 'tree' ? 80 : (spot.type === 'rock' ? 50 : 40);
+      
+      // 1. Check against Buildings
       for (let b of buildings) {
           let bSize = max(b.w, b.h);
-          if (dist(spot.px, spot.py, b.pos.x, b.pos.y) < (obstacleSize/2 + bSize/2)) {
+          // Ensure enough clearance around buildings
+          if (dist(spot.px, spot.py, b.pos.x, b.pos.y) < (obstacleSize/2 + bSize/2 + 30)) {
               canPlace = false;
               break;
           }
       }
+      
+      if (!canPlace) continue;
+
+      // 2. Check against existing Obstacles
+      for (let o of obstacles) {
+          // Use a safe gap to prevent getting stuck
+          // Gap should be larger than car size (approx 40-50 for safety)
+          let minDistance = (obstacleSize/2) + (o.w/2) + 60; 
+          if (dist(spot.px, spot.py, o.pos.x, o.pos.y) < minDistance) {
+              canPlace = false;
+              break;
+          }
+      }
+
       if (canPlace) {
           obstacles.push(new Obstacle(spot.px, spot.py, spot.type));
       }
@@ -635,101 +681,97 @@ function generateCity() {
 }
 
 function draw() {
-  // Draw Background (Grass) - Clear entire canvas first
+  // 1. Background
   background(34, 139, 34); // Forest Green
 
-  // Update Camera
+  // 2. Camera Update
   if (player) {
     // Center camera on player in Isometric Space
     let pIso = projectIso(player.pos.x, player.pos.y);
     camX = pIso.x - gameWidth / 2;
     camY = pIso.y - gameHeight / 2;
     
-    // Clamp to map boundaries (approximate)
-    // We use the mapGraphics dimensions as the world bounds
+    // Clamp to map boundaries
     camX = constrain(camX, 0, mapWidth - gameWidth);
     camY = constrain(camY, 0, mapHeight - gameHeight);
   }
 
-  // --- Game Area ---
+  // 3. Draw World (Inside Camera Transform)
   push();
-  // Translate to Status Bar area first, THEN apply camera
   translate(0, statusHeight); 
-  
-  // Apply Camera Translation
   translate(-camX, -camY);
   
-  // Screen Shake (Only affects game area)
   if (shakeAmount > 0) {
     translate(random(-shakeAmount, shakeAmount), random(-shakeAmount, shakeAmount));
-    shakeAmount *= 0.9; // Decay shake
+    shakeAmount *= 0.9; 
     if (shakeAmount < 0.5) shakeAmount = 0;
   }
 
-  // Draw World Background (Grass for whole map)
-  // Since we cleared with background(), we might need to draw a big rect for map limits if we want to see edges
-  // Or just rely on the background color. Let's draw map borders.
+  // Map
   if (mapGraphics) {
     image(mapGraphics, mapWidth/2, mapHeight/2);
   } else {
-    // Fallback if graphics not ready
-    noFill();
-    stroke(0);
-    strokeWeight(5);
-    rectMode(CORNER);
-    rect(0, 0, mapWidth, mapHeight);
-    
-    fill(50);
-    noStroke();
-    rect(0, 0, mapWidth, mapHeight);
+    // Fallback
+    noFill(); stroke(0); strokeWeight(5); rect(0, 0, mapWidth, mapHeight);
+    fill(50); noStroke(); rect(0, 0, mapWidth, mapHeight);
   }
 
-  // Draw Grid lines or something to show movement?
-  // Let's draw some grass patches or sidewalk lines to make movement visible
-  // stroke(255, 255, 255, 50);
-  // strokeWeight(2);
-  // for(let i=0; i<mapWidth; i+=200) line(i, 0, i, mapHeight);
-  // for(let j=0; j<mapHeight; j+=200) line(0, j, mapWidth, j);
-
-  if (gameState === 'MENU') {
-    // Reset translation for menu to center on screen
-    pop(); 
-    push();
-    translate(0, statusHeight);
-    drawMenu();
-  } else if (gameState === 'PLAY') {
-    playGame();
-  } else if (gameState === 'SHOP') {
-    // Keep drawing game in background but dimmed
-    playGame(); // Draw game scene
-    // Reset translation for shop UI
-    pop();
-    push();
-    translate(0, statusHeight);
-    drawShop();
-  } else if (gameState === 'GAMEOVER') {
-    // Reset translation for game over
-    pop();
-    push();
-    translate(0, statusHeight);
-    drawGameOver();
-  } else if (gameState === 'WIN') {
-    // Reset translation for win
-    pop();
-    push();
-    translate(0, statusHeight);
-    drawWin();
+  // Entities
+  if (gameState === 'PLAY') {
+      playGame(); // Logic + Draw
+  } else if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'GAMEOVER' || gameState === 'WIN') {
+      drawGameObjects(); // Just Draw
   }
   
-  pop(); 
+  pop(); // End Camera Transform
 
-  // Draw Status Bar LAST (Top) - Ensures it's always on top
+  // 4. Draw UI (Screen Space)
+  push();
+  translate(0, statusHeight);
+  
+  if (gameState === 'MENU') {
+      drawMenu();
+  } else if (gameState === 'PAUSED') {
+      if (boundaryWarningAlpha > 0) drawBoundaryWarning();
+      drawPaused();
+  } else if (gameState === 'SHOP') {
+      drawShop();
+  } else if (gameState === 'GAMEOVER') {
+      drawGameOver();
+  } else if (gameState === 'WIN') {
+      drawWin();
+  } else if (gameState === 'PLAY') {
+      if (boundaryWarningAlpha > 0) drawBoundaryWarning();
+  }
+  
+  pop();
+
+  // 5. Always on top UI
   drawStatusBar();
   
-  // Draw Mini-Map (Top Left, below status bar)
-  if (gameState === 'PLAY') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP') {
       drawMiniMap();
   }
+}
+
+
+
+function drawBoundaryWarning() {
+    // Draw red vignette
+    noFill();
+    stroke(255, 0, 0, boundaryWarningAlpha);
+    strokeWeight(20);
+    rectMode(CORNER);
+    rect(0, 0, gameWidth, gameHeight);
+    
+    // Text warning
+    if (boundaryWarningAlpha > 50) {
+        fill(255, 0, 0, boundaryWarningAlpha);
+        noStroke();
+        textSize(30);
+        textAlign(CENTER, CENTER);
+        text("WARNING: LEAVING CITY LIMITS", gameWidth/2, gameHeight/2 - 100);
+    }
 }
 
 function drawMiniMap() {
@@ -769,78 +811,116 @@ function drawMiniMap() {
     }
     
     // Player
-    fill(0, 255, 0);
-    ellipse(player.pos.x * scaleFactor, player.pos.y * scaleFactor, 5, 5);
-    
-    // Viewport Rectangle (Camera View) - Disabled for Iso view as it's non-rectangular in world space
-    // noFill();
-    // stroke(255, 255, 0, 100);
-    // strokeWeight(1);
-    // rect(camX * scaleFactor, camY * scaleFactor, gameWidth * scaleFactor, gameHeight * scaleFactor);
+    if (player) {
+        fill(0, 255, 0);
+        ellipse(player.pos.x * scaleFactor, player.pos.y * scaleFactor, 5, 5);
+    }
     
     pop();
 }
 
-
 function drawMenu() {
   fill(0, 0, 0, 150);
+  rectMode(CENTER);
   rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
   
   fill(255);
-  textSize(48);
-  text("HOTLINE ESCAPE", gameWidth / 2, gameHeight / 3);
+  textSize(60);
+  textStyle(BOLD);
+  text("HOTLINE ESCAPE", gameWidth / 2, gameHeight / 4);
+  textStyle(NORMAL);
   
+  textSize(20);
+  text("Objective: Survive and Escape the City", gameWidth / 2, gameHeight / 3);
+  
+  // Difficulty Selection
   textSize(24);
-  text("Use ARROW KEYS or WASD to drive", gameWidth / 2, gameHeight / 2);
-  text("MOUSE CLICK to Shoot", gameWidth / 2, gameHeight / 2 + 30);
-  text("Survive for " + survivalTime + " seconds!", gameWidth / 2, gameHeight / 2 + 70);
+  text("Select Difficulty:", gameWidth / 2, gameHeight / 2 - 40);
   
-  fill(0, 255, 0);
+  let diffs = ['EASY', 'NORMAL', 'HARD'];
+  let startY = gameHeight / 2;
+  
+  for (let i = 0; i < diffs.length; i++) {
+      let d = diffs[i];
+      if (difficulty === d) {
+          fill(0, 255, 0);
+          textSize(32);
+          text("> " + d + " <", gameWidth / 2, startY + i * 50);
+      } else {
+          fill(150);
+          textSize(24);
+          text(d, gameWidth / 2, startY + i * 50);
+      }
+  }
+  
+  fill(255);
+  textSize(16);
+  text("Click or use UP/DOWN to select difficulty", gameWidth / 2, gameHeight * 0.7);
+  
+  // Start Button
+  fill(0, 200, 255);
+  rect(gameWidth/2, gameHeight * 0.8, 200, 60, 10);
+  fill(255);
   textSize(30);
-  text("Press ENTER to Start", gameWidth / 2, gameHeight * 0.75);
+  text("START GAME", gameWidth/2, gameHeight * 0.8);
+}
+
+function drawPaused() {
+    fill(0, 0, 0, 150);
+    rectMode(CENTER);
+    rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+    
+    fill(255);
+    textSize(50);
+    text("PAUSED", gameWidth/2, gameHeight/3);
+    
+    textSize(20);
+    text("Press P to Resume", gameWidth/2, gameHeight/2);
+    
+    // Restart Button
+    fill(255, 50, 50);
+    rect(gameWidth/2, gameHeight * 0.7, 200, 50, 10);
+    fill(255);
+    textSize(24);
+    text("RESTART", gameWidth/2, gameHeight * 0.7);
 }
 
 function getPoliceSpawnPoint() {
-    // Find all police buildings
+    // ... existing ...
     let policeStations = buildings.filter(b => b.type === 'police');
-    
-    // If no police stations (shouldn't happen), fallback to random road
     if (policeStations.length === 0) return getRandomRoadCenter();
-    
-    // Pick a random station
     let station = random(policeStations);
-    
-    // Find nearest road to this station
     let nearest = null;
     let minDist = Infinity;
-    
-    // Search radius around station (e.g., 300 pixels)
-    // We don't need to search ALL roads, just nearby ones.
-    // But roadCenters is a flat list.
-    // Optimization: Check grid neighbors?
-    // Let's just iterate all roads for now (performance might be ok for one call every few seconds)
-    // Or better: Just calculate a point outside the building on the pavement/road.
-    // Since buildings are usually near roads (blocks are 4x4), let's try to spawn on the road adjacent to the building block.
-    
-    // Simpler: Iterate roadCenters and find closest.
     if (roadCenters && roadCenters.length > 0) {
         for(let rc of roadCenters) {
              let d = dist(rc.x, rc.y, station.pos.x, station.pos.y);
-             if (d < minDist && d > 80) { // Close but not INSIDE the building center (though building is on a tile)
+             if (d < minDist && d > 80) { 
                  minDist = d;
                  nearest = rc;
              }
         }
     }
-    
     return nearest || getRandomRoadCenter();
 }
 
 function playGame() {
-  if (gameState === 'SHOP') {
-      // Don't update game logic in shop mode, just draw
-      drawGameObjects();
+  if (gameState === 'SHOP' || gameState === 'PAUSED') {
       return;
+  }
+  
+  // Boundary Warning Logic
+  // Check if player is near edges of map
+  let margin = 300; // Warning distance
+  let nearLeft = player.pos.x < margin;
+  let nearRight = player.pos.x > mapWidth - margin;
+  let nearTop = player.pos.y < margin;
+  let nearBottom = player.pos.y > mapHeight - margin;
+  
+  if (nearLeft || nearRight || nearTop || nearBottom) {
+      boundaryWarningAlpha = min(boundaryWarningAlpha + 10, 150);
+  } else {
+      boundaryWarningAlpha = max(boundaryWarningAlpha - 10, 0);
   }
   
   // Timer
@@ -851,13 +931,17 @@ function playGame() {
     gameState = 'WIN';
   }
 
-  // Passive XP gain (survival)
+  // Passive XP gain (survival) - Scale with difficulty?
   if (frameCount % 60 === 0) { // Every second
-      player.xp += 1;
+      player.xp += (difficulty === 'EASY' ? 2 : 1);
   }
 
   // Spawning Enemies
-  if (millis() - lastEnemySpawnTime > 5000) { // Every 5 seconds
+  let spawnInterval = 5000;
+  if (difficulty === 'EASY') spawnInterval = 6000;
+  if (difficulty === 'HARD') spawnInterval = 3000;
+  
+  if (millis() - lastEnemySpawnTime > spawnInterval) { 
     let spawn = getPoliceSpawnPoint();
     if (spawn) {
         enemies.push(new Enemy(spawn.x, spawn.y));
@@ -866,11 +950,12 @@ function playGame() {
   }
 
   // Spawning PowerUps
-  if (millis() - lastPowerUpSpawnTime > 8000) { // Every 8 seconds
+  if (millis() - lastPowerUpSpawnTime > 3000) { // Increased spawn rate: Every 3 seconds
     let types = ['speed', 'shield', 'health'];
     let type = random(types);
-    let px = random(50, gameWidth-50);
-    let py = random(50, gameHeight-50);
+    
+    let px = random(100, mapWidth - 100);
+    let py = random(100, mapHeight - 100);
     
     // Simple check to avoid spawning inside buildings
     let valid = true;
@@ -893,9 +978,7 @@ function playGame() {
   // Interactions check for 'F' key
   if (keyIsDown(70)) { // F key
       for (let b of buildings) {
-          // Check proximity
           if (b.isInteractable() && p5.Vector.dist(player.pos, b.pos) < b.w) {
-              // Open Shop
               gameState = 'SHOP';
               shopBuilding = b;
               break;
@@ -913,9 +996,9 @@ function drawGameObjects() {
 
   // Update & Display Particles
   for (let i = particles.length - 1; i >= 0; i--) {
-    if (gameState !== 'SHOP') particles[i].update();
+    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') particles[i].update();
     particles[i].display();
-    if (gameState !== 'SHOP' && particles[i].isDead()) {
+    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN' && particles[i].isDead()) {
       particles.splice(i, 1);
     }
   }
@@ -923,7 +1006,7 @@ function drawGameObjects() {
   // Display Obstacles
   for (let o of obstacles) {
       o.display();
-      if (gameState !== 'SHOP') {
+      if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
           o.checkCollision(player);
           for(let e of enemies) o.checkCollision(e);
       }
@@ -932,10 +1015,10 @@ function drawGameObjects() {
   // Update & Display Projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
       let p = projectiles[i];
-      if (gameState !== 'SHOP') p.update();
+      if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') p.update();
       p.display();
       
-      if (gameState === 'SHOP') continue; // Skip collision logic in shop
+      if (gameState === 'SHOP' || gameState === 'PAUSED' || gameState === 'GAMEOVER' || gameState === 'WIN') continue; 
 
       if (p.isDead()) {
           projectiles.splice(i, 1);
@@ -944,21 +1027,57 @@ function drawGameObjects() {
       
       // Check collision with buildings
       for (let b of buildings) {
-          // Simple point in rect check
           if (p.pos.x > b.pos.x - b.w/2 && p.pos.x < b.pos.x + b.w/2 &&
               p.pos.y > b.pos.y - b.h/2 && p.pos.y < b.pos.y + b.h/2) {
-              projectiles.splice(i, 1);
-              createExplosion(p.pos.x, p.pos.y, color(200), 5);
+              
+              // RICOCHET LOGIC
+              if (p.type === 'ricochet' && p.bounces > 0) {
+                  // Determine which side was hit to reflect correctly
+                  // Simple approx: check distance to center vs width/height
+                  let dx = p.pos.x - b.pos.x;
+                  let dy = p.pos.y - b.pos.y;
+                  
+                  // Normalize by aspect ratio of building to find collision side
+                  // if abs(dx / w) > abs(dy / h) -> hit side (X bounce)
+                  // else -> hit top/bottom (Y bounce)
+                  
+                  if (abs(dx / b.w) > abs(dy / b.h)) {
+                      p.vel.x *= -1;
+                  } else {
+                      p.vel.y *= -1;
+                  }
+                  
+                  // Move out of collision to prevent sticking
+                  p.pos.add(p.vel); 
+                  
+                  p.bounces--;
+                  createExplosion(p.pos.x, p.pos.y, color(255, 0, 255), 3);
+              } else {
+                  projectiles.splice(i, 1);
+                  createExplosion(p.pos.x, p.pos.y, color(200), 5);
+              }
               break;
           }
       }
       
       // Check collision with obstacles
-      if (i < projectiles.length) { // Check if not already destroyed
+      if (i < projectiles.length) { 
           for (let o of obstacles) {
               if (o.isSolid && p.pos.dist(o.pos) < o.w/2) {
-                  projectiles.splice(i, 1);
-                  createExplosion(p.pos.x, p.pos.y, color(150, 100, 50), 5);
+                  if (p.type === 'ricochet' && p.bounces > 0) {
+                       let n = p5.Vector.sub(p.pos, o.pos).normalize();
+                       // Reflect: v = v - 2(v.n)n
+                       let v = p.vel.copy();
+                       let dot = v.dot(n);
+                       n.mult(2 * dot);
+                       v.sub(n);
+                       p.vel = v;
+                       p.pos.add(p.vel);
+                       p.bounces--;
+                  } else {
+                      projectiles.splice(i, 1);
+                      createExplosion(p.pos.x, p.pos.y, color(150, 100, 50), 5);
+                  }
                   break;
               }
           }
@@ -969,7 +1088,7 @@ function drawGameObjects() {
   for (let i = powerups.length - 1; i >= 0; i--) {
     let p = powerups[i];
     p.display();
-    if (gameState !== 'SHOP' && p.checkCollision(player)) {
+    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN' && p.checkCollision(player)) {
       applyPowerUp(p);
       createExplosion(p.pos.x, p.pos.y, color(255, 255, 255), 10);
       powerups.splice(i, 1);
@@ -977,13 +1096,12 @@ function drawGameObjects() {
   }
 
   // Update & Display Player
-  if (gameState !== 'SHOP') {
+  if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
       player.edges();
       player.update();
   }
   
-  // Check collision with buildings
-  if (gameState !== 'SHOP') {
+  if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
       for (let b of buildings) {
         b.checkCollision(player);
       }
@@ -993,43 +1111,34 @@ function drawGameObjects() {
   // Update & Display Enemies
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
-    if (gameState !== 'SHOP') e.update(player);
+    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') e.update(player);
     
-    if (gameState !== 'SHOP') {
-        // Check collision with buildings for enemies too
+    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
         for (let b of buildings) {
             b.checkCollision(e);
         }
         
-        // Check collision with projectiles
         for (let j = projectiles.length - 1; j >= 0; j--) {
             let p = projectiles[j];
             if (p.checkCollision(e)) {
-                // Apply damage based on weapon type (simple for now)
                 let dmg = 1;
-                // Laser penetrates, shotgun spreads... handled in Projectile class or here
-                // For now, assume 1 hit kill for normal enemies
-                
-                if (p.type !== 'laser') { // Laser doesn't get destroyed on hit immediately (penetration)
+                if (p.type !== 'laser' && p.type !== 'ricochet') { 
                     projectiles.splice(j, 1);
                 }
                 
                 createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 15);
-                // Enemy destroyed
                 enemies.splice(i, 1);
-                player.xp += 5; // Kill reward
+                player.xp += 5; 
                 shakeAmount = 5;
-                break; // Break inner loop (projectiles), continue outer loop (enemies)
+                break; 
             }
         }
     }
     
-    // Check if enemy still exists (might be destroyed by projectile)
     if (i < enemies.length) {
         e.display();
         
-        if (gameState !== 'SHOP') {
-            // Collision Player vs Enemy
+        if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
             let d = p5.Vector.dist(player.pos, e.pos);
             if (d < player.r + e.r) {
               createExplosion(player.pos.x, player.pos.y, color(255, 100, 0), 20);
@@ -1037,7 +1146,6 @@ function drawGameObjects() {
               
               if (player.hasShield) {
                 player.hasShield = false;
-                // Push enemy back
                 let pushVec = p5.Vector.sub(e.pos, player.pos);
                 pushVec.setMag(10);
                 e.applyForce(pushVec);
@@ -1129,27 +1237,33 @@ function drawShop() {
                     player.xp -= 100;
                     player.currentWeapon = 'laser';
                 }
+            }},
+            { key: '4', label: "Ricochet (150 XP)", action: () => {
+                if (player.xp >= 150 && player.currentWeapon !== 'ricochet') {
+                    player.xp -= 150;
+                    player.currentWeapon = 'ricochet';
+                }
             }}
         ];
     }
     
-    let startY = gameHeight/2 - 50;
+    let startY = gameHeight/2 - 70;
     for (let i = 0; i < options.length; i++) {
         let opt = options[i];
         fill(80);
         stroke(200);
-        rect(gameWidth/2, startY + i * 60, 400, 50, 5);
+        rect(gameWidth/2, startY + i * 55, 400, 45, 5);
         
         fill(255);
         noStroke();
         textSize(18);
-        text(`[${opt.key}] ${opt.label}`, gameWidth/2, startY + i * 60);
+        text(`[${opt.key}] ${opt.label}`, gameWidth/2, startY + i * 55);
     }
     
     // Close instruction
     fill(200);
     textSize(14);
-    text("Press ESC or F to Close", gameWidth/2, gameHeight/2 + 150);
+    text("Press ESC or F to Close", gameWidth/2, gameHeight/2 + 180);
 }
 
 function createExplosion(x, y, col, count) {
@@ -1180,7 +1294,7 @@ function drawStatusBar() {
   strokeWeight(4);
   line(0, statusHeight, width, statusHeight);
 
-  if (gameState !== 'PLAY') return; 
+  if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP') return; 
 
   let elapsed = (millis() - startTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
@@ -1214,7 +1328,6 @@ function drawStatusBar() {
   text("AMMO", 250, 25);
   
   // Bullet Icons
-  // Wrap bullets if too many
   let maxCols = 10;
   for (let i = 0; i < player.ammo; i++) {
       let col = i % maxCols;
@@ -1247,8 +1360,13 @@ function drawStatusBar() {
   textSize(32);
   text(nf(remaining, 0, 1), 700, 55);
   
-  // Shield Status (Overlay in game area or status bar?)
-  // Let's put it in status bar far right
+  // Level Indicator
+  fill(255, 255, 0);
+  textSize(14);
+  textAlign(RIGHT, TOP);
+  text("LEVEL " + currentLevel, gameWidth - 10, 10);
+  
+  // Shield Status
   if (player.hasShield) {
       fill(0, 255, 255);
       textSize(14);
@@ -1263,6 +1381,12 @@ function drawStatusBar() {
       noStroke();
       ellipse(820, 55, 30, 30);
   }
+
+  // Controls Overlay
+  fill(200);
+  textSize(14);
+  textAlign(CENTER, CENTER);
+  text("WASD: Move | CLICK: Shoot | F: Shop | P: Pause", width/2, statusHeight - 15);
 }
 
 function drawGameOver() {
@@ -1290,15 +1414,39 @@ function drawWin() {
   
   fill(255);
   textSize(24);
-  text("Press ENTER to Play Again", gameWidth / 2, gameHeight * 0.75);
+  text("Press SPACE for Next Level", gameWidth / 2, gameHeight * 0.6);
+  text("Press ENTER for Main Menu", gameWidth / 2, gameHeight * 0.75);
 }
 
 function keyPressed() {
   if (keyCode === ENTER) {
-    if (gameState === 'MENU' || gameState === 'GAMEOVER' || gameState === 'WIN') {
+    if (gameState === 'MENU' || gameState === 'GAMEOVER') {
       resetGame();
       gameState = 'PLAY';
+    } else if (gameState === 'WIN') {
+      gameState = 'MENU'; // Go back to menu from Win
     }
+  } else if (key === ' ' && gameState === 'WIN') {
+      // Next Level
+      resetGame(true); // Keep progress
+      gameState = 'PLAY';
+  } else if (keyCode === 80) { // P key
+      if (gameState === 'PLAY') gameState = 'PAUSED';
+      else if (gameState === 'PAUSED') gameState = 'PLAY';
+  } else if (key === 'r' || key === 'R') {
+      if (gameState === 'PAUSED') {
+          resetGame();
+          gameState = 'PLAY';
+      }
+  } else if (gameState === 'MENU') {
+      // Difficulty Selection
+      if (keyCode === UP_ARROW) {
+          if (difficulty === 'NORMAL') difficulty = 'EASY';
+          else if (difficulty === 'HARD') difficulty = 'NORMAL';
+      } else if (keyCode === DOWN_ARROW) {
+          if (difficulty === 'EASY') difficulty = 'NORMAL';
+          else if (difficulty === 'NORMAL') difficulty = 'HARD';
+      }
   } else if (gameState === 'SHOP') {
       if (keyCode === ESCAPE || keyCode === 70) { // ESC or F to close
           gameState = 'PLAY';
@@ -1333,6 +1481,11 @@ function keyPressed() {
                       player.xp -= 100;
                       player.currentWeapon = 'laser';
                   }
+              } else if (key === '4') { // Buy Ricochet
+                  if (player.xp >= 150 && player.currentWeapon !== 'ricochet') {
+                      player.xp -= 150;
+                      player.currentWeapon = 'ricochet';
+                  }
               }
           }
       }
@@ -1340,7 +1493,25 @@ function keyPressed() {
 }
 
 function mousePressed() {
-    if (gameState === 'PLAY') {
+    if (gameState === 'MENU') {
+        // Simple click detection for difficulty
+        // Approx coordinates from drawMenu
+        let startY = gameHeight / 2;
+        let dE = dist(mouseX, mouseY, gameWidth/2, startY);
+        let dN = dist(mouseX, mouseY, gameWidth/2, startY + 50);
+        let dH = dist(mouseX, mouseY, gameWidth/2, startY + 100);
+        
+        if (mouseY > startY - 20 && mouseY < startY + 20) difficulty = 'EASY';
+        if (mouseY > startY + 30 && mouseY < startY + 70) difficulty = 'NORMAL';
+        if (mouseY > startY + 80 && mouseY < startY + 120) difficulty = 'HARD';
+        
+        // Start Button
+        if (mouseX > gameWidth/2 - 100 && mouseX < gameWidth/2 + 100 &&
+            mouseY > gameHeight * 0.8 - 30 && mouseY < gameHeight * 0.8 + 30) {
+            resetGame();
+            gameState = 'PLAY';
+        }
+    } else if (gameState === 'PLAY') {
         // Adjust click check for top status bar
         if (mouseY > statusHeight) { 
             // Cooldown check (simple)
@@ -1359,6 +1530,10 @@ function mousePressed() {
                 } else if (player.currentWeapon === 'laser' && player.ammo >= 2) {
                     projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading, 'laser'));
                     player.ammo = max(0, player.ammo - 2); // Costs 2 ammo
+                    shakeAmount = 3;
+                } else if (player.currentWeapon === 'ricochet' && player.ammo >= 2) {
+                    projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading, 'ricochet'));
+                    player.ammo = max(0, player.ammo - 2); 
                     shakeAmount = 3;
                 }
                 lastShotTime = millis();

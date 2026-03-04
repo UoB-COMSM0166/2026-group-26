@@ -1,13 +1,22 @@
 $port = 8000
 $root = Join-Path $PSScriptRoot "docs"
 $listener = New-Object System.Net.HttpListener
-$listener.Prefixes.Add("http://localhost:$port/")
-try {
-    $listener.Start()
-    Write-Host "Server started at http://localhost:$port/"
-} catch {
-    Write-Error "Failed to start listener: $_"
-    exit 1
+
+while ($true) {
+    try {
+        $listener.Prefixes.Clear()
+        $listener.Prefixes.Add("http://localhost:$port/")
+        $listener.Start()
+        Write-Host "Server started at http://localhost:$port/"
+        break
+    } catch {
+        Write-Warning "Port $port is in use or failed. Trying next port..."
+        $port++
+        if ($port -gt 8100) {
+            Write-Error "Could not find a free port between 8000 and 8100."
+            exit 1
+        }
+    }
 }
 
 $mimeTypes = @{

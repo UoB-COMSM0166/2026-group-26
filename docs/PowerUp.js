@@ -10,6 +10,9 @@ class PowerUp {
     let isoPos = projectIso(this.pos.x, this.pos.y);
     translate(isoPos.x, isoPos.y);
     
+    // Scale up for better visibility
+    scale(1.8);
+    
     // Floating animation
     let floatY = sin(frameCount * 0.05) * 5;
     
@@ -23,12 +26,21 @@ class PowerUp {
 
     // Draw Item (floating)
     translate(0, floatY);
+    
+    // Glowing Halo
+    let pulse = 20 + sin(frameCount * 0.1) * 5;
+    noStroke();
+    if (this.type === 'speed') fill(255, 255, 0, 100);
+    else if (this.type === 'shield') fill(0, 255, 255, 100);
+    else fill(255, 50, 50, 100);
+    ellipse(0, 0, pulse, pulse);
+
     strokeWeight(2);
     
     if (this.type === 'speed') {
       // Lightning Bolt Icon
       fill(255, 255, 0); // Yellow
-      stroke(200, 150, 0); // Darker yellow/orange outline
+      stroke(255, 200, 0); // Orange outline
       
       beginShape();
       vertex(4, -12);
@@ -42,7 +54,7 @@ class PowerUp {
     } else if (this.type === 'shield') {
       // Shield Icon
       fill(0, 255, 255); // Cyan
-      stroke(0, 100, 200); // Blue outline
+      stroke(0, 100, 255); // Blue outline
       
       beginShape();
       vertex(-9, -9);
@@ -54,8 +66,8 @@ class PowerUp {
       
       // Inner detail
       noFill();
-      stroke(255, 255, 255, 150);
-      strokeWeight(1);
+      stroke(255, 255, 255, 200);
+      strokeWeight(2);
       beginShape();
       vertex(-5, -5);
       vertex(5, -5);
@@ -66,28 +78,31 @@ class PowerUp {
 
     } else if (this.type === 'health') {
       // Medkit Icon
-      fill(250); // White box
-      stroke(100); // Gray outline
+      fill(255); // White box
+      stroke(200); // Gray outline
       rectMode(CENTER);
-      rect(0, 0, 22, 18, 3);
+      rect(0, 0, 24, 20, 4); // Slightly larger
       
       // Handle
       noFill();
-      stroke(100);
+      stroke(150);
       strokeWeight(2);
-      arc(0, -9, 8, 8, PI, TWO_PI);
+      arc(0, -10, 10, 10, PI, TWO_PI);
 
       // Red Cross
       fill(255, 0, 0);
       noStroke();
-      rect(0, 1, 6, 12); // Vertical bar
-      rect(0, 1, 12, 6); // Horizontal bar
+      rect(0, 1, 8, 14); // Vertical bar
+      rect(0, 1, 14, 8); // Horizontal bar
     }
     pop();
   }
 
   checkCollision(vehicle) {
     let d = p5.Vector.dist(this.pos, vehicle.pos);
-    return d < this.r + vehicle.r;
+    // Increase collision radius for easier pickup
+    // Base radius (10) + vehicle radius (16) + buffer (20)
+    // Total distance ~46px allows "near miss" pickup
+    return d < (this.r + vehicle.r + 20);
   }
 }
