@@ -115,6 +115,42 @@ The Chaser's goal is to destroy the Evader within the time limit.
 **Acceptance Criteria:**  
 - The most challenging lesson involved defining Acceptance Criteria. We discovered that while User Stories describe what is needed, Acceptance Criteria define when it is finished. As a team, we found it difficult to apply measurable metrics to subjective qualities like "game feel" or "maintenance hours." This struggle taught us that vague criteria lead to vague implementation. We learned that rigorous, quantifiable criteria are essential to bridge the gap between a design concept and a testable software deliverable.
 
+## Evaluation
+
+### **Heuristic Evaluation**
+| **Interface** | **Issue** | **Heuristics** | **Frequency 0 (rare) to 4 (common)** | **Impact 0 (easy) to difficult (4)** | **Persistence (once) to 4 (repeated)** | **Severity** |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Game play interface** | Vehicle color contrast could be more noticeable, and drift trajectory highlighted | Visibility of system status | 2 | 1 | 3 | 2 |
+| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | User control and freedom | 2 | 3 | 3 | 3 |
+| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | Error prevention | 2 | 3 | 2 | 2 |
+| **Game interaction** | The initial version of the game lacks prompts for interaction, which may increase the user's memory load | Recognition rather than recall | 2 | 2 | 1 | 2 |
+| **Difficulty system** | The initial version of the game lacks difficulty options, unable to meet the needs of players of different skill levels. | Flexibility and efficiency of use | 4 | 3 | 3 | 4 |
+| **Game interface design** | The aesthetics of the game interface design could be improved | Aesthetic and minimalist design | 1 | 2 | 2 | 4 |
+
+---
+### Findings of User's Evaluation
+
+- **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups like health packs and shields lack visibility and are easily overlooked by players. The overall aesthetics of the game interface could also be improved.
+
+- **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players frequently crash into walls without warning, highlighting a severe lack of advance map boundary cues.
+
+- **Cognitive Load & Onboarding:** The initial version lacks clear interaction prompts, increasing the user's memory load. There are no explicit movement instructions (e.g., move/stop), which should be placed at the top of the interface. Furthermore, there is no transition prompt indicating "press to start" before gameplay begins.
+
+- **Gameplay Clarity:** The core mechanics are poorly communicated; players are not explicitly informed of the win conditions, nor is it clear whether they should dodge or collide with NPCs.
+
+- **System Flexibility:** The game currently lacks a difficulty selection system, failing to accommodate players of different skill levels.
+---
+
+### Qualitative Evaluation
+
+- **Misalignment in Core Objective Communication:** 
+Despite the asymmetric "Chase & Evasion" design, the UI fails to convey these rules. Players experience a steep learning curve due to confusion over victory conditions and NPC interaction logic (i.e., damage vs. evasion). Mandatory movement and objective prompts must be integrated directly into the HUD.
+
+- **Visual Hierarchy and Player Frustration:** 
+Essential interactive elements—such as player vehicles, health packs, and shields—blend into the background due to low contrast. Combined with the lack of collision warnings at map boundaries, this results in "cheap" deaths (e.g., sudden wall crashes) that punish players for UI shortcomings rather than lack of skill.
+
+- **Lack of Dynamic Progression and Replayability:** 
+The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types, such as projectiles that ricochet off buildings. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for both novice and expert players.
 
 
 ## Your Group
