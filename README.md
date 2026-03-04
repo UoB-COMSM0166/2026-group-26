@@ -120,12 +120,12 @@ The Chaser's goal is to destroy the Evader within the time limit.
 ### **Heuristic Evaluation**
 | **Interface** | **Issue** | **Heuristics** | **Frequency 0 (rare) to 4 (common)** | **Impact 0 (easy) to difficult (4)** | **Persistence (once) to 4 (repeated)** | **Severity** |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Game play interface** | Vehicle color contrast could be more noticeable, and drift trajectory highlighted | Visibility of system status | 2 | 1 | 3 | 2.3 |
-| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | User control and freedom | 2 | 3 | 3 | 2.7 |
-| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | Error prevention | 2 | 3 | 2 | 2.3 |
-| **Game interaction** | The initial version of the game lacks prompts for interaction, which may increase the user's memory load | Recognition rather than recall | 2 | 2 | 1 | 1.7 |
-| **Difficulty system** | The initial version of the game lacks difficulty options, unable to meet the needs of players of different skill levels. | Flexibility and efficiency of use | 4 | 3 | 3 | 3.7 |
-| **Game interface design** | The aesthetics of the game interface design could be improved | Aesthetic and minimalist design | 1 | 2 | 2 | 1.7 |
+| **Game play interface** | Vehicle color contrast could be more noticeable, and drift trajectory highlighted | Visibility of system status | 2 | 1 | 3 | 2 |
+| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | User control and freedom | 2 | 3 | 3 | 3 |
+| **Game running interface - Map boundary / Collision system** | Lack of obvious pause and restart buttons during the game. Players easily hit walls suddenly due to limited vision, lacking advance warnings. | Error prevention | 2 | 3 | 2 | 2 |
+| **Game interaction** | The initial version of the game lacks prompts for interaction, which may increase the user's memory load | Recognition rather than recall | 2 | 2 | 1 | 2 |
+| **Difficulty system** | The initial version of the game lacks difficulty options, unable to meet the needs of players of different skill levels. | Flexibility and efficiency of use | 4 | 3 | 3 | 4 |
+| **Game interface design** | The aesthetics of the game interface design could be improved | Aesthetic and minimalist design | 1 | 2 | 2 | 4 |
 
 ---
 ### Findings of User's Evaluation
