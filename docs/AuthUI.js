@@ -2,7 +2,7 @@ class AuthUI {
   constructor() {
     this.container = null;
     this.state = 'login';
-    this.apiBaseUrl = 'http://localhost:3000';
+    this.apiBaseUrl = window.location.origin;
     this.token = localStorage.getItem('authToken');
     this.user = JSON.parse(localStorage.getItem('user') || 'null');
     this.pendingVerificationEmail = '';

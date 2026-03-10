@@ -577,7 +577,7 @@ app.use(express.static(path.join(__dirname, '..', 'docs')));
 
 async function start() {
   await initDb();
-  app.listen(config.port, () => {
+  app.listen(config.port, '127.0.0.1', () => {
     process.stdout.write(`Backend started: http://localhost:${config.port}\n`);
   });
 }

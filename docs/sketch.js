@@ -75,8 +75,9 @@ let tileMap = []; // 2D array of tiles
 let tileSize = 100; // Size of each tile (pixels)
 let mapCols, mapRows;
 let roadCenters = [];
+let mapTextureRefreshDone = false;
 
-function preload() {
+function preloadAssets() {
   hospitalImg = loadImage('icon/BUILDING/hospital.png');
   armoryImg = loadImage('icon/BUILDING/arms.png');
   
@@ -196,10 +197,27 @@ function preload() {
   images.bushes = [images.bush1, images.bush2, images.bush3, images.bush4, images.bush5, images.bush6, images.bush7, images.bush8];
 }
 
+function isMapTextureReady(img) {
+  return !!(img && img.width > 1 && img.height > 1);
+}
+
+function areMapBaseTexturesReady() {
+  return (
+    isMapTextureReady(images.grass) &&
+    isMapTextureReady(images.pavement) &&
+    isMapTextureReady(images.sand) &&
+    isMapTextureReady(images.roadV) &&
+    isMapTextureReady(images.roadH) &&
+    isMapTextureReady(images.cross)
+  );
+}
+
 // Global Offset for Iso Map centering
 let mapOffsetX, mapOffsetY;
 
 function setup() {
+  preloadAssets();
+  mapTextureRefreshDone = false;
   gameWidth = windowWidth;
   gameHeight = windowHeight - statusHeight;
   
@@ -560,7 +578,7 @@ function createMapGraphics() {
           // We use the same projection logic as the game entities
           let isoPos = projectIso(x * tileSize, y * tileSize);
           
-          if (tile.img) {
+          if (isMapTextureReady(tile.img)) {
               // Ensure we draw the image at its intended size, scaled to the tile width
               // This preserves aspect ratio and prevents "shrinking" if the source image is larger/smaller
               // For isometric tiles, we usually want width = tileSize (100)
@@ -860,6 +878,10 @@ function draw() {
       generateTileMap();
     }
     createMapGraphics();
+  }
+  if (!mapTextureRefreshDone && areMapBaseTexturesReady()) {
+    createMapGraphics();
+    mapTextureRefreshDone = true;
   }
 
   // Map

@@ -1,0 +1,14 @@
+[Unit]
+Description=Hotline Escape Backend Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/2026-group-26
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

@@ -1,8 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/addons/p5.sound.min.js"></script>
+    <script src="p5.min.js?v=20260310"></script>
+    <script>
+      window.addEventListener('error', function (event) {
+        var box = document.getElementById('boot-error-box');
+        if (!box) {
+          box = document.createElement('pre');
+          box.id = 'boot-error-box';
+          box.style.position = 'fixed';
+          box.style.left = '10px';
+          box.style.right = '10px';
+          box.style.bottom = '10px';
+          box.style.maxHeight = '45vh';
+          box.style.overflow = 'auto';
+          box.style.background = 'rgba(0,0,0,0.85)';
+          box.style.color = '#ff6b6b';
+          box.style.padding = '12px';
+          box.style.zIndex = '99999';
+          box.style.whiteSpace = 'pre-wrap';
+          document.body.appendChild(box);
+        }
+        box.textContent = 'Runtime Error: ' + (event.message || 'unknown') + '\n' + (event.filename || '') + ':' + (event.lineno || 0) + ':' + (event.colno || 0);
+      });
+      window.addEventListener('unhandledrejection', function (event) {
+        var box = document.getElementById('boot-error-box');
+        if (!box) {
+          box = document.createElement('pre');
+          box.id = 'boot-error-box';
+          box.style.position = 'fixed';
+          box.style.left = '10px';
+          box.style.right = '10px';
+          box.style.bottom = '10px';
+          box.style.maxHeight = '45vh';
+          box.style.overflow = 'auto';
+          box.style.background = 'rgba(0,0,0,0.85)';
+          box.style.color = '#ff6b6b';
+          box.style.padding = '12px';
+          box.style.zIndex = '99999';
+          box.style.whiteSpace = 'pre-wrap';
+          document.body.appendChild(box);
+        }
+        box.textContent = 'Promise Rejection: ' + (event.reason && event.reason.message ? event.reason.message : String(event.reason));
+      });
+    </script>
     
     
     
@@ -13,18 +54,18 @@
   <body>
     <main>
     </main>
-    <script src="Vehicle.js"></script>
-    <script src="Player.js"></script>
-    <script src="Enemy.js"></script>
-    <script src="PowerUp.js"></script>
-    <script src="Particle.js"></script>
-    <script src="Building.js"></script>
-    <script src="WeaponConfig.js"></script>
-    <script src="Projectile.js"></script>
-  <script src="utils.js"></script>
-  <script src="special_weapons.js"></script>
-  <script src="AuthUI.js"></script>
-  <script src="ShopUI.js"></script>
-    <script src="sketch.js"></script>
+    <script src="Vehicle.js?v=20260310"></script>
+    <script src="Player.js?v=20260310"></script>
+    <script src="Enemy.js?v=20260310"></script>
+    <script src="PowerUp.js?v=20260310"></script>
+    <script src="Particle.js?v=20260310"></script>
+    <script src="Building.js?v=20260310"></script>
+    <script src="WeaponConfig.js?v=20260310"></script>
+    <script src="Projectile.js?v=20260310"></script>
+  <script src="utils.js?v=20260310"></script>
+  <script src="special_weapons.js?v=20260310"></script>
+  <script src="AuthUI.js?v=20260310"></script>
+  <script src="ShopUI.js?v=20260310"></script>
+    <script src="sketch.js?v=20260310c"></script>
   </body>
 </html>
