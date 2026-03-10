@@ -14,8 +14,63 @@ class Player extends Vehicle {
     this.hp = this.maxHp;
     this.maxAmmo = carData.maxAmmo;
     this.ammo = this.maxAmmo;
-    this.currentWeapon = 'pistol';
+    this.currentWeapon = WEAPON_TYPES.PISTOL;
+    this.ownedWeapons = [WEAPON_TYPES.PISTOL];
+    this.unlockedSpecialWeapons = []; // Special weapons unlocked in shop
+    this.currentSpecialWeapon = null; // Currently held special weapon (from drop)
+    this.specialWeaponCount = 0;
+    this.shieldDurationLevel = 0;
     this.hasShield = false;
+  }
+
+  canFire() {
+    if (!WEAPON_CONFIG[this.currentWeapon]) return false;
+    return millis() - lastShotTime > WEAPON_CONFIG[this.currentWeapon].cooldown;
+  }
+
+  fire(tx, ty) {
+    let config = WEAPON_CONFIG[this.currentWeapon];
+    if (!config) return;
+
+    if (this.ammo < config.ammoCost) return;
+
+    // Deduct ammo (once per fire action)
+    this.ammo -= config.ammoCost;
+    lastShotTime = millis();
+    shakeAmount = config.damage * 2;
+
+    // Create Projectiles based on type
+    if (this.currentWeapon === WEAPON_TYPES.SHOTGUN) {
+        let count = config.count;
+        let spread = config.spread;
+        let startAngle = this.heading - (spread * (count - 1)) / 2;
+        for (let i = 0; i < count; i++) {
+            let angle = startAngle + i * spread;
+            projectiles.push(new Projectile(this.pos.x, this.pos.y, angle, this.currentWeapon));
+        }
+    } else if (this.currentWeapon === WEAPON_TYPES.RIFLE) {
+        // Fire first shot immediately
+        projectiles.push(new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon));
+        // Schedule remaining shots
+        this.startBurst(config.count - 1, config.burstDelay);
+    } else if (this.currentWeapon === WEAPON_TYPES.MOLOTOV) {
+        // Calculate velocity to reach target
+        // tx, ty are World Coordinates (not Screen)
+        // Projectile needs to know it's a thrown object
+        let p = new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon);
+        p.setTarget(tx, ty);
+        projectiles.push(p);
+    } else {
+        // Pistol, Laser, etc.
+        projectiles.push(new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon));
+    }
+  }
+
+  // Handle burst fire state
+  startBurst(count, delay) {
+      this.burstCount = count;
+      this.burstDelay = delay;
+      this.burstTimer = 0;
   }
 
   applyCarType(carId) {
@@ -33,6 +88,18 @@ class Player extends Vehicle {
   }
 
   update() {
+    let timeScale = 1;
+    
+    // Handle Burst Fire
+    if (this.burstCount > 0) {
+        this.burstTimer -= timeScale; // Compensate timer
+        if (this.burstTimer <= 0) {
+             projectiles.push(new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon));
+             this.burstCount--;
+             this.burstTimer = this.burstDelay;
+        }
+    }
+
     // Determine direction of movement (forward or backward) relative to heading
     let direction = 0;
     let forward = p5.Vector.fromAngle(this.heading);
@@ -43,7 +110,7 @@ class Player extends Vehicle {
     // Only steer if moving
     if (this.vel.mag() > 0.1) {
         // Dynamic Turn Speed: Reduced when not accelerating (coasting) to simulate lack of power steering/grip
-        let currentTurnSpeed = this.turnSpeed;
+        let currentTurnSpeed = this.turnSpeed * timeScale; // Scale turn speed
         if (!keyIsDown(UP_ARROW) && !keyIsDown(87)) {
             currentTurnSpeed *= 0.4; // Significantly reduce turning ability when coasting
         }
@@ -62,25 +129,33 @@ class Player extends Vehicle {
     // Acceleration (Engine Force)
     if (keyIsDown(UP_ARROW) || keyIsDown(87)) { // Up or W
       let force = p5.Vector.fromAngle(this.heading);
-      force.mult(0.5); // Significantly increased acceleration (0.1 -> 0.5) to overcome friction
+      force.mult(0.5 * timeScale); // Scale Force
       this.applyForce(force);
     }
     
     // Reverse / Brake (S key)
     if (keyIsDown(DOWN_ARROW) || keyIsDown(83)) { // Down or S
        let force = p5.Vector.fromAngle(this.heading);
-       force.mult(-0.8); // Increased reverse speed as requested
+       force.mult(-0.8 * timeScale); // Scale Force
        this.applyForce(force);
     }
 
     // --- Drift & Grip Physics ---
     let grip = 0.15; // How fast velocity aligns with heading (0.15 = snappy but smooth)
+    // Adjust grip for timeScale? Lerp is non-linear with time.
+    // Ideally: newVel = lerp(vel, target, 1 - pow(1 - grip, timeScale))
+    // Approximation for small grip: grip * timeScale
+    let gripFactor = 1 - pow(1 - grip, timeScale);
+    
     let friction = this.friction; // Use instance friction
+    // Friction is per frame: vel *= friction
+    // With timeScale: vel *= pow(friction, timeScale)
+    let frictionFactor = pow(friction, timeScale);
 
     // Spacebar for Handbrake / Drift
     if (keyIsDown(32)) { 
-        grip = 0.01; // Lose traction (Drift)
-        friction = 0.92; // Decelerate more (Brake)
+        gripFactor = 1 - pow(1 - 0.01, timeScale); // Lose traction (Drift)
+        frictionFactor = pow(0.92, timeScale); // Decelerate more (Brake)
         this.isDrifting = true;
     } else {
         this.isDrifting = false;
@@ -94,10 +169,10 @@ class Player extends Vehicle {
         
         // Lerp current velocity towards target velocity
         // This preserves momentum while turning (solving the "slow down" issue)
-        this.vel.lerp(targetVel, grip);
+        this.vel.lerp(targetVel, gripFactor);
         
         // Apply Friction/Drag
-        this.vel.mult(friction);
+        this.vel.mult(frictionFactor);
     } else {
         // Stop completely if very slow and no input
         if (this.vel.mag() < 0.05 && !keyIsDown(UP_ARROW) && !keyIsDown(87)) {
@@ -105,18 +180,58 @@ class Player extends Vehicle {
         }
     }
 
-    super.update();
+    // super.update() logic needs timeScale too?
+    // Vehicle.update() does: vel += acc; pos += vel; acc *= 0;
+    // We should manually update position here to control timeScale
+    // Or modify Vehicle.update to accept timeScale.
+    // Let's override here since Vehicle is simple.
+    
+    // Physics Integration
+    // vel = vel + acc (acc already scaled by force application)
+    // pos = pos + vel * timeScale
+    
+    this.vel.add(this.acc);
+    this.vel.limit(this.maxSpeed);
+    
+    // Scale velocity for position update ONLY
+    let scaledVel = p5.Vector.mult(this.vel, timeScale);
+    this.pos.add(scaledVel);
+    
+    this.acc.mult(0);
+    
+    // Skid Marks Logic (Visuals)
+    // ... (Keep existing skid mark logic, maybe scale fade out?)
+    let speed = this.vel.mag();
+    if (speed > 1 && (this.isDrifting || this.isBraking)) {
+        let rearOffset = -this.length / 2;
+        let sideOffset = this.width / 2 - 2; 
+        let angle = this.heading;
+        let p1 = createVector(rearOffset, -sideOffset).rotate(angle).add(this.pos);
+        let p2 = createVector(rearOffset, sideOffset).rotate(angle).add(this.pos);
+        
+        this.skidMarks.push({
+            p1: p1,
+            p2: p2,
+            alpha: 255, 
+            life: 120 
+        });
+    }
+    
+    for (let i = this.skidMarks.length - 1; i >= 0; i--) {
+        this.skidMarks[i].alpha -= 4 * timeScale; // Fade out scaled
+        if (this.skidMarks[i].alpha <= 0) {
+            this.skidMarks.splice(i, 1);
+        }
+    }
 
     // Visual Feedback for Drifting
     if (this.isDrifting && this.vel.mag() > 2) {
-        // Calculate rear position based on heading
-        let rear = p5.Vector.fromAngle(this.heading);
-        rear.mult(-this.length/2); // Behind center
-        rear.add(this.pos);
-        
+        // ...
         // Add smoke particles
-        // Note: accessing global 'particles' array from sketch.js
-        if (frameCount % 3 === 0) { // Don't add every frame to save performance
+        if (frameCount % 3 === 0) { 
+            let rear = p5.Vector.fromAngle(this.heading);
+            rear.mult(-this.length/2); 
+            rear.add(this.pos);
             particles.push(new Particle(rear.x + random(-5, 5), rear.y + random(-5, 5), color(220, 220, 220, 100)));
         }
     }
@@ -127,10 +242,8 @@ class Player extends Vehicle {
 
     if (typeof mapCols !== 'undefined' && tileX >= 0 && tileX < mapCols && tileY >= 0 && tileY < mapRows) {
          let tile = tileMap[tileY][tileX];
-         // If on grass and moving fast enough
          if (tile && tile.type === 'grass' && this.vel.mag() > 2) {
-             // Emit mud particles
-             if (frameCount % 4 === 0) { // Throttle
+             if (frameCount % 4 === 0) { 
                  let rear = p5.Vector.fromAngle(this.heading);
                  rear.mult(-this.length/2);
                  rear.add(this.pos);

@@ -4,14 +4,17 @@ let powerups = [];
 let particles = [];
 let buildings = [];
 let projectiles = [];
-let gameState = 'MENU'; // MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP
+let gameState = 'MENU'; // MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP, AUTH
 let shopBuilding = null; // Store which building opened the shop
 let lastShotTime = 0; // For weapon cooldown
 let startTime;
 let survivalTime = 60; // 60 seconds to win
 let lastEnemySpawnTime = 0;
 let lastPowerUpSpawnTime = 0;
+let specialDropFailCount = 0;
 let shakeAmount = 0;
+let pauseStartTime = 0;
+let totalPausedTime = 0;
 let hospitalImg;
 let armoryImg;
 let gameCoverImg;
@@ -19,7 +22,21 @@ let gameCoverVideo;
 let startBtnImg;
 let exitBtnImg;
 let shopBtnImg;
+let shopBoardImg;
+let victoryImg;
+let defeatImg;
+let victoryVideo;
+let defeatVideo;
+let settingIconImg;
+let bulletIconImg;
+let controlKeyImgs = {};
 let lastCoverRect = null;
+let shopUI;
+let authUI;
+let startGateMessage = '';
+let startGateMessageColor = [255, 80, 80];
+let startGateMessageUntil = 0;
+let startGatePending = false;
 
 // Game Settings
 let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
@@ -31,6 +48,8 @@ let boundaryWarningAlpha = 0;
 let gameWidth;
 let gameHeight;
 let statusHeight = 130;
+let gameViewX = 0;
+let gameViewY = 0;
 
 // Map & Camera
 let mapWidth = 3200;
@@ -56,16 +75,6 @@ let tileMap = []; // 2D array of tiles
 let tileSize = 100; // Size of each tile (pixels)
 let mapCols, mapRows;
 let roadCenters = [];
-const SHOP_CAR_ORDER = ['starter', 'speedster', 'tank', 'drifter'];
-const SHOP_WEAPONS = [
-  { key: '5', id: 'shotgun', name: 'Shotgun', price: 80 },
-  { key: '6', id: 'laser', name: 'Laser Cannon', price: 140 },
-  { key: '7', id: 'ricochet', name: 'Ricochet', price: 200 }
-];
-const SHOP_UPGRADES = [
-  { key: '8', id: 'maxHp', name: 'Max HP +1', price: 60 },
-  { key: '9', id: 'maxAmmo', name: 'Max Ammo +10', price: 50 }
-];
 
 function preload() {
   hospitalImg = loadImage('icon/BUILDING/hospital.png');
@@ -74,13 +83,37 @@ function preload() {
   gameCoverImg = loadImage('icon/game_cover.png');
   startBtnImg = loadImage('icon/start.png');
   exitBtnImg = loadImage('icon/exit.png');
-  shopBtnImg = loadImage('icon/BUILDING/supermarket.png');
+  shopBtnImg = loadImage('icon/basic/store_mainpage.png');
+  shopBoardImg = loadImage('icon/shop_board.png');
+  victoryImg = null;
+  defeatImg = null;
+  settingIconImg = loadImage('icon/basic/setting.png');
+  bulletIconImg = loadImage('icon/basic/bullet.png');
+  controlKeyImgs = {
+    W: loadImage('icon/basic/keyboard_W.png'),
+    A: loadImage('icon/basic/keyboard_A.png'),
+    S: loadImage('icon/basic/keyboard_S.png'),
+    D: loadImage('icon/basic/keyboard_D.png'),
+    X: loadImage('icon/basic/keyboard_X.png'),
+    UP: loadImage('icon/basic/keyboard_up.png'),
+    DOWN: loadImage('icon/basic/keyboard_down.png'),
+    LEFT: loadImage('icon/basic/keyboard_left.png'),
+    RIGHT: loadImage('icon/basic/keyboard_right.png')
+  };
+  images.weaponShop = {
+    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.png'),
+    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.png'),
+    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.png'),
+    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.png'),
+    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.png'),
+    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.png'),
+    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.png'),
+    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.png')
+  };
   
   // Load terrain and environment assets
   images.grass = loadImage('icon/grass_1.png');
   images.grassAlt1 = loadImage('icon/Grass.png');
-  images.grassAlt2 = loadImage('icon/grass_piece.png');
-  images.grassAlt3 = loadImage('icon/grass_hole.png');
   images.asphalt = loadImage('icon/asphalt.png');
   images.pavement = loadImage('icon/pavement_tile_1.png');
   images.pavementAlt = loadImage('icon/pavement.png');
@@ -154,7 +187,7 @@ function preload() {
       images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
   }
 
-  images.grassVariants = [images.grass, images.grassAlt1, images.grassAlt2, images.grassAlt3];
+  images.grassVariants = [images.grass, images.grassAlt1];
   images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
   images.roadVVariants = [images.roadV, images.roadV, images.roadVAlt];
   images.roadHVariants = [images.roadH, images.roadH, images.roadHAlt];
@@ -189,23 +222,53 @@ function setup() {
   // Create Visuals from TileMap
   createMapGraphics();
 
+  shopUI = new ShopUI();
+  authUI = new AuthUI();
+  ensurePlayerProfile();
+  if (authUI.isLoggedIn()) {
+      refreshUserProgress();
+  }
+
   gameCoverVideo = createVideo('icon/game_cover_video.mp4');
   gameCoverVideo.volume(0);
   gameCoverVideo.elt.muted = true;
   gameCoverVideo.elt.playsInline = true;
   gameCoverVideo.loop();
   gameCoverVideo.hide();
+  defeatVideo = createVideo('icon/basic/defeat.mp4');
+  defeatVideo.volume(0);
+  defeatVideo.elt.muted = true;
+  defeatVideo.elt.playsInline = true;
+  defeatVideo.elt.preload = 'auto';
+  defeatVideo.elt.load();
+  defeatVideo.hide();
+  victoryVideo = createVideo('icon/basic/victory.mp4');
+  victoryVideo.volume(0);
+  victoryVideo.elt.muted = true;
+  victoryVideo.elt.playsInline = true;
+  victoryVideo.elt.preload = 'auto';
+  victoryVideo.elt.load();
+  victoryVideo.hide();
+  updateGameplayViewport();
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  gameWidth = windowWidth;
-  gameHeight = windowHeight - statusHeight;
+  updateGameplayViewport();
   
   // Re-create map graphics if necessary or just let it scale
   // Ideally, if map size is constant, we don't need to recreate.
   // But if the canvas resize affects how we want to see things, we might.
   // For now, mapGraphics is independent of screen size, so we are good.
+}
+
+function updateGameplayViewport() {
+  let coverSource = gameCoverVideo && gameCoverVideo.elt && gameCoverVideo.elt.videoWidth > 0 ? gameCoverVideo : gameCoverImg;
+  let rect = getCoverRect(windowWidth, windowHeight - statusHeight, coverSource, true);
+  gameViewX = rect.x;
+  gameViewY = rect.y;
+  gameWidth = rect.w;
+  gameHeight = rect.h;
 }
 
 function projectIso(x, y) {
@@ -253,10 +316,16 @@ function resetGame(keepProgress = false) {
       player.bonusMaxHp = oldPlayer.bonusMaxHp;
       player.bonusMaxAmmo = oldPlayer.bonusMaxAmmo;
       player.currentWeapon = oldPlayer.currentWeapon;
-      player.hasShield = oldPlayer.hasShield;
+      player.ownedWeapons = Array.isArray(oldPlayer.ownedWeapons) ? [...oldPlayer.ownedWeapons] : [WEAPON_TYPES.PISTOL];
+      player.ownedCars = Array.isArray(oldPlayer.ownedCars) ? [...oldPlayer.ownedCars] : ['starter'];
+      player.unlockedSpecialWeapons = Array.isArray(oldPlayer.unlockedSpecialWeapons) ? [...oldPlayer.unlockedSpecialWeapons] : [];
+      player.shieldDurationLevel = oldPlayer.shieldDurationLevel || 0;
       player.applyCarType(oldPlayer.carType);
-      player.hp = min(oldPlayer.hp, player.maxHp);
-      player.ammo = min(oldPlayer.ammo, player.maxAmmo);
+      player.hp = player.maxHp;
+      player.ammo = player.maxAmmo;
+      player.hasShield = false;
+      player.currentSpecialWeapon = null;
+      player.specialWeaponCount = 0;
   }
 
   enemies = [];
@@ -269,7 +338,10 @@ function resetGame(keepProgress = false) {
   lastEnemySpawnTime = millis();
   lastPowerUpSpawnTime = millis();
   shakeAmount = 0;
+  pauseStartTime = 0;
+  totalPausedTime = 0;
   boundaryWarningAlpha = 0;
+  specialDropFailCount = 0;
   
   // Difficulty Adjustments
   if (difficulty === 'EASY') {
@@ -695,9 +767,10 @@ function generateCity() {
       
       // 1. Check against Buildings
       for (let b of buildings) {
-          let bSize = max(b.w, b.h);
-          // Ensure enough clearance around buildings
-          if (dist(spot.px, spot.py, b.pos.x, b.pos.y) < (obstacleSize/2 + bSize/2 + 30)) {
+          let bCenter = b.getCollisionCenter();
+          let bSize = b.getCollisionSize();
+          let halfDiagonal = sqrt((bSize.w * bSize.w) + (bSize.h * bSize.h)) * 0.5;
+          if (dist(spot.px, spot.py, bCenter.x, bCenter.y) < (obstacleSize / 2 + halfDiagonal + 20)) {
               canPlace = false;
               break;
           }
@@ -725,36 +798,55 @@ function generateCity() {
 function draw() {
   // 0. Menu Handling (Full Screen, No Camera/Status Bar Offset)
   if (gameState === 'MENU') {
+      if (defeatVideo) defeatVideo.pause();
+      if (victoryVideo) victoryVideo.pause();
       drawMainMenu();
       return; // Stop drawing anything else
+  } else if (gameState === 'AUTH') {
+      if (defeatVideo) defeatVideo.pause();
+      if (victoryVideo) victoryVideo.pause();
+      drawCoverBackground();
+      return;
   } else if (gameState === 'DIFFICULTY_SELECT') {
+      if (defeatVideo) defeatVideo.pause();
+      if (victoryVideo) victoryVideo.pause();
       drawDifficultySelect();
       return; // Stop drawing anything else
   } else if (gameState === 'MENU_SHOP') {
+      if (defeatVideo) defeatVideo.pause();
+      if (victoryVideo) victoryVideo.pause();
       drawShopMenu();
       return;
   }
+  if (gameState !== 'GAMEOVER' && defeatVideo) defeatVideo.pause();
+  if (gameState !== 'WIN' && victoryVideo) victoryVideo.pause();
 
+  updateGameplayViewport();
   imageMode(CENTER);
 
-  // 1. Background
-  background(34, 139, 34); // Forest Green
+  background(0);
 
-  // 2. Camera Update
   if (player) {
-    // Center camera on player in Isometric Space
-    let pIso = projectIso(player.pos.x, player.pos.y);
+    let focusX = player.pos.x;
+    let focusY = player.pos.y;
+    if (gameState === 'MISSILE_CONTROL' && typeof loiteringMissile !== 'undefined' && loiteringMissile) {
+      focusX = loiteringMissile.pos.x;
+      focusY = loiteringMissile.pos.y;
+    }
+    let pIso = projectIso(focusX, focusY);
     camX = pIso.x - gameWidth / 2;
     camY = pIso.y - gameHeight / 2;
-    
-    // Clamp to map boundaries
     camX = constrain(camX, 0, mapWidth - gameWidth);
     camY = constrain(camY, 0, mapHeight - gameHeight);
   }
 
-  // 3. Draw World (Inside Camera Transform)
   push();
-  translate(0, statusHeight); 
+  translate(gameViewX, statusHeight + gameViewY);
+  let ctx = drawingContext;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, gameWidth, gameHeight);
+  ctx.clip();
   translate(-camX, -camY);
   
   if (shakeAmount > 0) {
@@ -781,16 +873,62 @@ function draw() {
 
   // Entities
   if (gameState === 'PLAY') {
-      playGame(); // Logic + Draw
-  } else if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'GAMEOVER' || gameState === 'WIN') {
-      drawGameObjects(); // Just Draw
-  }
-  
-  pop(); // End Camera Transform
+      playGame();
+  } else if (gameState === 'MAP_SELECT') {
+      playGame();
+  } else if (gameState === 'MISSILE_CONTROL') {
+      updateLoiteringMissile();
+      
+      if (mapGraphics) image(mapGraphics, mapWidth/2, mapHeight/2);
+      
+      drawGameObjects();
+      
+      if (loiteringMissile) {
+          push();
+          let isoPos = projectIso(loiteringMissile.pos.x, loiteringMissile.pos.y);
+          translate(isoPos.x, isoPos.y);
+          let hVec = p5.Vector.fromAngle(loiteringMissile.heading);
+          let isoH = projectIsoVector(hVec.x, hVec.y);
+          rotate(isoH.heading());
+          let bodyW = 96;
+          let bodyH = 56;
+          let droneIcon = images && images.weaponShop ? images.weaponShop[WEAPON_TYPES.LOITERING] : null;
+          if (droneIcon && droneIcon.width > 0 && droneIcon.height > 0) {
+              imageMode(CENTER);
+              let ratio = min(bodyW / droneIcon.width, bodyH / droneIcon.height);
+              tint(255, 245);
+              push();
+              rotate(HALF_PI);
+              image(droneIcon, 0, 0, droneIcon.width * ratio, droneIcon.height * ratio);
+              pop();
+              noTint();
+          } else {
+              noStroke();
+              fill(210, 215, 235);
+              ellipse(4, 0, bodyW * 0.75, bodyH * 0.85);
+              fill(90, 120, 170);
+              ellipse(8, 0, bodyW * 0.32, bodyH * 0.45);
+              fill(75, 90, 120);
+              triangle(-8, -bodyH * 0.5, 6, -bodyH * 0.2, -10, -bodyH * 0.05);
+              triangle(-8, bodyH * 0.5, 6, bodyH * 0.2, -10, bodyH * 0.05);
+          }
 
-  // 4. Draw UI (Screen Space)
+          let flamePulse = 0.75 + 0.25 * sin(frameCount * 0.6);
+          noStroke();
+          fill(255, 170, 0, 190);
+          triangle(-bodyW * 0.52, 0, -bodyW * 0.92, 5 * flamePulse, -bodyW * 0.92, -5 * flamePulse);
+          fill(255, 80, 0, 220);
+          triangle(-bodyW * 0.45, 0, -bodyW * 0.75, 2.8 * flamePulse, -bodyW * 0.75, -2.8 * flamePulse);
+          pop();
+      }
+  } else if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'GAMEOVER' || gameState === 'WIN') {
+      drawGameObjects();
+  }
+  ctx.restore();
+  pop();
+
   push();
-  translate(0, statusHeight);
+  translate(gameViewX, statusHeight + gameViewY);
   
   if (gameState === 'PAUSED') {
       if (boundaryWarningAlpha > 0) drawBoundaryWarning();
@@ -801,17 +939,19 @@ function draw() {
       drawGameOver();
   } else if (gameState === 'WIN') {
       drawWin();
-  } else if (gameState === 'PLAY') {
+  } else if (gameState === 'PLAY' || gameState === 'MAP_SELECT') {
       if (boundaryWarningAlpha > 0) drawBoundaryWarning();
   }
   
   pop();
 
-  // 5. Always on top UI
   drawStatusBar();
   
-  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT') {
       drawMiniMap();
+  }
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT' || gameState === 'MISSILE_CONTROL') {
+      drawControlGuidePanel();
   }
 }
 
@@ -835,57 +975,331 @@ function drawBoundaryWarning() {
     }
 }
 
-function drawMiniMap() {
-    let mapSize = 150; // Size of minimap on screen
-    let scaleFactor = mapSize / mapWidth; // Scale world to minimap
-    let mapH = mapHeight * scaleFactor;
+let miniMapGraphics;
+let miniMapBuildingsGraphics;
+let dongfengTargetLocked = false;
+let mapSelectCharged = false;
+let mapSelectLockX = 0;
+let mapSelectLockY = 0;
+
+function consumeCurrentSpecialWeapon() {
+    if (!player || !player.currentSpecialWeapon) return;
+    player.specialWeaponCount = max(0, (player.specialWeaponCount || 0) - 1);
+    if (player.specialWeaponCount === 0) {
+        player.currentSpecialWeapon = null;
+    }
+}
+
+function isPlayerControlLocked() {
+    return gameState === 'MISSILE_CONTROL';
+}
+
+function triggerDongfengFromMiniMap(cursorX, cursorY, scaleFactor) {
+    if (dongfengTargetLocked) return;
+    dongfengTargetLocked = true;
+    mapSelectStart = 0;
+
+    let focusIso = projectIso(mapWidth / 2, mapHeight / 2);
+    let isoX = (cursorX / scaleFactor) + focusIso.x;
+    let isoY = (cursorY / scaleFactor) + focusIso.y;
+    let dx = isoX - mapOffsetX;
+    let dy = isoY - mapOffsetY;
+    let W = tileSize / 2;
+    let H = tileSize / 4;
+    let gridX = (dx / W + dy / H) / 2;
+    let gridY = (dy / H - dx / W) / 2;
+    let targetX = gridX * tileSize;
+    let targetY = gridY * tileSize;
+
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
+        gameState = 'PLAY';
+        dongfengTargetLocked = false;
+        return;
+    }
+
+    targetX = constrain(targetX, 0, mapWidth);
+    targetY = constrain(targetY, 0, mapHeight);
+
+    let strikeFn = null;
+    if (typeof fireDongfengStrike === 'function') {
+        strikeFn = fireDongfengStrike;
+    } else if (typeof globalThis !== 'undefined' && typeof globalThis.fireDongfengStrike === 'function') {
+        strikeFn = globalThis.fireDongfengStrike;
+    }
+
+    if (strikeFn) {
+        strikeFn(targetX, targetY);
+    } else {
+        gameState = 'PLAY';
+        consumeCurrentSpecialWeapon();
+        setTimeout(() => {
+            createExplosion(targetX, targetY, color(255, 50, 0), 80);
+            shakeAmount = max(shakeAmount, 30);
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                if (dist(e.pos.x, e.pos.y, targetX, targetY) < 300) {
+                    e.hp -= 50;
+                    if (e.hp <= 0) enemies.splice(i, 1);
+                }
+            }
+        }, 850);
+    }
+    dongfengTargetLocked = false;
+    mapSelectCharged = false;
+}
+
+function createAbstractMapGraphics() {
+    if (miniMapGraphics) miniMapGraphics.remove();
+    miniMapGraphics = createGraphics(mapWidth, mapHeight);
     
-    let margin = 20;
-    let mmX = margin;
-    let mmY = statusHeight + margin;
+    if (miniMapBuildingsGraphics) miniMapBuildingsGraphics.remove();
+    miniMapBuildingsGraphics = createGraphics(mapWidth, mapHeight);
+    
+    // Transparent background
+    miniMapGraphics.clear();
+    miniMapGraphics.noStroke();
+    
+    miniMapBuildingsGraphics.clear();
+    miniMapBuildingsGraphics.noStroke();
+    
+    // Draw abstract terrain
+    for (let y = 0; y < mapRows; y++) {
+        for (let x = 0; x < mapCols; x++) {
+            let tile = tileMap[y][x];
+            let isoPos = projectIso(x * tileSize, y * tileSize);
+            
+            // Draw diamond shape
+            miniMapGraphics.beginShape();
+            miniMapGraphics.vertex(isoPos.x, isoPos.y - tileSize/4);
+            miniMapGraphics.vertex(isoPos.x + tileSize/2, isoPos.y);
+            miniMapGraphics.vertex(isoPos.x, isoPos.y + tileSize/4);
+            miniMapGraphics.vertex(isoPos.x - tileSize/2, isoPos.y);
+            
+            if (tile.type === 'road') {
+                miniMapGraphics.fill(40, 45, 60, 255); // Dark Blue-Grey Road
+            } else if (tile.type === 'pavement') {
+                miniMapGraphics.fill(30, 30, 40, 255); // Darker Pavement
+            } else if (tile.type === 'grass') {
+                  miniMapGraphics.fill(15, 25, 15, 255);
+            } else {
+                  miniMapGraphics.fill(20, 20, 10, 255); // Sand/Other
+            }
+            miniMapGraphics.endShape(CLOSE);
+        }
+    }
+    
+    // Pre-render Buildings
+    miniMapBuildingsGraphics.rectMode(CENTER);
+    miniMapBuildingsGraphics.noStroke();
+    for (let b of buildings) {
+        let isoPos = projectIso(b.pos.x, b.pos.y);
+        let bw = b.w; 
+        let bh = b.h;
+        
+        if (b.type === 'hospital') miniMapBuildingsGraphics.fill(50, 255, 100, 200);
+        else if (b.type === 'armory') miniMapBuildingsGraphics.fill(255, 150, 50, 200);
+        else miniMapBuildingsGraphics.fill(150, 200, 255, 180);
+        
+        miniMapBuildingsGraphics.beginShape();
+        miniMapBuildingsGraphics.vertex(isoPos.x, isoPos.y - bh/2);
+        miniMapBuildingsGraphics.vertex(isoPos.x + bw/2, isoPos.y);
+        miniMapBuildingsGraphics.vertex(isoPos.x, isoPos.y + bh/2);
+        miniMapBuildingsGraphics.vertex(isoPos.x - bw/2, isoPos.y);
+        miniMapBuildingsGraphics.endShape(CLOSE);
+    }
+}
+
+function getMiniMapLayout(isTargeting = false) {
+    let margin = 20; // Tight margin to top-left
+    
+    if (isTargeting) {
+        // Large Targeting Map (Centered)
+        let mapR = min(gameWidth, gameHeight) * 0.4; // Radius
+        let centerX = gameWidth / 2;
+        let centerY = gameHeight / 2;
+        
+        // Calculate scale to fit map inside circle (Cover or Contain?)
+        // Map is wider than tall (3200x2400)
+        // Let's fit width to diameter for max visibility
+        let scaleFactor = (mapR * 2) / mapWidth;
+        
+        return { centerX, centerY, mapR, scaleFactor, mode: 'fixed' };
+    } else {
+        // Normal Mini-map (Top-Left, Player Centered)
+        let mapR = 90; // Radius
+        let centerX = gameViewX + mapR + margin;
+        let centerY = statusHeight + gameViewY + mapR + margin;
+        
+        // Zoomed in scale for local view
+        // Show approx 800 units width in minimap
+        let viewWidth = 1200;
+        let scaleFactor = (mapR * 2) / viewWidth;
+        
+        return { centerX, centerY, mapR, scaleFactor, mode: 'follow' };
+    }
+}
+
+function drawMiniMap() {
+    let isTargeting = gameState === 'MAP_SELECT';
+    let { centerX, centerY, mapR, scaleFactor, mode } = getMiniMapLayout(isTargeting);
+    if (!isTargeting) {
+        mapSelectStart = 0;
+        dongfengTargetLocked = false;
+        mapSelectCharged = false;
+    }
+    
+    if (mode === 'fixed' && !miniMapGraphics) {
+        if (!tileMap || tileMap.length === 0) generateTileMap();
+        createAbstractMapGraphics();
+    }
     
     push();
-    translate(mmX, mmY);
-    
-    // Minimap Background
-    fill(0, 0, 0, 150);
-    stroke(200);
-    strokeWeight(2);
-    rectMode(CORNER);
-    rect(0, 0, mapSize, mapH);
-    
-    // Buildings
+    translate(centerX, centerY);
     noStroke();
-    fill(100);
-    for(let b of buildings) {
-        let bx = b.pos.x * scaleFactor;
-        let by = b.pos.y * scaleFactor;
-        let bw = b.w * scaleFactor;
-        let bh = b.h * scaleFactor;
-        rect(bx - bw/2, by - bh/2, bw, bh); // b.pos is center
+    fill(0, 10, 20, 240);
+    ellipse(0, 0, mapR * 2, mapR * 2);
+
+    let ctx = drawingContext;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, mapR, 0, TWO_PI);
+    ctx.clip();
+
+    if (mode === 'follow' && player) {
+        let radarScale = mapR / 420;
+        noStroke();
+        fill(60, 140, 220, 95);
+        for (let b of buildings) {
+            let dx = (b.pos.x - player.pos.x) * radarScale;
+            let dy = (b.pos.y - player.pos.y) * radarScale;
+            if (dx * dx + dy * dy > mapR * mapR) continue;
+            ellipse(dx, dy, 3, 3);
+        }
+        for (let e of enemies) {
+            let dx = (e.pos.x - player.pos.x) * radarScale;
+            let dy = (e.pos.y - player.pos.y) * radarScale;
+            if (dx * dx + dy * dy > mapR * mapR) continue;
+            let pulse = (frameCount % 60) / 60;
+            fill(255, 50, 50, 220 - pulse * 180);
+            ellipse(dx, dy, 5 + 4 * pulse, 5 + 4 * pulse);
+        }
+        fill(0, 255, 255);
+        ellipse(0, 0, 7, 7);
+        stroke(0, 255, 255, 200);
+        strokeWeight(2);
+        line(0, 0, cos(player.heading) * 14, sin(player.heading) * 14);
+    } else {
+        let centerIso = projectIso(mapWidth / 2, mapHeight / 2);
+        let viewOffsetX = -centerIso.x * scaleFactor;
+        let viewOffsetY = -centerIso.y * scaleFactor;
+        translate(viewOffsetX, viewOffsetY);
+        if (miniMapGraphics) {
+            push();
+            scale(scaleFactor);
+            imageMode(CORNER);
+            tint(200, 255, 255, 220);
+            image(miniMapGraphics, 0, 0);
+            if (miniMapBuildingsGraphics) image(miniMapBuildingsGraphics, 0, 0);
+            noTint();
+            pop();
+        }
+        noStroke();
+        for (let e of enemies) {
+            let isoPos = projectIso(e.pos.x, e.pos.y);
+            let ex = isoPos.x * scaleFactor;
+            let ey = isoPos.y * scaleFactor;
+            if ((ex + viewOffsetX) * (ex + viewOffsetX) + (ey + viewOffsetY) * (ey + viewOffsetY) > mapR * mapR) continue;
+            let pulse = (frameCount % 60) / 60;
+            fill(255, 50, 50, 220 - pulse * 180);
+            ellipse(ex, ey, 5 + 4 * pulse, 5 + 4 * pulse);
+        }
+        if (player) {
+            let isoPos = projectIso(player.pos.x, player.pos.y);
+            let px = isoPos.x * scaleFactor;
+            let py = isoPos.y * scaleFactor;
+            fill(0, 255, 255);
+            ellipse(px, py, 7, 7);
+            stroke(255, 255, 255, 100);
+            strokeWeight(1);
+            noFill();
+            rectMode(CORNER);
+            rect(camX * scaleFactor, camY * scaleFactor, gameWidth * scaleFactor, gameHeight * scaleFactor);
+        }
     }
-    
-    // Enemies
-    fill(255, 0, 0);
-    for(let e of enemies) {
-        ellipse(e.pos.x * scaleFactor, e.pos.y * scaleFactor, 4, 4);
-    }
-    
-    // Player
-    if (player) {
-        fill(0, 255, 0);
-        ellipse(player.pos.x * scaleFactor, player.pos.y * scaleFactor, 5, 5);
+
+    ctx.restore();
+    noFill();
+    stroke(0, 255, 255);
+    strokeWeight(4);
+    ellipse(0, 0, mapR * 2, mapR * 2);
+    stroke(0, 255, 255, 50);
+    strokeWeight(1);
+    ellipse(0, 0, mapR * 1.8, mapR * 1.8);
+    fill(0, 255, 255);
+    noStroke();
+    textSize(10);
+    textAlign(CENTER, BOTTOM);
+    text("N", 0, -mapR + 12);
+
+    if (isTargeting) {
+        let dx = mouseX - centerX;
+        let dy = mouseY - centerY;
+        let distFromCenter = sqrt(dx*dx + dy*dy);
+        let insideMap = distFromCenter < mapR;
+        let cursorX = dx;
+        let cursorY = dy;
+        if (distFromCenter > mapR) {
+            let angle = atan2(dy, dx);
+            cursorX = cos(angle) * (mapR - 5);
+            cursorY = sin(angle) * (mapR - 5);
+        }
+        stroke(255, 50, 50);
+        strokeWeight(1);
+        line(cursorX - 10, cursorY, cursorX + 10, cursorY);
+        line(cursorX, cursorY - 10, cursorX, cursorY + 10);
+        if (mouseIsPressed && insideMap && !dongfengTargetLocked) {
+            if (mapSelectStart === 0) mapSelectStart = millis();
+            let progress = min(1, (millis() - mapSelectStart) / 2000);
+            noFill();
+            stroke(255, 0, 0);
+            strokeWeight(3);
+            arc(cursorX, cursorY, 40, 40, -HALF_PI, -HALF_PI + TWO_PI * progress);
+            if (progress >= 1) {
+                mapSelectCharged = true;
+                mapSelectLockX = cursorX;
+                mapSelectLockY = cursorY;
+                triggerDongfengFromMiniMap(mapSelectLockX, mapSelectLockY, scaleFactor);
+                mapSelectStart = 0;
+                mapSelectCharged = false;
+            }
+        } else if (!mouseIsPressed) {
+            mapSelectStart = 0;
+            mapSelectCharged = false;
+        }
+        fill(255);
+        noStroke();
+        textSize(16);
+        textAlign(CENTER, TOP);
+        text("SATELLITE TARGETING", 0, mapR + 20);
     }
     
     pop();
 }
 
-function getCoverRect() {
-  let source = null;
+function getCoverRect(viewW = width, viewH = height, sourceOverride = null, forceContain = null) {
+  let source = sourceOverride;
   let sourceW = 0;
   let sourceH = 0;
-  
-  if (gameCoverVideo && gameCoverVideo.elt && gameCoverVideo.elt.videoWidth > 0) {
+
+  if (source) {
+      if (source.elt && source.elt.videoWidth > 0) {
+          sourceW = source.elt.videoWidth;
+          sourceH = source.elt.videoHeight;
+      } else if (source.width && source.height) {
+          sourceW = source.width;
+          sourceH = source.height;
+      }
+  } else if (gameCoverVideo && gameCoverVideo.elt && gameCoverVideo.elt.videoWidth > 0) {
       source = gameCoverVideo;
       sourceW = gameCoverVideo.elt.videoWidth;
       sourceH = gameCoverVideo.elt.videoHeight;
@@ -894,47 +1308,45 @@ function getCoverRect() {
       sourceW = gameCoverImg.width;
       sourceH = gameCoverImg.height;
   }
-  
-  let rect = { x: 0, y: 0, w: width, h: height, source };
-  
-  if (source) {
-      let imgAspect = sourceW / sourceH;
-      let screenAspect = width / height;
-      let drawW, drawH, offX, offY;
-      let useContain = source === gameCoverVideo;
-      
-      if (useContain) {
-          if (screenAspect > imgAspect) {
-              drawH = height;
-              drawW = height * imgAspect;
-              offX = (width - drawW) / 2;
-              offY = 0;
-          } else {
-              drawW = width;
-              drawH = width / imgAspect;
-              offX = 0;
-              offY = (height - drawH) / 2;
-          }
+
+  let rect = { x: 0, y: 0, w: viewW, h: viewH, source };
+  if (!source || sourceW <= 0 || sourceH <= 0) return rect;
+
+  let imgAspect = sourceW / sourceH;
+  let screenAspect = viewW / viewH;
+  let drawW, drawH, offX, offY;
+  let useContain = forceContain !== null ? forceContain : source === gameCoverVideo;
+
+  if (useContain) {
+      if (screenAspect > imgAspect) {
+          drawH = viewH;
+          drawW = viewH * imgAspect;
+          offX = (viewW - drawW) / 2;
+          offY = 0;
       } else {
-          if (screenAspect > imgAspect) {
-              drawW = width;
-              drawH = width / imgAspect;
-              offX = 0;
-              offY = (height - drawH) / 2;
-          } else {
-              drawH = height;
-              drawW = height * imgAspect;
-              offX = (width - drawW) / 2;
-              offY = 0;
-          }
+          drawW = viewW;
+          drawH = viewW / imgAspect;
+          offX = 0;
+          offY = (viewH - drawH) / 2;
       }
-      
-      rect.x = offX;
-      rect.y = offY;
-      rect.w = drawW;
-      rect.h = drawH;
+  } else {
+      if (screenAspect > imgAspect) {
+          drawW = viewW;
+          drawH = viewW / imgAspect;
+          offX = 0;
+          offY = (viewH - drawH) / 2;
+      } else {
+          drawH = viewH;
+          drawW = viewH * imgAspect;
+          offX = (viewW - drawW) / 2;
+          offY = 0;
+      }
   }
-  
+
+  rect.x = offX;
+  rect.y = offY;
+  rect.w = drawW;
+  rect.h = drawH;
   return rect;
 }
 
@@ -1043,6 +1455,15 @@ function drawMainMenu() {
       fill(255, 0, 0); rect(exitX, exitY, 150, 60, 10);
       fill(255); text("EXIT", exitX, exitY);
   }
+
+  if (startGatePending || millis() < startGateMessageUntil) {
+      fill(startGateMessageColor[0], startGateMessageColor[1], startGateMessageColor[2]);
+      noStroke();
+      textAlign(CENTER, CENTER);
+      textSize(20);
+      let msg = startGatePending ? 'Checking backend service...' : startGateMessage;
+      text(msg, width / 2, height - 50);
+  }
 }
 
 function drawDifficultySelect() {
@@ -1103,6 +1524,15 @@ function drawDifficultySelect() {
   fill(150);
   textSize(16);
   text("Press ESC to Back", width/2, height/2 + 160);
+
+  if (startGatePending || millis() < startGateMessageUntil) {
+      fill(startGateMessageColor[0], startGateMessageColor[1], startGateMessageColor[2]);
+      noStroke();
+      textSize(18);
+      textAlign(CENTER, CENTER);
+      let msg = startGatePending ? 'Checking backend service...' : startGateMessage;
+      text(msg, width / 2, height / 2 + 200);
+  }
 }
 
 function drawPaused() {
@@ -1112,10 +1542,10 @@ function drawPaused() {
     
     fill(255);
     textSize(50);
-    text("PAUSED", gameWidth/2, gameHeight/3);
+    text("SETTINGS", gameWidth/2, gameHeight/3);
     
     textSize(20);
-    text("Press P to Resume", gameWidth/2, gameHeight/2);
+    text("Press ESC to Resume", gameWidth/2, gameHeight/2);
     
     // Restart Button
     fill(255, 50, 50);
@@ -1164,16 +1594,31 @@ function playGame() {
   }
   
   // Timer
-  let elapsed = (millis() - startTime) / 1000;
+  let elapsed = (millis() - startTime - totalPausedTime) / 1000;
   let remaining = survivalTime - elapsed;
   
   if (remaining <= 0) {
     gameState = 'WIN';
   }
 
-  if (frameCount % 60 === 0) {
-      player.coins += (difficulty === 'EASY' ? 3 : 2);
-  }
+    if (frameCount % 3600 === 0) { // Every 60 seconds (60fps * 60s)
+        if (authUI && authUI.isLoggedIn()) {
+            let data = {
+                coins: player.coins,
+                unlockedWeapons: player.unlockedSpecialWeapons,
+                upgradeState: {
+                    maxHp: player.bonusMaxHp,
+                    maxAmmo: player.bonusMaxAmmo,
+                    shieldDuration: player.shieldDurationLevel
+                }
+            };
+            authUI.saveProgress(data);
+        }
+    }
+
+    if (frameCount % 60 === 0) {
+        player.coins += (difficulty === 'EASY' ? 3 : 2);
+    }
 
   // Spawning Enemies
   let spawnInterval = 5000;
@@ -1191,7 +1636,39 @@ function playGame() {
   // Spawning PowerUps
   if (millis() - lastPowerUpSpawnTime > 2500) {
     let types = ['speed', 'shield', 'health', 'coin', 'coin'];
-    let type = random(types);
+    let type;
+    let hasUnlockedSpecial = player.unlockedSpecialWeapons && player.unlockedSpecialWeapons.length > 0;
+    let choseSpecialDrop = false;
+    
+    if (hasUnlockedSpecial) {
+        let specialChance = min(0.45 + specialDropFailCount * 0.08, 0.85);
+        let forceSpecialDrop = specialDropFailCount >= 6;
+        if (forceSpecialDrop || random() < specialChance) {
+             let pool = player.unlockedSpecialWeapons;
+             let totalWeight = 0;
+             for (let id of pool) {
+                 totalWeight += (WEAPON_CONFIG[id] && WEAPON_CONFIG[id].dropWeight) || 10;
+             }
+             let r = random(totalWeight);
+             let sum = 0;
+             for (let id of pool) {
+                 sum += (WEAPON_CONFIG[id] && WEAPON_CONFIG[id].dropWeight) || 10;
+                 if (r < sum) {
+                     type = id;
+                     choseSpecialDrop = true;
+                     break;
+                 }
+             }
+             if (!type) {
+                 type = pool[0];
+                 choseSpecialDrop = true;
+             }
+        } else {
+            type = random(types);
+        }
+    } else {
+        type = random(types);
+    }
     
     let px = random(100, mapWidth - 100);
     let py = random(100, mapHeight - 100);
@@ -1209,13 +1686,17 @@ function playGame() {
     if (valid) {
         powerups.push(new PowerUp(px, py, type));
         lastPowerUpSpawnTime = millis();
+        if (hasUnlockedSpecial) {
+            if (choseSpecialDrop) specialDropFailCount = 0;
+            else specialDropFailCount = min(10, specialDropFailCount + 1);
+        }
     }
   }
 
   drawGameObjects();
   
   // Interactions check for 'F' key
-  if (keyIsDown(70)) { // F key
+  if (!isPlayerControlLocked() && keyIsDown(70)) { // F key
       for (let b of buildings) {
           if (b.isInteractable() && p5.Vector.dist(player.pos, b.pos) < b.w) {
               gameState = 'SHOP';
@@ -1227,6 +1708,8 @@ function playGame() {
 }
 
 function drawGameObjects() {
+  let shouldUpdate = gameState === 'PLAY' || gameState === 'MISSILE_CONTROL';
+  let playerLocked = shouldUpdate && isPlayerControlLocked();
   // Draw Buildings
   for (let b of buildings) {
     b.display();
@@ -1235,29 +1718,51 @@ function drawGameObjects() {
 
   // Update & Display Particles
   for (let i = particles.length - 1; i >= 0; i--) {
-    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') particles[i].update();
+    if (shouldUpdate) particles[i].update();
     particles[i].display();
-    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN' && particles[i].isDead()) {
+    if (shouldUpdate && particles[i].isDead()) {
       particles.splice(i, 1);
     }
   }
   
-  // Display Obstacles
-  for (let o of obstacles) {
-      o.display();
-      if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
-          o.checkCollision(player);
-          for(let e of enemies) o.checkCollision(e);
-      }
-  }
+    // Display Obstacles
+    for (let o of obstacles) {
+        o.display();
+        if (shouldUpdate) {
+            if (!playerLocked) o.checkCollision(player);
+            for(let e of enemies) o.checkCollision(e);
+        }
+    }
+
+    // Update & Display Missile Strikes (Dongfeng)
+    let updateStrikeFn = null;
+    let drawStrikeFn = null;
+    if (typeof updateMissileStrikes === 'function') updateStrikeFn = updateMissileStrikes;
+    else if (typeof globalThis !== 'undefined' && typeof globalThis.updateMissileStrikes === 'function') updateStrikeFn = globalThis.updateMissileStrikes;
+    if (typeof drawMissileStrikes === 'function') drawStrikeFn = drawMissileStrikes;
+    else if (typeof globalThis !== 'undefined' && typeof globalThis.drawMissileStrikes === 'function') drawStrikeFn = globalThis.drawMissileStrikes;
+    if (updateStrikeFn && drawStrikeFn) {
+        if (shouldUpdate) updateStrikeFn();
+        drawStrikeFn();
+    }
+    let updateAtomicFn = null;
+    let drawAtomicFn = null;
+    if (typeof updateAtomicStrikes === 'function') updateAtomicFn = updateAtomicStrikes;
+    else if (typeof globalThis !== 'undefined' && typeof globalThis.updateAtomicStrikes === 'function') updateAtomicFn = globalThis.updateAtomicStrikes;
+    if (typeof drawAtomicStrikes === 'function') drawAtomicFn = drawAtomicStrikes;
+    else if (typeof globalThis !== 'undefined' && typeof globalThis.drawAtomicStrikes === 'function') drawAtomicFn = globalThis.drawAtomicStrikes;
+    if (updateAtomicFn && drawAtomicFn) {
+        if (shouldUpdate) updateAtomicFn();
+        drawAtomicFn();
+    }
 
   // Update & Display Projectiles
   for (let i = projectiles.length - 1; i >= 0; i--) {
       let p = projectiles[i];
-      if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') p.update();
+      if (shouldUpdate) p.update();
       p.display();
       
-      if (gameState === 'SHOP' || gameState === 'PAUSED' || gameState === 'GAMEOVER' || gameState === 'WIN') continue; 
+      if (!shouldUpdate) continue; 
 
       if (p.isDead()) {
           projectiles.splice(i, 1);
@@ -1327,20 +1832,25 @@ function drawGameObjects() {
   for (let i = powerups.length - 1; i >= 0; i--) {
     let p = powerups[i];
     p.display();
-    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN' && p.checkCollision(player)) {
-      applyPowerUp(p);
-      createExplosion(p.pos.x, p.pos.y, color(255, 255, 255), 10);
-      powerups.splice(i, 1);
+    if (shouldUpdate && p.checkCollision(player)) {
+      let consumed = applyPowerUp(p);
+      if (consumed) {
+          createExplosion(p.pos.x, p.pos.y, color(255, 255, 255), 10);
+          powerups.splice(i, 1);
+      }
     }
   }
 
   // Update & Display Player
-  if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
+  if (shouldUpdate && !playerLocked) {
       player.edges();
       player.update();
+  } else if (playerLocked) {
+      player.vel.mult(0);
+      player.acc.mult(0);
   }
   
-  if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
+  if (shouldUpdate && !playerLocked) {
       for (let b of buildings) {
         b.checkCollision(player);
       }
@@ -1350,9 +1860,9 @@ function drawGameObjects() {
   // Update & Display Enemies
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
-    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') e.update(player);
+    if (shouldUpdate) e.update(player);
     
-    if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
+    if (shouldUpdate) {
         for (let b of buildings) {
             b.checkCollision(e);
         }
@@ -1360,15 +1870,26 @@ function drawGameObjects() {
         for (let j = projectiles.length - 1; j >= 0; j--) {
             let p = projectiles[j];
             if (p.checkCollision(e)) {
-                let dmg = 1;
-                if (p.type !== 'laser' && p.type !== 'ricochet') { 
-                    projectiles.splice(j, 1);
+                let config = WEAPON_CONFIG[p.type];
+                let dmg = config ? config.damage : 1;
+                
+                e.hp -= dmg;
+                createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 5);
+                
+                if (e.hp <= 0) {
+                    createExplosion(e.pos.x, e.pos.y, color(255, 50, 0), 15);
+                    enemies.splice(i, 1);
+                    player.coins += 5; 
+                    shakeAmount = 5;
+                } else {
+                    // Knockback?
+                    let push = p5.Vector.sub(e.pos, p.pos).normalize().mult(2);
+                    e.pos.add(push);
                 }
                 
-                createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 15);
-                enemies.splice(i, 1);
-                player.coins += 5; 
-                shakeAmount = 5;
+                if (!config || !config.penetrates && !p.isFireArea) {
+                     projectiles.splice(j, 1);
+                }
                 break; 
             }
         }
@@ -1377,7 +1898,7 @@ function drawGameObjects() {
     if (i < enemies.length) {
         e.display();
         
-        if (gameState !== 'SHOP' && gameState !== 'PAUSED' && gameState !== 'GAMEOVER' && gameState !== 'WIN') {
+        if (shouldUpdate) {
             let d = p5.Vector.dist(player.pos, e.pos);
             if (d < player.r + e.r) {
               createExplosion(player.pos.x, player.pos.y, color(255, 100, 0), 20);
@@ -1407,6 +1928,100 @@ function ensurePlayerProfile() {
     }
 }
 
+function applyProgressData(data) {
+    if (!data) return;
+    ensurePlayerProfile();
+    player.coins = Number.isFinite(data.coins) ? data.coins : 0;
+    player.ownedWeapons = Array.isArray(data.ownedWeapons) ? data.ownedWeapons : [WEAPON_TYPES.PISTOL];
+    player.ownedCars = Array.isArray(data.ownedCars) ? data.ownedCars : ['starter'];
+    player.currentWeapon = data.currentWeapon || WEAPON_TYPES.PISTOL;
+    player.unlockedSpecialWeapons = Array.isArray(data.unlockedSpecialWeapons)
+        ? data.unlockedSpecialWeapons
+        : (Array.isArray(data.unlockedWeapons) ? data.unlockedWeapons : []);
+    let targetCar = data.carType || 'starter';
+    if (player.ownedCars.includes(targetCar)) {
+        player.applyCarType(targetCar);
+    }
+    let upgradeState = data.upgradeState && typeof data.upgradeState === 'object' ? data.upgradeState : {};
+    player.bonusMaxHp = upgradeState.maxHp || 0;
+    player.bonusMaxAmmo = upgradeState.maxAmmo || 0;
+    player.shieldDurationLevel = upgradeState.shieldDuration || 0;
+    player.currentSpecialWeapon = null;
+    player.specialWeaponCount = 0;
+    player.applyCarType(player.carType || targetCar);
+}
+
+async function refreshUserProgress() {
+    if (!authUI || !authUI.isLoggedIn()) return false;
+    let data = await authUI.loadProgress();
+    if (!data) return false;
+    applyProgressData(data);
+    return true;
+}
+
+function setStartGateMessage(msg, colorRgb = [255, 80, 80], durationMs = 3000) {
+    startGateMessage = msg;
+    startGateMessageColor = colorRgb;
+    startGateMessageUntil = millis() + durationMs;
+}
+
+async function isBackendAvailable() {
+    if (!authUI || !authUI.apiBaseUrl) return false;
+    let controller = new AbortController();
+    let timer = setTimeout(() => controller.abort(), 3000);
+    try {
+        let res = await fetch(`${authUI.apiBaseUrl}/api/health`, {
+            method: 'GET',
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        return res.ok;
+    } catch (e) {
+        clearTimeout(timer);
+        return false;
+    }
+}
+
+async function continueStartAfterAuth() {
+    let loaded = await refreshUserProgress();
+    if (!loaded) {
+        authUI.showMessage('Failed to load progress. Please check backend and retry.');
+        return;
+    }
+    authUI.hide();
+    gameState = 'DIFFICULTY_SELECT';
+}
+
+async function beginStartFlow() {
+    if (startGatePending) return;
+    startGatePending = true;
+    let backendOk = await isBackendAvailable();
+    if (!backendOk) {
+        setStartGateMessage('Backend unavailable. Please start login service first.');
+        startGatePending = false;
+        return;
+    }
+
+    if (authUI.isLoggedIn()) {
+        let loaded = await refreshUserProgress();
+        if (!loaded) {
+            setStartGateMessage('Unable to load profile data. Please login again.');
+            startGatePending = false;
+            return;
+        }
+        gameState = 'DIFFICULTY_SELECT';
+        startGatePending = false;
+        return;
+    }
+
+    gameState = 'AUTH';
+    authUI.show();
+    authUI.onLoginSuccess = async () => {
+        await continueStartAfterAuth();
+    };
+    startGatePending = false;
+}
+
 function buyCar(carId) {
     if (!CAR_CATALOG || !CAR_CATALOG[carId]) return;
     let data = CAR_CATALOG[carId];
@@ -1417,9 +2032,19 @@ function buyCar(carId) {
 
 function buyWeapon(weaponId, price) {
     if (player.coins < price) return;
-    if (player.currentWeapon === weaponId) return;
-    player.coins -= price;
-    player.currentWeapon = weaponId;
+    
+    // Check if special unlock
+    let config = WEAPON_CONFIG[weaponId];
+    if (config && config.type === 'special') {
+        if (player.unlockedSpecialWeapons.includes(weaponId)) return; // Already unlocked
+        player.coins -= price;
+        player.unlockedSpecialWeapons.push(weaponId);
+    } else {
+        // Basic weapon
+        if (player.currentWeapon === weaponId) return;
+        player.coins -= price;
+        player.currentWeapon = weaponId;
+    }
 }
 
 function buyUpgrade(type, price) {
@@ -1436,81 +2061,15 @@ function buyUpgrade(type, price) {
     }
 }
 
-function drawShopContent(areaW, areaH, centerX, centerY, footerText) {
-    fill(0, 0, 0, 200);
-    rectMode(CORNER);
-    rect(0, 0, areaW, areaH);
-    
-    rectMode(CENTER);
-    let panelW = min(720, areaW * 0.85);
-    let panelH = min(520, areaH * 0.85);
-    fill(50);
-    stroke(255);
-    strokeWeight(2);
-    rect(centerX, centerY, panelW, panelH, 10);
-    
-    fill(255);
-    noStroke();
-    textSize(32);
-    textAlign(CENTER, TOP);
-    text("SHOP", centerX, centerY - panelH/2 + 20);
-    
-    textSize(18);
-    textAlign(CENTER, TOP);
-    text(`Coins: ${player.coins}`, centerX, centerY - panelH/2 + 60);
-    text(`Car: ${CAR_CATALOG[player.carType].name} | Weapon: ${player.currentWeapon.toUpperCase()}`, centerX, centerY - panelH/2 + 85);
-    text(`Max HP: ${player.maxHp} | Max Ammo: ${player.maxAmmo}`, centerX, centerY - panelH/2 + 110);
-    
-    let col1X = centerX - panelW/2 + 30;
-    let col2X = centerX + 20;
-    let listY = centerY - panelH/2 + 150;
-    
-    textAlign(LEFT, TOP);
-    textSize(18);
-    text("CARS", col1X, listY);
-    text("WEAPONS", col2X, listY);
-    
-    let carY = listY + 30;
-    for (let i = 0; i < SHOP_CAR_ORDER.length; i++) {
-        let id = SHOP_CAR_ORDER[i];
-        let data = CAR_CATALOG[id];
-        let key = String(i + 1);
-        let owned = player.carType === id ? "OWNED" : `${data.price}`;
-        text(`[${key}] ${data.name} - ${owned}`, col1X, carY);
-        text(`SPD ${data.maxSpeed} | HP ${data.maxHp}`, col1X, carY + 18);
-        carY += 40;
-    }
-    
-    let weaponY = listY + 30;
-    for (let i = 0; i < SHOP_WEAPONS.length; i++) {
-        let w = SHOP_WEAPONS[i];
-        let owned = player.currentWeapon === w.id ? "OWNED" : `${w.price}`;
-        text(`[${w.key}] ${w.name} - ${owned}`, col2X, weaponY);
-        weaponY += 30;
-    }
-    
-    let upgradeY = weaponY + 10;
-    text("UPGRADES", col2X, upgradeY);
-    upgradeY += 30;
-    for (let i = 0; i < SHOP_UPGRADES.length; i++) {
-        let u = SHOP_UPGRADES[i];
-        text(`[${u.key}] ${u.name} - ${u.price}`, col2X, upgradeY);
-        upgradeY += 30;
-    }
-    
-    textAlign(CENTER, CENTER);
-    textSize(14);
-    text(footerText, centerX, centerY + panelH/2 - 20);
-}
-
 function drawShopMenu() {
     ensurePlayerProfile();
     drawCoverBackground();
-    drawShopContent(width, height, width/2, height/2, "Press ESC to Back");
+    let rect = lastCoverRect || getCoverRect();
+    shopUI.draw(rect.w, rect.h, rect.x, rect.y);
 }
 
 function drawShop() {
-    drawShopContent(gameWidth, gameHeight, gameWidth/2, gameHeight/2, "Press ESC or F to Close");
+    shopUI.draw(gameWidth, gameHeight, 0, 0, gameViewX, statusHeight + gameViewY);
 }
 
 function createExplosion(x, y, col, count) {
@@ -1522,14 +2081,31 @@ function createExplosion(x, y, col, count) {
 function applyPowerUp(p) {
   if (p.type === 'speed') {
     player.maxSpeed += 2;
-    setTimeout(() => player.maxSpeed -= 2, 5000); // Temporary boost
+    let bonusTime = (player.shieldDurationLevel || 0) * 2000;
+    setTimeout(() => player.maxSpeed -= 2, 5000 + bonusTime); // Temporary boost
+    return true;
   } else if (p.type === 'shield') {
     player.hasShield = true;
+    return true;
   } else if (p.type === 'health') {
     player.hp = min(player.hp + 1, player.maxHp);
+    return true;
   } else if (p.type === 'coin') {
     player.coins += p.value || 5;
+    return true;
+  } else if (p.type === WEAPON_TYPES.DONGFENG || p.type === WEAPON_TYPES.LOITERING || p.type === WEAPON_TYPES.ATOMIC) {
+      if (player.currentSpecialWeapon && player.currentSpecialWeapon !== p.type) {
+          return false;
+      }
+      if (player.currentSpecialWeapon !== p.type) {
+          player.currentSpecialWeapon = p.type;
+          player.specialWeaponCount = 0;
+      }
+      player.specialWeaponCount = (player.specialWeaponCount || 0) + 1;
+      shakeAmount = 5;
+      return true;
   }
+  return true;
 }
 
 function drawStatusBar() {
@@ -1547,8 +2123,36 @@ function drawStatusBar() {
 
   if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP') return; 
 
-  let elapsed = (millis() - startTime) / 1000;
+  let currentMillis = millis();
+  if (gameState === 'PAUSED') {
+      currentMillis = pauseStartTime;
+  }
+  let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
+
+  // --- Gear Icon (Settings/Pause) ---
+  push();
+  translate(width - 50, statusHeight / 2);
+  if (settingIconImg && settingIconImg.width > 0 && settingIconImg.height > 0) {
+      imageMode(CENTER);
+      image(settingIconImg, 0, 0, 50, 50);
+  } else {
+      noFill();
+      stroke(200);
+      strokeWeight(3);
+      ellipse(0, 0, 30, 30);
+      fill(200);
+      noStroke();
+      for(let i=0; i<8; i++) {
+          push();
+          rotate(TWO_PI * i / 8);
+          rect(0, -18, 6, 8);
+          pop();
+      }
+      fill(30);
+      ellipse(0, 0, 10, 10);
+  }
+  pop();
 
   // --- Left Section: HP ---
   textAlign(LEFT, CENTER);
@@ -1632,41 +2236,176 @@ function drawStatusBar() {
       noStroke();
       ellipse(820, 55, 30, 30);
   }
+  
+  // Special Weapon Status
+  if (player.currentSpecialWeapon) {
+      let label = "SPECIAL";
+      if (player.currentSpecialWeapon === WEAPON_TYPES.DONGFENG) label = "MISSILE";
+      else if (player.currentSpecialWeapon === WEAPON_TYPES.LOITERING) label = "DRONE";
+      else if (player.currentSpecialWeapon === WEAPON_TYPES.ATOMIC) label = "NUKE";
+      
+      fill(255, 100, 0);
+      textSize(14);
+      textAlign(CENTER, CENTER);
+      text(label, 900, 25);
+      
+      noFill();
+      stroke(255, 100, 0);
+      strokeWeight(2);
+      rect(900, 55, 50, 50, 5);
+      
+      fill(255, 100, 0);
+      textSize(20);
+      textStyle(BOLD);
+      noStroke();
+      text("X", 900, 55);
+      textStyle(NORMAL);
+      fill(255, 180, 80);
+      textSize(14);
+      text("x" + (player.specialWeaponCount || 0), 900, 90);
+  }
 
-  // Controls Overlay
-  fill(200);
-  textSize(14);
-  textAlign(CENTER, CENTER);
-  text("WASD: Move | CLICK: Shoot | F: Shop | P: Pause", width/2, statusHeight - 15);
+}
+
+function drawControlGuidePanel() {
+  let items = [
+      { key: 'W', label: 'Forward' },
+      { key: 'UP', label: 'Forward' },
+      { key: 'A', label: 'Left' },
+      { key: 'LEFT', label: 'Left' },
+      { key: 'S', label: 'Brake/Back' },
+      { key: 'DOWN', label: 'Brake/Back' },
+      { key: 'D', label: 'Right' },
+      { key: 'RIGHT', label: 'Right' },
+      { key: 'X', label: 'Special' }
+  ];
+
+  let cols = items.length;
+  let iconSize = 22;
+  let labelGap = 9;
+  let cellW = 62;
+  let cellH = 44;
+  let rows = ceil(items.length / cols);
+  let panelW = cols * cellW + 14;
+  let panelH = rows * cellH + 10;
+  let panelX = gameViewX + (gameWidth - panelW) / 2;
+  let panelY = statusHeight + gameViewY + gameHeight - panelH - 12;
+
+  push();
+  rectMode(CORNER);
+  noStroke();
+  fill(255, 255, 255, 220);
+  rect(panelX, panelY, panelW, panelH, 18);
+
+  textAlign(CENTER, TOP);
+  textSize(9);
+  fill(35);
+  for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      let col = i % cols;
+      let row = floor(i / cols);
+      let cx = panelX + 10 + col * cellW + cellW / 2;
+      let cy = panelY + 8 + row * cellH;
+      let img = controlKeyImgs[item.key];
+
+      if (img && img.width > 0 && img.height > 0) {
+          imageMode(CENTER);
+          image(img, cx, cy + iconSize / 2, iconSize, iconSize);
+      } else {
+          fill(40, 40, 40, 180);
+          rect(cx - iconSize / 2, cy, iconSize, iconSize, 6);
+          fill(245);
+          text(item.key, cx, cy + 8);
+      }
+      fill(35);
+      text(item.label, cx, cy + iconSize + labelGap);
+  }
+  pop();
 }
 
 function drawGameOver() {
-  fill(0, 0, 0, 150);
-  rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+  push();
+  let videoReady = ensureVideoPlayable(defeatVideo);
+  let source = videoReady ? defeatVideo : (defeatImg ? defeatImg : gameCoverImg);
+  let coverRect = getCoverRect(gameWidth, gameHeight, source, true);
+  if (videoReady) {
+      imageMode(CORNER);
+      image(defeatVideo, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
+  } else if (defeatImg) {
+      imageMode(CORNER);
+      image(defeatImg, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
+  } else {
+      fill(0, 0, 0, 150);
+      rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+      fill(255, 0, 0);
+      textSize(48);
+      textAlign(CENTER, CENTER);
+      text("GAME OVER", gameWidth / 2, gameHeight / 3);
+  }
 
-  fill(255, 0, 0);
-  textSize(48);
-  textAlign(CENTER, CENTER);
-  text("GAME OVER", gameWidth / 2, gameHeight / 3);
-  
+  fill(0, 0, 0, 120);
+  noStroke();
+  rectMode(CORNER);
+  rect(gameWidth * 0.2, gameHeight * 0.68, gameWidth * 0.6, 56, 12);
   fill(255);
   textSize(24);
   text("Press ENTER to Try Again", gameWidth / 2, gameHeight * 0.75);
+  pop();
 }
 
 function drawWin() {
-  fill(0, 0, 0, 150);
-  rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+  push();
+  let videoReady = ensureVideoPlayable(victoryVideo);
+  let source = videoReady ? victoryVideo : (victoryImg ? victoryImg : gameCoverImg);
+  let coverRect = getCoverRect(gameWidth, gameHeight, source, true);
+  if (videoReady) {
+      imageMode(CORNER);
+      image(victoryVideo, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
+  } else if (victoryImg) {
+      imageMode(CORNER);
+      image(victoryImg, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
+  } else {
+      fill(0, 0, 0, 150);
+      rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+      fill(0, 255, 0);
+      textSize(48);
+      textAlign(CENTER, CENTER);
+      text("MISSION ACCOMPLISHED", gameWidth / 2, gameHeight / 3);
+  }
 
-  fill(0, 255, 0);
-  textSize(48);
-  textAlign(CENTER, CENTER);
-  text("MISSION ACCOMPLISHED", gameWidth / 2, gameHeight / 3);
-  
+  fill(0, 0, 0, 120);
+  noStroke();
+  rectMode(CORNER);
+  rect(gameWidth * 0.2, gameHeight * 0.53, gameWidth * 0.6, 96, 12);
   fill(255);
   textSize(24);
   text("Press SPACE for Next Level", gameWidth / 2, gameHeight * 0.6);
   text("Press ENTER for Main Menu", gameWidth / 2, gameHeight * 0.75);
+  pop();
+}
+
+function ensureVideoPlayable(video) {
+  if (!video || !video.elt) return false;
+  let el = video.elt;
+  el.muted = true;
+  el.playsInline = true;
+  el.loop = true;
+  if (el.readyState < 2) return false;
+  if (el.paused) {
+      let p = el.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+  }
+  return true;
+}
+
+function togglePause() {
+    if (gameState === 'PLAY') {
+        gameState = 'PAUSED';
+        pauseStartTime = millis();
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAY';
+        totalPausedTime += millis() - pauseStartTime;
+    }
 }
 
 function keyPressed() {
@@ -1681,39 +2420,64 @@ function keyPressed() {
       // Next Level
       resetGame(true); // Keep progress
       gameState = 'PLAY';
-  } else if (keyCode === 80) { // P key
-      if (gameState === 'PLAY') gameState = 'PAUSED';
-      else if (gameState === 'PAUSED') gameState = 'PLAY';
+  } else if (keyCode === ESCAPE) {
+      if (gameState === 'PLAY' || gameState === 'PAUSED') {
+          togglePause();
+      } else if (gameState === 'DIFFICULTY_SELECT') {
+          gameState = 'MENU';
+      } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+          gameState = gameState === 'SHOP' ? 'PLAY' : 'MENU';
+          shopBuilding = null;
+      }
+  } else if (key === 'x' || key === 'X') {
+      if (gameState === 'PLAY') {
+          if (player.currentSpecialWeapon === WEAPON_TYPES.DONGFENG) {
+               gameState = 'MAP_SELECT';
+               mapSelectStart = 0;
+               dongfengTargetLocked = false;
+               mapSelectCharged = false;
+          } else if (player.currentSpecialWeapon === WEAPON_TYPES.LOITERING) {
+               launchLoiteringMunition();
+          } else if (player.currentSpecialWeapon === WEAPON_TYPES.ATOMIC) {
+               triggerAtomicBomb();
+               consumeCurrentSpecialWeapon();
+          }
+      } else if (gameState === 'MAP_SELECT') {
+          gameState = 'PLAY';
+          mapSelectStart = 0;
+          dongfengTargetLocked = false;
+          mapSelectCharged = false;
+      }
   } else if (key === 'r' || key === 'R') {
       if (gameState === 'PAUSED') {
           resetGame(true);
           gameState = 'PLAY';
       }
-  } else if (gameState === 'DIFFICULTY_SELECT') {
-      if (keyCode === ESCAPE) {
-          gameState = 'MENU';
-      }
-  } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
-      if (keyCode === ESCAPE || (gameState === 'SHOP' && keyCode === 70)) {
-          gameState = gameState === 'SHOP' ? 'PLAY' : 'MENU';
+  }
+
+  if (gameState === 'SHOP' || gameState === 'MENU_SHOP' || gameState === 'AUTH') {
+      if (gameState === 'SHOP' && keyCode === 70) {
+          gameState = 'PLAY';
           shopBuilding = null;
-      } else if (player) {
-          if (key >= '1' && key <= '4') {
-              let carId = SHOP_CAR_ORDER[int(key) - 1];
-              if (carId) buyCar(carId);
-          } else {
-              for (let i = 0; i < SHOP_WEAPONS.length; i++) {
-                  if (SHOP_WEAPONS[i].key === key) buyWeapon(SHOP_WEAPONS[i].id, SHOP_WEAPONS[i].price);
-              }
-              for (let i = 0; i < SHOP_UPGRADES.length; i++) {
-                  if (SHOP_UPGRADES[i].key === key) buyUpgrade(SHOP_UPGRADES[i].id, SHOP_UPGRADES[i].price);
-              }
-          }
+      }
+      if (gameState === 'AUTH' && keyCode === ESCAPE) {
+          gameState = 'MENU';
+          authUI.hide();
       }
   }
 }
 
-function mousePressed() {
+async function mousePressed() {
+    if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        shopUI.handleClick();
+        return;
+    }
+    
+    if (gameState === 'AUTH') {
+        // Clicks handled by DOM elements
+        return;
+    }
+    
     if (gameState === 'MENU') {
         let layout = getMenuButtonLayout();
         let shopX = layout.shopX;
@@ -1726,11 +2490,17 @@ function mousePressed() {
         
         if (dist(mouseX, mouseY, shopX, shopY) < hoverRadius) {
              ensurePlayerProfile();
-             gameState = 'MENU_SHOP';
+             if (authUI.isLoggedIn()) {
+                 refreshUserProgress().finally(() => {
+                     gameState = 'MENU_SHOP';
+                 });
+             } else {
+                 gameState = 'MENU_SHOP';
+             }
         }
         
         if (dist(mouseX, mouseY, startX, startY) < hoverRadius) {
-             gameState = 'DIFFICULTY_SELECT';
+             await beginStartFlow();
         }
         
         if (dist(mouseX, mouseY, exitX, exitY) < hoverRadius) {
@@ -1752,38 +2522,55 @@ function mousePressed() {
             
             // Check click on difficulty button
             if (abs(mouseX - width/2) < 120 && abs(mouseY - btnY) < 30) {
+                let backendOk = await isBackendAvailable();
+                if (!backendOk) {
+                    setStartGateMessage('Backend unavailable. Cannot start game now.');
+                    return;
+                }
+                if (authUI && authUI.isLoggedIn()) {
+                    let loaded = await refreshUserProgress();
+                    if (!loaded) {
+                        setStartGateMessage('Unable to load profile data. Please login again.');
+                        return;
+                    }
+                }
                 difficulty = d;
                 resetGame(true);
                 gameState = 'PLAY';
             }
         }
-    } else if (gameState === 'PLAY') {
-        // Adjust click check for top status bar
-        if (mouseY > statusHeight) { 
-            // Cooldown check (simple)
-            if (millis() - lastShotTime > 200) { // 200ms cooldown base
-                if (player.currentWeapon === 'pistol' && player.ammo >= 1) {
-                    projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading, 'pistol'));
-                    player.ammo--;
-                    shakeAmount = 2;
-                } else if (player.currentWeapon === 'shotgun' && player.ammo >= 3) {
-                    // Spread shot
-                    for(let i = -1; i <= 1; i++) {
-                        projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading + i*0.15, 'shotgun'));
-                    }
-                    player.ammo = max(0, player.ammo - 3); // Costs 3 ammo
-                    shakeAmount = 5;
-                } else if (player.currentWeapon === 'laser' && player.ammo >= 2) {
-                    projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading, 'laser'));
-                    player.ammo = max(0, player.ammo - 2); // Costs 2 ammo
-                    shakeAmount = 3;
-                } else if (player.currentWeapon === 'ricochet' && player.ammo >= 2) {
-                    projectiles.push(new Projectile(player.pos.x, player.pos.y, player.heading, 'ricochet'));
-                    player.ammo = max(0, player.ammo - 2); 
-                    shakeAmount = 3;
+    } else if (gameState === 'PLAY' || gameState === 'PAUSED') {
+        // Check Gear Icon Click (Top Right)
+        if (dist(mouseX, mouseY, width - 50, statusHeight / 2) < 25) {
+            togglePause();
+            return;
+        }
+
+        if (gameState === 'PLAY') {
+            if (mouseX >= gameViewX && mouseX <= gameViewX + gameWidth && mouseY >= statusHeight + gameViewY && mouseY <= statusHeight + gameViewY + gameHeight) {
+                if (!isPlayerControlLocked() && player.canFire()) {
+                    let target = getMouseWorldPos();
+                    player.fire(target.x, target.y);
                 }
-                lastShotTime = millis();
             }
         }
+    }
+}
+
+function mouseDragged() {
+    if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        if (shopUI.handleMouseDragged()) return false;
+    }
+}
+
+function mouseReleased() {
+    if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        shopUI.handleMouseReleased();
+    }
+}
+
+function mouseWheel(event) {
+    if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        if (shopUI.handleWheel(event.delta)) return false;
     }
 }

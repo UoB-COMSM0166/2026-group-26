@@ -3,6 +3,8 @@ class Enemy extends Vehicle {
     super(x, y, color(255, 0, 0));
     this.maxSpeed = 3;
     this.maxForce = 0.1;
+    this.hp = 5; // Reasonable HP
+    this.maxHp = 5;
   }
 
   seek(target) {
