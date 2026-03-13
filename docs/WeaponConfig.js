@@ -22,7 +22,7 @@ const WEAPON_CONFIG = {
     lifespan: 60,
     spread: 0,
     count: 1,
-    description: "Standard issue sidearm. Reliable."
+    description: "Basic sidearm. Left click to shoot single shots. Good for early game."
   },
   [WEAPON_TYPES.SHOTGUN]: {
     name: 'Shotgun',
@@ -35,7 +35,7 @@ const WEAPON_CONFIG = {
     lifespan: 40,
     spread: 0.15, // Angle spread
     count: 5, // Number of pellets
-    description: "Fires a spread of pellets. devastating at close range."
+    description: "Fires 5 pellets at once. High damage at close range. Slow fire rate."
   },
   [WEAPON_TYPES.RIFLE]: {
     name: 'Assault Rifle',
@@ -49,7 +49,7 @@ const WEAPON_CONFIG = {
     spread: 0.05,
     count: 3, // Burst count
     burstDelay: 5, // Frames between burst shots
-    description: "Fires a burst of bullets with high precision."
+    description: "Fires 3-round bursts rapidly. Excellent for mid-range combat."
   },
   [WEAPON_TYPES.LASER]: {
     name: 'Laser Gun',
@@ -61,7 +61,7 @@ const WEAPON_CONFIG = {
     color: [0, 255, 255],
     lifespan: 60,
     penetrates: true,
-    description: "Fires a high-energy beam that penetrates enemies."
+    description: "Fires a high-energy beam that pierces through multiple enemies."
   },
   [WEAPON_TYPES.MOLOTOV]: {
     name: 'Molotov',
@@ -75,7 +75,7 @@ const WEAPON_CONFIG = {
     isThrown: true,
     areaDuration: 300, // Frames fire stays on ground
     areaRadius: 80,
-    description: "Thrown explosive that creates a patch of fire."
+    description: "Throws a fire bottle that creates a burning area. Damages enemies over time."
   },
   // Special Weapons (Drops)
   [WEAPON_TYPES.DONGFENG]: {
@@ -84,7 +84,7 @@ const WEAPON_CONFIG = {
     damage: 50,
     cooldown: 0,
     ammoCost: 1, // Uses the item itself
-    description: "Strategic missile strike. Select target on map.",
+    description: "Strategic nuke. Press Space to open Map, Click to launch missile at target area.",
     dropWeight: 50,
     dropRateText: "Medium"
   },
@@ -97,7 +97,7 @@ const WEAPON_CONFIG = {
     speed: 5, // Initial speed
     maxSpeed: 20,
     turnSpeed: 0.1,
-    description: "Remote controlled drone missile.",
+    description: "Drone missile. Press Space to launch. Use Arrow Keys to guide it to targets.",
     dropWeight: 30,
     dropRateText: "Low"
   },
@@ -107,7 +107,7 @@ const WEAPON_CONFIG = {
     damage: 9999,
     cooldown: 0,
     ammoCost: 1,
-    description: "Total annihilation.",
+    description: "The ultimate weapon. Press Space to detonate. Destroys EVERYTHING on screen.",
     dropWeight: 5,
     dropRateText: "Very Rare"
   }

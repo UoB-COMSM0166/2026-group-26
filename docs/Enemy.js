@@ -2,6 +2,9 @@ class Enemy extends Vehicle {
   constructor(x, y) {
     super(x, y, color(255, 0, 0));
     this.maxSpeed = 3.6;
+    if (typeof difficulty !== 'undefined' && difficulty === 'HARD') {
+        this.maxSpeed = 4.0; // Faster in Hard mode
+    }
     this.maxForce = 0.12;
     this.hp = 5; // Reasonable HP
     this.maxHp = 5;

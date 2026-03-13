@@ -28,11 +28,13 @@ let defeatImg;
 let victoryVideo;
 let defeatVideo;
 let settingIconImg;
+let helpIconImg;
 let bulletIconImg;
 let controlKeyImgs = {};
 let lastCoverRect = null;
 let shopUI;
 let authUI;
+let tutorialSystem;
 let startGateMessage = '';
 let startGateMessageColor = [255, 80, 80];
 let startGateMessageUntil = 0;
@@ -89,6 +91,7 @@ function preloadAssets() {
   victoryImg = null;
   defeatImg = null;
   settingIconImg = loadImage('icon/basic/setting.png');
+  helpIconImg = loadImage('icon/basic/help.png');
   bulletIconImg = loadImage('icon/basic/bullet.png');
   controlKeyImgs = {
     W: loadImage('icon/basic/keyboard_W.png'),
@@ -242,6 +245,7 @@ function setup() {
 
   shopUI = new ShopUI();
   authUI = new AuthUI();
+  tutorialSystem = new TutorialSystem();
   ensurePlayerProfile();
   if (authUI.isLoggedIn()) {
       refreshUserProgress();
@@ -364,10 +368,20 @@ function resetGame(keepProgress = false) {
   // Difficulty Adjustments
   if (difficulty === 'EASY') {
       survivalTime = 60;
+      currentLevel = 1;
   } else if (difficulty === 'NORMAL') {
       survivalTime = 90;
+      currentLevel = 2;
   } else if (difficulty === 'HARD') {
       survivalTime = 120;
+      currentLevel = 3;
+      // Difficulty Modifiers
+      player.maxSpeed *= 0.9;
+      // Enemy speed is handled in Enemy class or spawn
+  }
+  
+  if (tutorialSystem) {
+      tutorialSystem.triggerLevelIntro(difficulty);
   }
   
   if (!tileMap || tileMap.length === 0) {
@@ -943,7 +957,7 @@ function draw() {
           triangle(-bodyW * 0.45, 0, -bodyW * 0.75, 2.8 * flamePulse, -bodyW * 0.75, -2.8 * flamePulse);
           pop();
       }
-  } else if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'GAMEOVER' || gameState === 'WIN') {
+  } else if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'HELP' || gameState === 'TUTORIAL' || gameState === 'GAMEOVER' || gameState === 'WIN') {
       drawGameObjects();
   }
   ctx.restore();
@@ -955,17 +969,27 @@ function draw() {
   if (gameState === 'PAUSED') {
       if (boundaryWarningAlpha > 0) drawBoundaryWarning();
       drawPaused();
+  } else if (gameState === 'TUTORIAL') {
+      if (boundaryWarningAlpha > 0) drawBoundaryWarning();
+      if (tutorialSystem) tutorialSystem.draw(0, 0, gameWidth, gameHeight, statusHeight);
+  } else if (gameState === 'HELP') {
+      drawHelp();
   } else if (gameState === 'SHOP') {
       drawShop();
-  } else if (gameState === 'GAMEOVER') {
-      drawGameOver();
-  } else if (gameState === 'WIN') {
-      drawWin();
   } else if (gameState === 'PLAY' || gameState === 'MAP_SELECT') {
       if (boundaryWarningAlpha > 0) drawBoundaryWarning();
   }
   
   pop();
+
+  if (gameState === 'GAMEOVER') {
+      drawGameOver();
+      return;
+  }
+  if (gameState === 'WIN') {
+      drawWin();
+      return;
+  }
 
   drawStatusBar();
   
@@ -1673,7 +1697,14 @@ function getPoliceSpawnPoint() {
 }
 
 function playGame() {
-  if (gameState === 'SHOP' || gameState === 'PAUSED') {
+  if (gameState === 'SHOP' || gameState === 'PAUSED' || gameState === 'TUTORIAL') {
+      return;
+  }
+  
+  // Tutorial Check
+  if (tutorialSystem && tutorialSystem.check(player, enemies, buildings, powerups)) {
+      gameState = 'TUTORIAL';
+      pauseStartTime = millis();
       return;
   }
   
@@ -1742,7 +1773,15 @@ function playGame() {
 
   // Spawning PowerUps
   if (millis() - lastPowerUpSpawnTime > 2500) {
+    if (difficulty === 'HARD') {
+        lastPowerUpSpawnTime = millis();
+    } else {
     let types = ['speed', 'shield', 'health', 'coin', 'coin'];
+    if (difficulty === 'EASY') {
+        types = ['speed', 'shield', 'health', 'health', 'coin', 'coin'];
+    } else if (difficulty === 'NORMAL') {
+        types = ['speed', 'shield', 'health', 'coin', 'coin'];
+    }
     let type;
     let hasUnlockedSpecial = player.unlockedSpecialWeapons && player.unlockedSpecialWeapons.length > 0;
     let choseSpecialDrop = false;
@@ -1797,6 +1836,7 @@ function playGame() {
             if (choseSpecialDrop) specialDropFailCount = 0;
             else specialDropFailCount = min(10, specialDropFailCount + 1);
         }
+    }
     }
   }
 
@@ -2229,14 +2269,33 @@ function drawStatusBar() {
   strokeWeight(4);
   line(0, statusHeight, width, statusHeight);
 
-  if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP') return; 
+  if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP' && gameState !== 'HELP') return; 
 
   let currentMillis = millis();
-  if (gameState === 'PAUSED' || gameState === 'SHOP') {
+  if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'HELP') {
       currentMillis = pauseStartTime;
   }
   let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
+
+  // --- Help Icon ---
+  push();
+  translate(width - 110, statusHeight / 2);
+  if (helpIconImg && helpIconImg.width > 0 && helpIconImg.height > 0) {
+      imageMode(CENTER);
+      image(helpIconImg, 0, 0, 50, 50);
+  } else {
+      noFill();
+      stroke(200);
+      strokeWeight(3);
+      ellipse(0, 0, 30, 30);
+      fill(200);
+      noStroke();
+      textAlign(CENTER, CENTER);
+      textSize(20);
+      text("?", 0, 0);
+  }
+  pop();
 
   // --- Gear Icon (Settings/Pause) ---
   push();
@@ -2327,7 +2386,7 @@ function drawStatusBar() {
   fill(255, 255, 0);
   textSize(14);
   textAlign(RIGHT, TOP);
-  text("LEVEL " + currentLevel, gameWidth - 10, 10);
+  text("DIFFICULTY: " + difficulty, gameWidth - 10, 10);
   
   // Shield Status
   if (player.hasShield) {
@@ -2435,7 +2494,7 @@ function drawGameOver() {
   push();
   let videoReady = ensureVideoPlayable(defeatVideo);
   let source = videoReady ? defeatVideo : (defeatImg ? defeatImg : gameCoverImg);
-  let coverRect = getCoverRect(gameWidth, gameHeight, source, true);
+  let coverRect = getCoverRect(width, height, source, true);
   if (videoReady) {
       imageMode(CORNER);
       image(defeatVideo, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
@@ -2444,20 +2503,31 @@ function drawGameOver() {
       image(defeatImg, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
   } else {
       fill(0, 0, 0, 150);
-      rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+      rect(width/2, height/2, width, height);
       fill(255, 0, 0);
       textSize(48);
       textAlign(CENTER, CENTER);
-      text("GAME OVER", gameWidth / 2, gameHeight / 3);
+      text("GAME OVER", width / 2, height / 3);
   }
+
+  let contentLeft = gameViewX;
+  let contentTop = statusHeight + gameViewY;
+  let contentW = gameWidth;
+  let contentH = gameHeight;
+  let panelW = contentW * 0.6;
+  let panelH = 56;
+  let bottomOffset = contentH * 0.08;
+  let panelX = contentLeft + (contentW - panelW) * 0.5;
+  let panelY = contentTop + contentH - bottomOffset - panelH;
 
   fill(0, 0, 0, 120);
   noStroke();
   rectMode(CORNER);
-  rect(gameWidth * 0.2, gameHeight * 0.68, gameWidth * 0.6, 56, 12);
+  rect(panelX, panelY, panelW, panelH, 12);
   fill(255);
   textSize(24);
-  text("Press ENTER to Try Again", gameWidth / 2, gameHeight * 0.75);
+  textAlign(CENTER, CENTER);
+  text("Press ENTER to Try Again", panelX + panelW * 0.5, panelY + panelH * 0.5);
   pop();
 }
 
@@ -2465,7 +2535,7 @@ function drawWin() {
   push();
   let videoReady = ensureVideoPlayable(victoryVideo);
   let source = videoReady ? victoryVideo : (victoryImg ? victoryImg : gameCoverImg);
-  let coverRect = getCoverRect(gameWidth, gameHeight, source, true);
+  let coverRect = getCoverRect(width, height, source, true);
   if (videoReady) {
       imageMode(CORNER);
       image(victoryVideo, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
@@ -2474,21 +2544,40 @@ function drawWin() {
       image(victoryImg, coverRect.x, coverRect.y, coverRect.w, coverRect.h);
   } else {
       fill(0, 0, 0, 150);
-      rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+      rect(width/2, height/2, width, height);
       fill(0, 255, 0);
       textSize(48);
       textAlign(CENTER, CENTER);
-      text("MISSION ACCOMPLISHED", gameWidth / 2, gameHeight / 3);
+      text("MISSION ACCOMPLISHED", width / 2, height / 3);
   }
+
+  let contentLeft = gameViewX;
+  let contentTop = statusHeight + gameViewY;
+  let contentW = gameWidth;
+  let contentH = gameHeight;
+  let panelW = contentW * 0.6;
+  let panelH = 104;
+  let bottomOffset = contentH * 0.08;
+  let panelX = contentLeft + (contentW - panelW) * 0.5;
+  let panelY = contentTop + contentH - bottomOffset - panelH;
 
   fill(0, 0, 0, 120);
   noStroke();
   rectMode(CORNER);
-  rect(gameWidth * 0.2, gameHeight * 0.53, gameWidth * 0.6, 96, 12);
+  rect(panelX, panelY, panelW, panelH, 12);
   fill(255);
   textSize(24);
-  text("Press SPACE for Next Level", gameWidth / 2, gameHeight * 0.6);
-  text("Press ENTER for Main Menu", gameWidth / 2, gameHeight * 0.75);
+  textAlign(CENTER, CENTER);
+  
+  let nextDiff = difficulty === 'EASY' ? 'NORMAL' : (difficulty === 'NORMAL' ? 'HARD' : null);
+  
+  if (nextDiff) {
+      text("Press SPACE for Next Level (" + nextDiff + ")", panelX + panelW * 0.5, panelY + panelH * 0.38);
+  } else {
+      text("You have conquered all difficulties!", panelX + panelW * 0.5, panelY + panelH * 0.38);
+  }
+  
+  text("Press ENTER for Main Menu", panelX + panelW * 0.5, panelY + panelH * 0.74);
   pop();
 }
 
@@ -2516,6 +2605,15 @@ function togglePause() {
     }
 }
 
+function enterGameplayStateAfterReset() {
+    if (tutorialSystem && tutorialSystem.activeTutorial === 'intro') {
+        gameState = 'TUTORIAL';
+        pauseStartTime = millis();
+    } else {
+        gameState = 'PLAY';
+    }
+}
+
 function closeShopFromUI() {
     if (gameState === 'SHOP') {
         totalPausedTime += millis() - pauseStartTime;
@@ -2534,14 +2632,28 @@ function keyPressed() {
   if (keyCode === ENTER) {
     if (gameState === 'GAMEOVER') {
       resetGame(true);
-      gameState = 'PLAY';
+      enterGameplayStateAfterReset();
     } else if (gameState === 'WIN') {
       gameState = 'MENU'; // Go back to menu from Win
     }
   } else if (key === ' ' && gameState === 'WIN') {
-      // Next Level
+      // Next Level Logic
+      if (difficulty === 'EASY') difficulty = 'NORMAL';
+      else if (difficulty === 'NORMAL') difficulty = 'HARD';
+      else if (difficulty === 'HARD') {
+          // Stay on Hard or Loop? For now stay on hard or just return to menu
+          gameState = 'MENU';
+          return;
+      }
+      
       resetGame(true); // Keep progress
-      gameState = 'PLAY';
+      enterGameplayStateAfterReset();
+  } else if ((key === ' ' || keyCode === ENTER) && gameState === 'TUTORIAL') {
+       if (tutorialSystem) {
+           tutorialSystem.dismiss();
+           gameState = 'PLAY';
+           totalPausedTime += millis() - pauseStartTime;
+       }
   } else if (keyCode === ESCAPE) {
       if (gameState === 'PLAY' || gameState === 'PAUSED') {
           togglePause();
@@ -2572,7 +2684,7 @@ function keyPressed() {
   } else if (key === 'r' || key === 'R') {
       if (gameState === 'PAUSED') {
           resetGame(true);
-          gameState = 'PLAY';
+          enterGameplayStateAfterReset();
       }
   }
 
@@ -2656,13 +2768,43 @@ async function mousePressed() {
                 }
                 difficulty = d;
                 resetGame(true);
-                gameState = 'PLAY';
+                enterGameplayStateAfterReset();
             }
         }
+    } else if (gameState === 'HELP') {
+        let layout = getHelpLayout();
+        let localX = mouseX - gameViewX;
+        let localY = mouseY - (statusHeight + gameViewY);
+        if (
+            localX >= layout.closeX - layout.closeSize / 2 &&
+            localX <= layout.closeX + layout.closeSize / 2 &&
+            localY >= layout.closeY - layout.closeSize / 2 &&
+            localY <= layout.closeY + layout.closeSize / 2
+        ) {
+            gameState = 'PAUSED';
+            return;
+        }
+    } else if (gameState === 'TUTORIAL') {
+         if (tutorialSystem) {
+             tutorialSystem.dismiss();
+             gameState = 'PLAY';
+             totalPausedTime += millis() - pauseStartTime;
+         }
+         return;
     } else if (gameState === 'PLAY' || gameState === 'PAUSED') {
         if (dist(mouseX, mouseY, width - 50, statusHeight / 2) < 25) {
             togglePause();
             return;
+        }
+
+        if (dist(mouseX, mouseY, width - 110, statusHeight / 2) < 25) {
+             if (gameState === 'PLAY') {
+                 gameState = 'HELP';
+                 pauseStartTime = millis();
+             } else {
+                 gameState = 'HELP';
+             }
+             return;
         }
 
         if (gameState === 'PAUSED') {
@@ -2670,7 +2812,7 @@ async function mousePressed() {
             let localY = mouseY - (statusHeight + gameViewY);
             if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.68) <= 26) {
                 resetGame(true);
-                gameState = 'PLAY';
+                enterGameplayStateAfterReset();
                 return;
             }
             if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.78) <= 26) {
@@ -2707,4 +2849,184 @@ function mouseWheel(event) {
     if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
         if (shopUI.handleWheel(event.delta)) return false;
     }
+}
+
+function drawImageContain(img, x, y, boxW, boxH) {
+    if (!img) return;
+    let imgAspect = img.width / img.height;
+    let boxAspect = boxW / boxH;
+    let drawW, drawH;
+    
+    if (imgAspect > boxAspect) {
+        drawW = boxW;
+        drawH = boxW / imgAspect;
+    } else {
+        drawH = boxH;
+        drawW = boxH * imgAspect;
+    }
+    image(img, x, y, drawW, drawH);
+}
+
+function getHelpLayout() {
+    let viewX = 0;
+    let viewY = 0;
+    let viewW = gameWidth;
+    let viewH = gameHeight;
+    let panelW = min(viewW * 0.94, 1120);
+    let panelH = min(viewH * 0.92, 760);
+    let panelX = viewW / 2;
+    let panelY = viewH / 2;
+    let closeSize = 40;
+    let closeX = panelX + panelW / 2 - 34;
+    let closeY = panelY - panelH / 2 + 34;
+    return { viewX, viewY, viewW, viewH, panelX, panelY, panelW, panelH, closeX, closeY, closeSize };
+}
+
+function drawHelp() {
+    push();
+    let layout = getHelpLayout();
+    fill(0, 175);
+    noStroke();
+    rect(layout.viewX + layout.viewW / 2, layout.viewY + layout.viewH / 2, layout.viewW, layout.viewH);
+
+    fill(28, 33, 39);
+    stroke(100);
+    strokeWeight(2);
+    rect(layout.panelX, layout.panelY, layout.panelW, layout.panelH, 15);
+
+    noStroke();
+    fill(255);
+    textSize(30);
+    textAlign(CENTER, TOP);
+    text("TACTICAL GUIDE", layout.panelX, layout.panelY - layout.panelH / 2 + 18);
+
+    fill(200, 60, 60);
+    rect(layout.closeX, layout.closeY, layout.closeSize, layout.closeSize, 8);
+    fill(255);
+    textSize(24);
+    textAlign(CENTER, CENTER);
+    text("X", layout.closeX, layout.closeY);
+
+    rectMode(CORNER);
+    let leftX = layout.panelX - layout.panelW / 2 + 24;
+    let topY = layout.panelY - layout.panelH / 2 + 72;
+    let bottomY = layout.panelY + layout.panelH / 2 - 24;
+    let totalW = layout.panelW - 48;
+    let gapX = 18;
+    let leftW = floor(totalW * 0.34);
+    let rightW = totalW - leftW - gapX;
+    let rightX = leftX + leftW + gapX;
+    let innerH = bottomY - topY;
+
+    fill(36, 42, 50);
+    stroke(70);
+    strokeWeight(1);
+    rect(leftX, topY, leftW, innerH, 10);
+    rect(rightX, topY, rightW, innerH, 10);
+
+    noStroke();
+    textAlign(LEFT, TOP);
+
+    fill(255, 200, 0);
+    textSize(19);
+    text("CONTROLS", leftX + 14, topY + 12);
+
+    let keyY = topY + 46;
+    let keyCenterX = leftX + leftW * 0.5;
+    let keySize = 30;
+    imageMode(CENTER);
+    if (controlKeyImgs.W) image(controlKeyImgs.W, keyCenterX, keyY + keySize, keySize, keySize);
+    if (controlKeyImgs.A) image(controlKeyImgs.A, keyCenterX - keySize, keyY + keySize * 2, keySize, keySize);
+    if (controlKeyImgs.S) image(controlKeyImgs.S, keyCenterX, keyY + keySize * 2, keySize, keySize);
+    if (controlKeyImgs.D) image(controlKeyImgs.D, keyCenterX + keySize, keyY + keySize * 2, keySize, keySize);
+
+    fill(220);
+    textSize(14);
+    textLeading(21);
+    text("Move: WASD / Arrows\nAim & Fire: Mouse Left\nInteract / Shop: F\nPause: ESC", leftX + 14, topY + 154, leftW - 28, 110);
+
+    fill(255, 200, 0);
+    textSize(19);
+    text("ENVIRONMENT", leftX + 14, topY + 268);
+
+    let obsY = topY + 324;
+    if (images.trees && images.trees.length > 0) drawImageContain(images.trees[0], leftX + leftW * 0.25, obsY, 44, 44);
+    if (images.rocks && images.rocks.length > 0) drawImageContain(images.rocks[0], leftX + leftW * 0.5, obsY, 36, 36);
+    if (images.bushes && images.bushes.length > 0) drawImageContain(images.bushes[0], leftX + leftW * 0.75, obsY, 34, 34);
+
+    fill(220);
+    textSize(13);
+    textLeading(19);
+    text("Trees & Rocks are solid, they block movement and bullets.\nBushes are passable and can be driven through.", leftX + 14, topY + 354, leftW - 28, 92);
+
+    fill(255, 200, 0);
+    textSize(19);
+    text("MISSION", leftX + 14, topY + 456);
+
+    fill(220);
+    textSize(14);
+    textLeading(21);
+    text("Survive for " + survivalTime + " seconds.\nDefeat enemies to earn coins.\nFind shops and upgrade your build.", leftX + 14, topY + 492, leftW - 28, 120);
+
+    fill(255, 200, 0);
+    textSize(19);
+    text("WEAPON DATABASE", rightX + 14, topY + 12);
+
+    let allWeapons = [
+        WEAPON_TYPES.PISTOL,
+        WEAPON_TYPES.SHOTGUN,
+        WEAPON_TYPES.RIFLE,
+        WEAPON_TYPES.LASER,
+        WEAPON_TYPES.MOLOTOV,
+        WEAPON_TYPES.DONGFENG,
+        WEAPON_TYPES.LOITERING,
+        WEAPON_TYPES.ATOMIC
+    ];
+    
+    let rowStartY = topY + 44;
+    let rowH = 62;
+    let rowGap = 6;
+    let iconBox = 48;
+
+    for (let wType of allWeapons) {
+        let conf = WEAPON_CONFIG[wType];
+        if (!conf) continue;
+        let itemY = rowStartY;
+        if (itemY + rowH > bottomY - 10) break;
+
+        fill(45, 50, 58);
+        stroke(76);
+        rect(rightX + 10, itemY, rightW - 20, rowH, 8);
+
+        fill(58);
+        noStroke();
+        rect(rightX + 16, itemY + (rowH - iconBox) / 2, iconBox, iconBox, 6);
+
+        let icon = images.weaponShop ? images.weaponShop[wType] : null;
+        if (icon) {
+            drawImageContain(icon, rightX + 16 + iconBox / 2, itemY + rowH / 2, 40, 40);
+        }
+
+        noStroke();
+        fill(conf.type === 'special' ? color(255, 100, 100) : color(100, 200, 255));
+        textSize(15);
+        text(conf.name, rightX + 72, itemY + 7);
+
+        fill(180);
+        textSize(11);
+        let rateStr = conf.cooldown > 0 ? (1000 / conf.cooldown).toFixed(1) + "/s" : "Manual";
+        let stats = `DMG: ${conf.damage}`;
+        if (conf.cooldown > 0) stats += ` | Rate: ${rateStr}`;
+        if (conf.count && conf.count > 1) stats += ` x${conf.count}`;
+        text(stats, rightX + 72, itemY + 26);
+
+        fill(220);
+        textSize(11);
+        textLeading(15);
+        text(conf.description, rightX + 72, itemY + 41, rightW - 90, 18);
+
+        rowStartY += rowH + rowGap;
+    }
+
+    pop();
 }
