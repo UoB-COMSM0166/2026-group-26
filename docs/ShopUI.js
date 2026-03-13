@@ -852,7 +852,17 @@ class ShopUI {
 
   closeShop() {
       if (typeof gameState !== 'undefined') {
-          if (gameState === 'SHOP') gameState = 'PLAY';
+          if (gameState === 'SHOP') {
+              if (typeof closeShopFromUI === 'function') {
+                  closeShopFromUI();
+              } else {
+                  gameState = 'PLAY';
+                  if (typeof shopBuilding !== 'undefined') {
+                      shopBuilding = null;
+                  }
+              }
+              return;
+          }
           else if (gameState === 'MENU_SHOP') gameState = 'MENU';
       }
       if (typeof shopBuilding !== 'undefined') {

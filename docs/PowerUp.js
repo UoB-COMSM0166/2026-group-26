@@ -144,6 +144,11 @@ class PowerUp {
 
   checkCollision(vehicle) {
     let d = p5.Vector.dist(this.pos, vehicle.pos);
-    return d < this.r + vehicle.r + 20; // Increased pickup range
+    let extraRange = 24;
+    if (this.type === 'coin') extraRange = 34;
+    if (this.type === WEAPON_TYPES.DONGFENG || this.type === WEAPON_TYPES.LOITERING || this.type === WEAPON_TYPES.ATOMIC) {
+      extraRange = 36;
+    }
+    return d < this.r + vehicle.r + extraRange;
   }
 }

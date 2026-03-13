@@ -1,8 +1,8 @@
 class Enemy extends Vehicle {
   constructor(x, y) {
     super(x, y, color(255, 0, 0));
-    this.maxSpeed = 3;
-    this.maxForce = 0.1;
+    this.maxSpeed = 3.6;
+    this.maxForce = 0.12;
     this.hp = 5; // Reasonable HP
     this.maxHp = 5;
   }
@@ -27,7 +27,33 @@ class Enemy extends Vehicle {
 
   update(target) {
     this.seek(target);
+    this.separate();
     super.update();
+  }
+
+  separate() {
+    if (!Array.isArray(enemies) || enemies.length < 2) return;
+    let desiredSeparation = this.r * 2.5;
+    let steer = createVector(0, 0);
+    let count = 0;
+    for (let other of enemies) {
+      if (other === this) continue;
+      let d = p5.Vector.dist(this.pos, other.pos);
+      if (d > 0 && d < desiredSeparation) {
+        let diff = p5.Vector.sub(this.pos, other.pos);
+        diff.normalize();
+        diff.div(max(d, 0.01));
+        steer.add(diff);
+        count++;
+      }
+    }
+    if (count === 0) return;
+    steer.div(count);
+    if (steer.mag() === 0) return;
+    steer.setMag(this.maxSpeed);
+    steer.sub(this.vel);
+    steer.limit(this.maxForce * 1.8);
+    this.applyForce(steer);
   }
 
   display() {

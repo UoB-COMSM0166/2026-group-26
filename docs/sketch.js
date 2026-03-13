@@ -1188,18 +1188,77 @@ function drawMiniMap() {
     ctx.clip();
 
     if (mode === 'follow' && player) {
-        let radarScale = mapR / 420;
+        // Use a larger scale for ISO view because projection shrinks coordinates
+        // World 100px -> Iso 50px width. So we double the scale to keep visual size similar.
+        let radarScale = (mapR / 420) * 2;
+        
+        // Draw Roads
+        noStroke();
+        fill(120, 120, 120, 180);
+        
+        // Calculate Diamond Dimensions for Road Tile
+        let rW = tileSize * radarScale; // Width
+        let rH = rW * 0.5; // Height (2:1 aspect)
+        
+        if (roadCenters && roadCenters.length > 0) {
+            for (let rc of roadCenters) {
+                let worldDx = rc.x - player.pos.x;
+                let worldDy = rc.y - player.pos.y;
+                
+                // Convert to Isometric Screen Difference
+                // IsoX = (x - y) / 2
+                // IsoY = (x + y) / 4
+                let dx = (worldDx - worldDy) * 0.5 * radarScale;
+                let dy = (worldDx + worldDy) * 0.25 * radarScale;
+                
+                // Optimization: Skip if far outside
+                // Check against mapR plus some buffer
+                if (dx*dx + dy*dy > (mapR + rW) * (mapR + rW)) continue;
+                
+                // Draw Diamond (Rhombus)
+                quad(
+                    dx, dy - rH/2,      // Top
+                    dx + rW/2, dy,      // Right
+                    dx, dy + rH/2,      // Bottom
+                    dx - rW/2, dy       // Left
+                );
+            }
+        }
+
         noStroke();
         fill(60, 140, 220, 95);
         for (let b of buildings) {
-            let dx = (b.pos.x - player.pos.x) * radarScale;
-            let dy = (b.pos.y - player.pos.y) * radarScale;
+            let worldDx = b.pos.x - player.pos.x;
+            let worldDy = b.pos.y - player.pos.y;
+            let dx = (worldDx - worldDy) * 0.5 * radarScale;
+            let dy = (worldDx + worldDy) * 0.25 * radarScale;
+            
             if (dx * dx + dy * dy > mapR * mapR) continue;
-            ellipse(dx, dy, 3, 3);
+            ellipse(dx, dy, 5, 5);
         }
+
+        // Draw Obstacles (Abstract: small dots/squares)
+        noStroke();
+        fill(160, 120, 80, 200); // Brownish/Grey for obstacles
+        for (let o of obstacles) {
+            let worldDx = o.pos.x - player.pos.x;
+            let worldDy = o.pos.y - player.pos.y;
+            let dx = (worldDx - worldDy) * 0.5 * radarScale;
+            let dy = (worldDx + worldDy) * 0.25 * radarScale;
+
+            if (dx * dx + dy * dy > mapR * mapR) continue;
+            
+            // Abstract shape: small circle or square
+            // Obstacles are generally smaller than buildings
+            ellipse(dx, dy, 4, 4);
+        }
+
         for (let e of enemies) {
-            let dx = (e.pos.x - player.pos.x) * radarScale;
-            let dy = (e.pos.y - player.pos.y) * radarScale;
+            let worldDx = e.pos.x - player.pos.x;
+            let worldDy = e.pos.y - player.pos.y;
+            let dx = (worldDx - worldDy) * 0.5 * radarScale;
+            let dy = (worldDx + worldDy) * 0.25 * radarScale;
+            
             if (dx * dx + dy * dy > mapR * mapR) continue;
             let pulse = (frameCount % 60) / 60;
             fill(255, 50, 50, 220 - pulse * 180);
@@ -1209,7 +1268,19 @@ function drawMiniMap() {
         ellipse(0, 0, 7, 7);
         stroke(0, 255, 255, 200);
         strokeWeight(2);
-        line(0, 0, cos(player.heading) * 14, sin(player.heading) * 14);
+        // Player heading indicator also needs to be projected?
+        // Heading is in world space (angle).
+        // A vector (cos(h), sin(h)) in world space becomes (cos(h)-sin(h), cos(h)+sin(h)) in Iso?
+        // Let's project the tip of the heading vector.
+        let hLen = 14;
+        let hTipX = cos(player.heading) * hLen;
+        let hTipY = sin(player.heading) * hLen;
+        // Project vector
+        let isoHx = (hTipX - hTipY) * 0.5; // No scale needed for direction really, but relative to 14px
+        let isoHy = (hTipX + hTipY) * 0.25;
+        // Normalize and scale to desired length? Or just apply projection.
+        // If we project, length changes. That's correct for Iso.
+        line(0, 0, isoHx, isoHy);
     } else {
         let centerIso = projectIso(mapWidth / 2, mapHeight / 2);
         let viewOffsetX = -centerIso.x * scaleFactor;
@@ -1564,17 +1635,22 @@ function drawPaused() {
     
     fill(255);
     textSize(50);
-    text("SETTINGS", gameWidth/2, gameHeight/3);
+    text("PAUSED", gameWidth/2, gameHeight/3);
     
     textSize(20);
     text("Press ESC to Resume", gameWidth/2, gameHeight/2);
     
-    // Restart Button
     fill(255, 50, 50);
-    rect(gameWidth/2, gameHeight * 0.7, 200, 50, 10);
+    rect(gameWidth/2, gameHeight * 0.68, 220, 52, 10);
     fill(255);
     textSize(24);
-    text("RESTART", gameWidth/2, gameHeight * 0.7);
+    text("RESTART", gameWidth/2, gameHeight * 0.68);
+
+    fill(40, 140, 255);
+    rect(gameWidth/2, gameHeight * 0.78, 220, 52, 10);
+    fill(255);
+    textSize(20);
+    text("MAIN MENU", gameWidth/2, gameHeight * 0.78);
 }
 
 function getPoliceSpawnPoint() {
@@ -1650,7 +1726,16 @@ function playGame() {
   if (millis() - lastEnemySpawnTime > spawnInterval) { 
     let spawn = getPoliceSpawnPoint();
     if (spawn) {
-        enemies.push(new Enemy(spawn.x, spawn.y));
+        let canSpawn = true;
+        for (let e of enemies) {
+            if (dist(spawn.x, spawn.y, e.pos.x, e.pos.y) < 140) {
+                canSpawn = false;
+                break;
+            }
+        }
+        if (canSpawn) {
+            enemies.push(new Enemy(spawn.x, spawn.y));
+        }
     }
     lastEnemySpawnTime = millis();
   }
@@ -1722,6 +1807,7 @@ function playGame() {
       for (let b of buildings) {
           if (b.isInteractable() && p5.Vector.dist(player.pos, b.pos) < b.w) {
               gameState = 'SHOP';
+              pauseStartTime = millis();
               shopBuilding = b;
               break;
           }
@@ -2146,7 +2232,7 @@ function drawStatusBar() {
   if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP') return; 
 
   let currentMillis = millis();
-  if (gameState === 'PAUSED') {
+  if (gameState === 'PAUSED' || gameState === 'SHOP') {
       currentMillis = pauseStartTime;
   }
   let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
@@ -2430,6 +2516,20 @@ function togglePause() {
     }
 }
 
+function closeShopFromUI() {
+    if (gameState === 'SHOP') {
+        totalPausedTime += millis() - pauseStartTime;
+        gameState = 'PLAY';
+        shopBuilding = null;
+        return;
+    }
+    if (gameState === 'MENU_SHOP') {
+        gameState = 'MENU';
+        shopBuilding = null;
+        return;
+    }
+}
+
 function keyPressed() {
   if (keyCode === ENTER) {
     if (gameState === 'GAMEOVER') {
@@ -2448,8 +2548,7 @@ function keyPressed() {
       } else if (gameState === 'DIFFICULTY_SELECT') {
           gameState = 'MENU';
       } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
-          gameState = gameState === 'SHOP' ? 'PLAY' : 'MENU';
-          shopBuilding = null;
+          closeShopFromUI();
       }
   } else if (key === 'x' || key === 'X') {
       if (gameState === 'PLAY') {
@@ -2479,8 +2578,7 @@ function keyPressed() {
 
   if (gameState === 'SHOP' || gameState === 'MENU_SHOP' || gameState === 'AUTH') {
       if (gameState === 'SHOP' && keyCode === 70) {
-          gameState = 'PLAY';
-          shopBuilding = null;
+          closeShopFromUI();
       }
       if (gameState === 'AUTH' && keyCode === ESCAPE) {
           gameState = 'MENU';
@@ -2562,10 +2660,24 @@ async function mousePressed() {
             }
         }
     } else if (gameState === 'PLAY' || gameState === 'PAUSED') {
-        // Check Gear Icon Click (Top Right)
         if (dist(mouseX, mouseY, width - 50, statusHeight / 2) < 25) {
             togglePause();
             return;
+        }
+
+        if (gameState === 'PAUSED') {
+            let localX = mouseX - gameViewX;
+            let localY = mouseY - (statusHeight + gameViewY);
+            if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.68) <= 26) {
+                resetGame(true);
+                gameState = 'PLAY';
+                return;
+            }
+            if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.78) <= 26) {
+                gameState = 'MENU';
+                shopBuilding = null;
+                return;
+            }
         }
 
         if (gameState === 'PLAY') {

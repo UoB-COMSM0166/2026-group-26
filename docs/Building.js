@@ -371,30 +371,26 @@ class Building {
   }
 
   showTooltip(player) {
-      // Check distance for tooltip (larger than collision)
       let size = this.getCollisionSize();
-      let d = p5.Vector.dist(this.pos, player.pos);
-      if (d < max(size.w, size.h)) {
-          push();
-          let center = this.getCollisionCenter();
-          let isoPos = projectIso(center.x, center.y);
-          let offset = max(size.w, size.h) * 0.6 + 10;
-          translate(isoPos.x, isoPos.y - offset);
-          fill(0, 0, 0, 200);
-          noStroke();
-          rectMode(CENTER);
-          let lines = [this.getDisplayName()];
-          if (this.isInteractable()) {
-              lines.push("Press F to Interact");
-          }
-          let boxH = lines.length === 1 ? 24 : 40;
-          rect(0, 0, 160, boxH, 5);
-          
-          fill(255);
-          textAlign(CENTER, CENTER);
-          textSize(12);
-          text(lines.join("\n"), 0, 0);
-          pop();
+      push();
+      let center = this.getCollisionCenter();
+      let isoPos = projectIso(center.x, center.y);
+      let offset = max(size.w, size.h) * 0.6 + 10;
+      translate(isoPos.x, isoPos.y - offset);
+      fill(0, 0, 0, 200);
+      noStroke();
+      rectMode(CENTER);
+      let lines = [this.getDisplayName()];
+      if (this.isInteractable()) {
+          lines.push("Press F to Interact");
       }
+      let boxH = lines.length === 1 ? 24 : 40;
+      rect(0, 0, 160, boxH, 5);
+      
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(12);
+      text(lines.join("\n"), 0, 0);
+      pop();
   }
 }

@@ -348,6 +348,11 @@ function updateLoiteringMissile() {
     
     loiteringMissile.vel = p5.Vector.fromAngle(loiteringMissile.heading).mult(loiteringMissile.maxSpeed);
     loiteringMissile.pos.add(loiteringMissile.vel);
+
+    if (loiteringMissile.pos.x <= 0 || loiteringMissile.pos.x >= mapWidth || loiteringMissile.pos.y <= 0 || loiteringMissile.pos.y >= mapHeight) {
+        explodeMissile();
+        return;
+    }
     
     // Collision
     for (let b of buildings) {

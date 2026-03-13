@@ -2,10 +2,33 @@ class AuthUI {
   constructor() {
     this.container = null;
     this.state = 'login';
-    this.apiBaseUrl = window.location.origin;
+    this.apiBaseUrl = this.resolveApiBaseUrl();
     this.token = localStorage.getItem('authToken');
     this.user = JSON.parse(localStorage.getItem('user') || 'null');
     this.pendingVerificationEmail = '';
+  }
+
+  resolveApiBaseUrl() {
+    let explicit = '';
+    if (typeof window !== 'undefined' && window.__API_BASE_URL__) {
+      explicit = String(window.__API_BASE_URL__).trim();
+    }
+    if (!explicit) {
+      let saved = localStorage.getItem('apiBaseUrl');
+      if (saved) explicit = String(saved).trim();
+    }
+    if (explicit) {
+      return explicit.replace(/\/+$/, '');
+    }
+
+    let origin = window.location.origin;
+    let host = window.location.hostname;
+    let port = window.location.port;
+    let isLocalHost = host === 'localhost' || host === '127.0.0.1';
+    if (isLocalHost && port !== '3000') {
+      return 'http://localhost:3000';
+    }
+    return origin;
   }
 
   isLoggedIn() {
