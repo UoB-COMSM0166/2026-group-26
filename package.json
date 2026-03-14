@@ -1,0 +1,24 @@
+{
+  "name": "hotline-escape-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local backend for player accounts and progress persistence",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "node --check src/server.js src/db.js src/mailer.js src/security.js",
+    "typecheck": "node --check src/server.js src/db.js src/mailer.js src/security.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
+    "sqlite3": "^5.1.7"
+  }
+}
