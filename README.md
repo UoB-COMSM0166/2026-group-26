@@ -187,7 +187,8 @@ GROUP PHOTO.
 
 - 15% ~750 words 
 - System architecture. Class diagrams, behavioural diagrams.
-  
+#### Class Diagram
+<img width="621" height="515" alt="Image" src="https://github.com/user-attachments/assets/e7fe663c-dcdc-4e9a-83f5-2d2b78157599" />
 #### Sequence Diagram
 <img width="399" height="444" alt="image" src="https://github.com/user-attachments/assets/2391da13-6c32-4bfa-9a6f-36ba9dfcdc1f" />
 
