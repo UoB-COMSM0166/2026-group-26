@@ -186,6 +186,12 @@ So the null hypothesis was not rejected at a 95% confidence interval. This meant
 The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too close to each other in terms of gameplay experience, **so the 3 difficulties should be readjusted.**
 
 
+### Technical challenges
+
+1. Unintended bugs caused by the interaction of the timer and shop mechanics
+
+2. Missile flying out of the map indefinitely (which locks player control) bug.
+
 ## Your Group
 
 GROUP PHOTO. 
