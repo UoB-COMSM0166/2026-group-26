@@ -162,14 +162,21 @@ The current loop is too shallow. To enhance strategic depth, the game requires a
 | hard NASA TLX score | 42.5    | 43.3333 | 45.8333 | 31.6666 | 86.6666 | 25     | 42.5    | 45.35711 |
 
 The first Wilcoxon Signed-Rank Test is as follows:
+
 Null hypothesis: The easy SUS score and the hard SUS score share the same distribution.
+
 Alternate hypothesis: The easy SUS score and the hard SUS score do not share the same distribution.
+
 Result: W test statistic=4 (number of non-tied pairs=5).
 So the null hypothesis was not rejected at a 90% confidence interval. This meant the test result is not statistically significant.
 
+
 The second Wilcoxon Signed-Rank Test is as follows:
+
 Null hypothesis: The easy NASA TLX score and the hard NASA TLX score share the same distribution.
+
 Alternate hypothesis: The easy NASA TLX score and the hard NASA TLX score do not share the same distribution.
+
 Result: W test statistic=1 (number of non-tied pairs=6).
 So the null hypothesis was not rejected at a 95% confidence interval. This meant the test result is not statistically significant.
 
