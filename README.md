@@ -153,6 +153,45 @@ Essential interactive elements—such as player vehicles, health packs, and shie
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types, such as projectiles that ricochet off buildings. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for both novice and expert players.
 
 
+### Quantitative Evaluation
+|                     | User 1  | User 2  | User 3  | User 4  | User 5  | User 6 | User 7  | Average  |
+| ------------------- | ------- | ------- | ------- | ------- | ------- | ------ | ------- | -------- |
+| easy SUS score      | 55      | 50      | 62.5    | 95      | 55      | 50     | 52.5    | 60       |
+| hard SUS score      | 52.5    | 50      | 62.5    | 92.5    | 52.5    | 50     | 57.5    | 59.64286 |
+| easy NASA TLX score | 36.6666 | 41.6666 | 36.6666 | 21.6666 | 69.1666 | 25     | 43.3333 | 39.16661 |
+| hard NASA TLX score | 42.5    | 43.3333 | 45.8333 | 31.6666 | 86.6666 | 25     | 42.5    | 45.35711 |
+
+**The first Wilcoxon Signed-Rank Test** is as follows:
+
+Null hypothesis: The easy SUS score and the hard SUS score share the same distribution.
+
+Alternate hypothesis: The easy SUS score and the hard SUS score do not share the same distribution.
+
+Result: W test statistic=4 (number of non-tied pairs=5).
+So the null hypothesis was not rejected at a 90% confidence interval. This meant the test result is **not statistically significant.**
+
+
+**The second Wilcoxon Signed-Rank Test** is as follows:
+
+Null hypothesis: The easy NASA TLX score and the hard NASA TLX score share the same distribution.
+
+Alternate hypothesis: The easy NASA TLX score and the hard NASA TLX score do not share the same distribution.
+
+Result: W test statistic=1 (number of non-tied pairs=6).
+So the null hypothesis was not rejected at a 95% confidence interval. This meant the test result is **not statistically significant.**
+
+
+### Findings of Quantitative Evaluation
+
+The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too close to each other in terms of gameplay experience, **so the 3 difficulties should be readjusted.**
+
+
+### Technical challenges
+
+1. Unintended bugs caused by the interaction of the timer and shop mechanics
+
+2. Missile flying out of the map indefinitely (which locks player control) bug.
+
 ## Your Group
 
 GROUP PHOTO. 
