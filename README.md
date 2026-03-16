@@ -154,6 +154,12 @@ The current loop is too shallow. To enhance strategic depth, the game requires a
 
 
 ### Quantitative Evaluation
+|                     | User 1  | User 2  | User 3  | User 4  | User 5  | User 6 | User 7  | Average  |
+| ------------------- | ------- | ------- | ------- | ------- | ------- | ------ | ------- | -------- |
+| easy SUS score      | 55      | 50      | 62.5    | 95      | 55      | 50     | 52.5    | 60       |
+| hard SUS score      | 52.5    | 50      | 62.5    | 92.5    | 52.5    | 50     | 57.5    | 59.64286 |
+| easy NASA TLX score | 36.6666 | 41.6666 | 36.6666 | 21.6666 | 69.1666 | 25     | 43.3333 | 39.16661 |
+| hard NASA TLX score | 42.5    | 43.3333 | 45.8333 | 31.6666 | 86.6666 | 25     | 42.5    | 45.35711 |
 
 
 
