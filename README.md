@@ -153,6 +153,10 @@ Essential interactive elements—such as player vehicles, health packs, and shie
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types, such as projectiles that ricochet off buildings. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for both novice and expert players.
 
 
+### Quantitative Evaluation
+
+
+
 ## Your Group
 
 GROUP PHOTO. 
