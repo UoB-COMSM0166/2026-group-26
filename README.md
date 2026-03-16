@@ -161,25 +161,29 @@ The current loop is too shallow. To enhance strategic depth, the game requires a
 | easy NASA TLX score | 36.6666 | 41.6666 | 36.6666 | 21.6666 | 69.1666 | 25     | 43.3333 | 39.16661 |
 | hard NASA TLX score | 42.5    | 43.3333 | 45.8333 | 31.6666 | 86.6666 | 25     | 42.5    | 45.35711 |
 
-The first Wilcoxon Signed-Rank Test is as follows:
+**The first Wilcoxon Signed-Rank Test** is as follows:
 
 Null hypothesis: The easy SUS score and the hard SUS score share the same distribution.
 
 Alternate hypothesis: The easy SUS score and the hard SUS score do not share the same distribution.
 
 Result: W test statistic=4 (number of non-tied pairs=5).
-So the null hypothesis was not rejected at a 90% confidence interval. This meant the test result is not statistically significant.
+So the null hypothesis was not rejected at a 90% confidence interval. This meant the test result is **not statistically significant.**
 
 
-The second Wilcoxon Signed-Rank Test is as follows:
+**The second Wilcoxon Signed-Rank Test** is as follows:
 
 Null hypothesis: The easy NASA TLX score and the hard NASA TLX score share the same distribution.
 
 Alternate hypothesis: The easy NASA TLX score and the hard NASA TLX score do not share the same distribution.
 
 Result: W test statistic=1 (number of non-tied pairs=6).
-So the null hypothesis was not rejected at a 95% confidence interval. This meant the test result is not statistically significant.
+So the null hypothesis was not rejected at a 95% confidence interval. This meant the test result is **not statistically significant.**
 
+
+### Findings of Quantitative Evaluation
+
+The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too close to each other in terms of gameplay experience, **so the 3 difficulties should be readjusted.**
 
 
 ## Your Group
