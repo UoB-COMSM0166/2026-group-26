@@ -39,6 +39,7 @@ let startGateMessage = '';
 let startGateMessageColor = [255, 80, 80];
 let startGateMessageUntil = 0;
 let startGatePending = false;
+let helpTab = 'BASICS'; // BASICS, VEHICLES, WEAPONS
 
 // Game Settings
 let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
@@ -911,7 +912,7 @@ function draw() {
   if (gameState === 'PLAY') {
       playGame();
   } else if (gameState === 'MAP_SELECT') {
-      playGame();
+      drawGameObjects();
   } else if (gameState === 'MISSILE_CONTROL') {
       updateLoiteringMissile();
       
@@ -1040,6 +1041,25 @@ function isPlayerControlLocked() {
     return gameState === 'MISSILE_CONTROL';
 }
 
+function enterMapSelectState() {
+    gameState = 'MAP_SELECT';
+    pauseStartTime = millis();
+    mapSelectStart = 0;
+    dongfengTargetLocked = false;
+    mapSelectCharged = false;
+}
+
+function exitMapSelectState() {
+    if (gameState === 'MAP_SELECT') {
+        totalPausedTime += millis() - pauseStartTime;
+    }
+    gameState = 'PLAY';
+    pauseStartTime = 0;
+    mapSelectStart = 0;
+    dongfengTargetLocked = false;
+    mapSelectCharged = false;
+}
+
 function triggerDongfengFromMiniMap(cursorX, cursorY, scaleFactor) {
     if (dongfengTargetLocked) return;
     dongfengTargetLocked = true;
@@ -1058,7 +1078,7 @@ function triggerDongfengFromMiniMap(cursorX, cursorY, scaleFactor) {
     let targetY = gridY * tileSize;
 
     if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
-        gameState = 'PLAY';
+        exitMapSelectState();
         dongfengTargetLocked = false;
         return;
     }
@@ -1073,10 +1093,10 @@ function triggerDongfengFromMiniMap(cursorX, cursorY, scaleFactor) {
         strikeFn = globalThis.fireDongfengStrike;
     }
 
+    exitMapSelectState();
     if (strikeFn) {
         strikeFn(targetX, targetY);
     } else {
-        gameState = 'PLAY';
         consumeCurrentSpecialWeapon();
         setTimeout(() => {
             createExplosion(targetX, targetY, color(255, 50, 0), 80);
@@ -1586,61 +1606,71 @@ function drawMainMenu() {
 function drawDifficultySelect() {
   drawCoverBackground(100);
   
-  // 2. Panel
+  let centerX = width/2;
+  let centerY = height/2;
+  let panelW = 420;
+  let panelH = 460;
+  
+  push();
   rectMode(CENTER);
-  fill(30, 30, 30, 220);
-  stroke(255);
-  strokeWeight(2);
-  rect(width/2, height/2, 400, 400, 15);
+  textAlign(CENTER, CENTER);
+  
+  // 1. Darken Background with Blur feel
+  fill(10, 15, 20, 200);
+  noStroke();
+  rect(centerX, centerY, width, height);
+
+  // 2. Main Panel
+  // Shadow for depth
+  drawingContext.shadowBlur = 30;
+  drawingContext.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  
+  fill(25, 30, 40, 245);
+  stroke(60, 70, 80);
+  strokeWeight(1);
+  rect(centerX, centerY, panelW, panelH, 16);
+  
+  // Reset shadow for internal elements
+  drawingContext.shadowBlur = 0;
   
   // 3. Header
   fill(255);
-  noStroke();
-  textSize(32);
-  textAlign(CENTER, TOP);
-  text("SELECT DIFFICULTY", width/2, height/2 - 150);
+  textSize(42);
+  textStyle(BOLD);
+  drawingContext.shadowBlur = 10;
+  drawingContext.shadowColor = 'rgba(255, 255, 255, 0.2)';
+  text("SELECT DIFFICULTY", centerX, centerY - 150);
+  drawingContext.shadowBlur = 0;
   
   // 4. Options
-  let diffs = ['EASY', 'NORMAL', 'HARD'];
-  let startY = height/2 - 50;
+  let diffs = [
+      { id: 'EASY', color: color(80, 200, 120) },
+      { id: 'NORMAL', color: color(255, 215, 0) }, // Gold
+      { id: 'HARD', color: color(255, 80, 80) }
+  ];
+  let btnH = 60;
   let gap = 80;
+  let startY = centerY - gap + 20; // Center the group vertically a bit better
+  let btnW = 280;
   
   for (let i = 0; i < diffs.length; i++) {
       let d = diffs[i];
       let btnY = startY + i * gap;
       
       // Hover check
-      let isHover = abs(mouseX - width/2) < 120 && abs(mouseY - btnY) < 30;
+      let isHover = abs(mouseX - centerX) <= btnW / 2 && abs(mouseY - btnY) <= btnH / 2;
+      let isPressed = isHover && mouseIsPressed;
       
-      if (isHover) {
-          fill(255, 215, 0); // Gold hover
-          stroke(255);
-          strokeWeight(3);
-          rect(width/2, btnY, 240, 60, 10);
-          
-          fill(0);
-          noStroke();
-          textSize(28);
-          textStyle(BOLD);
-          text(d, width/2, btnY);
-          textStyle(NORMAL);
-      } else {
-          fill(50);
-          stroke(150);
-          strokeWeight(1);
-          rect(width/2, btnY, 240, 60, 10);
-          
-          fill(200);
-          noStroke();
-          textSize(24);
-          text(d, width/2, btnY);
-      }
+      drawModernButton(centerX, btnY, btnW, btnH, d.id, isHover, isPressed, d.color);
   }
   
   // Back instruction
-  fill(150);
+  fill(160, 170, 190);
   textSize(16);
-  text("Press ESC to Back", width/2, height/2 + 160);
+  textStyle(NORMAL);
+  text("Press ESC to Back", centerX, centerY + 180);
+
+  pop();
 
   if (startGatePending || millis() < startGateMessageUntil) {
       fill(startGateMessageColor[0], startGateMessageColor[1], startGateMessageColor[2]);
@@ -1648,33 +1678,127 @@ function drawDifficultySelect() {
       textSize(18);
       textAlign(CENTER, CENTER);
       let msg = startGatePending ? 'Checking backend service...' : startGateMessage;
-      text(msg, width / 2, height / 2 + 200);
+      text(msg, width / 2, height - 80);
   }
 }
 
-function drawPaused() {
-    fill(0, 0, 0, 150);
-    rectMode(CENTER);
-    rect(gameWidth/2, gameHeight/2, gameWidth, gameHeight);
+function getPausedLayout() {
+    let centerX = gameWidth * 0.5;
+    let centerY = gameHeight * 0.5;
+    let panelW = 400;
+    let panelH = 320;
     
-    fill(255);
-    textSize(50);
-    text("PAUSED", gameWidth/2, gameHeight/3);
+    // Title
+    let titleY = centerY - 100;
+    let hintY = centerY - 60;
     
-    textSize(20);
-    text("Press ESC to Resume", gameWidth/2, gameHeight/2);
+    // Buttons
+    let btnW = 280;
+    let btnH = 60;
+    let btnGap = 20;
     
-    fill(255, 50, 50);
-    rect(gameWidth/2, gameHeight * 0.68, 220, 52, 10);
-    fill(255);
-    textSize(24);
-    text("RESTART", gameWidth/2, gameHeight * 0.68);
+    let restartY = centerY + 20;
+    let menuY = restartY + btnH + btnGap;
+    
+    return { centerX, centerY, panelW, panelH, titleY, hintY, btnW, btnH, restartY, menuY };
+}
 
-    fill(40, 140, 255);
-    rect(gameWidth/2, gameHeight * 0.78, 220, 52, 10);
+function drawPaused() {
+    let layout = getPausedLayout();
+    let localX = mouseX - gameViewX;
+    let localY = mouseY - (statusHeight + gameViewY);
+    
+    // Check hovers
+    let restartHover = abs(localX - layout.centerX) <= layout.btnW / 2 && abs(localY - layout.restartY) <= layout.btnH / 2;
+    let menuHover = abs(localX - layout.centerX) <= layout.btnW / 2 && abs(localY - layout.menuY) <= layout.btnH / 2;
+    
+    // Click effect (scale down if clicked)
+    let restartPressed = restartHover && mouseIsPressed;
+    let menuPressed = menuHover && mouseIsPressed;
+
+    push();
+    rectMode(CENTER);
+    textAlign(CENTER, CENTER);
+    
+    // 1. Darken Background with Blur feel
+    fill(10, 15, 20, 200);
+    noStroke();
+    rect(gameWidth / 2, gameHeight / 2, gameWidth, gameHeight);
+
+    // 2. Main Panel
+    // Shadow for depth
+    drawingContext.shadowBlur = 30;
+    drawingContext.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    
+    fill(25, 30, 40, 245);
+    stroke(60, 70, 80);
+    strokeWeight(1);
+    rect(layout.centerX, layout.centerY, layout.panelW, layout.panelH, 16);
+    
+    // Reset shadow for internal elements
+    drawingContext.shadowBlur = 0;
+
+    // 3. Title
     fill(255);
-    textSize(20);
-    text("MAIN MENU", gameWidth/2, gameHeight * 0.78);
+    textSize(42);
+    textStyle(BOLD);
+    drawingContext.shadowBlur = 10;
+    drawingContext.shadowColor = 'rgba(255, 255, 255, 0.2)';
+    text("PAUSED", layout.centerX, layout.titleY);
+    drawingContext.shadowBlur = 0;
+
+    // 4. Subtitle
+    fill(160, 170, 190);
+    textSize(16);
+    textStyle(NORMAL);
+    text("Game paused. Take a break.", layout.centerX, layout.hintY);
+
+    // 5. Restart Button
+    drawModernButton(layout.centerX, layout.restartY, layout.btnW, layout.btnH, 
+        "RESTART", restartHover, restartPressed, color(255, 80, 80));
+
+    // 6. Menu Button
+    drawModernButton(layout.centerX, layout.menuY, layout.btnW, layout.btnH, 
+        "MAIN MENU", menuHover, menuPressed, color(80, 160, 255));
+
+    pop();
+}
+
+function drawModernButton(x, y, w, h, label, isHover, isPressed, accentColor) {
+    push();
+    translate(x, y);
+    if (isPressed) scale(0.96);
+    else if (isHover) scale(1.02);
+
+    // Button Background
+    if (isHover) {
+        fill(45, 50, 60);
+        stroke(accentColor);
+        strokeWeight(2);
+        drawingContext.shadowBlur = 15;
+        drawingContext.shadowColor = accentColor;
+    } else {
+        fill(35, 40, 50);
+        stroke(60, 70, 80);
+        strokeWeight(1);
+    }
+    
+    rect(0, 0, w, h, 12);
+    drawingContext.shadowBlur = 0; // Reset
+
+    // Accent Bar (Left side)
+    noStroke();
+    fill(accentColor);
+    rect(-w/2 + 6, 0, 4, h - 16, 4);
+
+    // Text
+    fill(255);
+    textSize(18);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text(label, 0, 0);
+
+    pop();
 }
 
 function getPoliceSpawnPoint() {
@@ -1738,7 +1862,8 @@ function playGame() {
                 upgradeState: {
                     maxHp: player.bonusMaxHp,
                     maxAmmo: player.bonusMaxAmmo,
-                    shieldDuration: player.shieldDurationLevel
+                    topSpeed: player.bonusTopSpeed,
+                    acceleration: player.bonusAcceleration
                 }
             };
             authUI.saveProgress(data);
@@ -2091,9 +2216,11 @@ function applyProgressData(data) {
         player.applyCarType(targetCar);
     }
     let upgradeState = data.upgradeState && typeof data.upgradeState === 'object' ? data.upgradeState : {};
-    player.bonusMaxHp = upgradeState.maxHp || 0;
-    player.bonusMaxAmmo = upgradeState.maxAmmo || 0;
-    player.shieldDurationLevel = upgradeState.shieldDuration || 0;
+    player.bonusMaxHp = constrain(Number(upgradeState.maxHp) || 0, 0, 2);
+    player.bonusMaxAmmo = constrain(Number(upgradeState.maxAmmo) || 0, 0, 5);
+    player.bonusTopSpeed = constrain(Number(upgradeState.topSpeed) || 0, 0, 5);
+    player.bonusAcceleration = constrain(Number(upgradeState.acceleration) || 0, 0, 5);
+    player.shieldDurationLevel = 0;
     player.currentSpecialWeapon = null;
     player.specialWeaponCount = 0;
     player.applyCarType(player.carType || targetCar);
@@ -2138,6 +2265,35 @@ async function continueStartAfterAuth() {
     }
     authUI.hide();
     gameState = 'DIFFICULTY_SELECT';
+}
+
+async function beginMenuShopFlow() {
+    ensurePlayerProfile();
+    let backendOk = await isBackendAvailable();
+    if (!backendOk) {
+        setStartGateMessage('Backend unavailable. Please start login service first.');
+        return;
+    }
+    if (authUI.isLoggedIn()) {
+        let loaded = await refreshUserProgress();
+        if (!loaded) {
+            setStartGateMessage('Unable to load profile data. Please login again.');
+            return;
+        }
+        gameState = 'MENU_SHOP';
+        return;
+    }
+    gameState = 'AUTH';
+    authUI.show();
+    authUI.onLoginSuccess = async () => {
+        let loaded = await refreshUserProgress();
+        if (!loaded) {
+            setStartGateMessage('Unable to load profile data. Please login again.');
+            gameState = 'MENU';
+            return;
+        }
+        gameState = 'MENU_SHOP';
+    };
 }
 
 async function beginStartFlow() {
@@ -2243,6 +2399,11 @@ function applyPowerUp(p) {
     return true;
   } else if (p.type === WEAPON_TYPES.DONGFENG || p.type === WEAPON_TYPES.LOITERING || p.type === WEAPON_TYPES.ATOMIC) {
       if (player.currentSpecialWeapon && player.currentSpecialWeapon !== p.type) {
+          if (tutorialSystem && !tutorialSystem.shown.inventory_full) {
+              tutorialSystem.trigger('inventory_full');
+              gameState = 'TUTORIAL';
+              pauseStartTime = millis();
+          }
           return false;
       }
       if (player.currentSpecialWeapon !== p.type) {
@@ -2269,58 +2430,19 @@ function drawStatusBar() {
   strokeWeight(4);
   line(0, statusHeight, width, statusHeight);
 
-  if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP' && gameState !== 'HELP') return; 
+  if (gameState !== 'PLAY' && gameState !== 'PAUSED' && gameState !== 'SHOP' && gameState !== 'HELP' && gameState !== 'MAP_SELECT') return; 
 
   let currentMillis = millis();
-  if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'HELP') {
+  if (gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'HELP' || gameState === 'MAP_SELECT') {
       currentMillis = pauseStartTime;
   }
   let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
 
-  // --- Help Icon ---
-  push();
-  translate(width - 110, statusHeight / 2);
-  if (helpIconImg && helpIconImg.width > 0 && helpIconImg.height > 0) {
-      imageMode(CENTER);
-      image(helpIconImg, 0, 0, 50, 50);
-  } else {
-      noFill();
-      stroke(200);
-      strokeWeight(3);
-      ellipse(0, 0, 30, 30);
-      fill(200);
-      noStroke();
-      textAlign(CENTER, CENTER);
-      textSize(20);
-      text("?", 0, 0);
-  }
-  pop();
-
-  // --- Gear Icon (Settings/Pause) ---
-  push();
-  translate(width - 50, statusHeight / 2);
-  if (settingIconImg && settingIconImg.width > 0 && settingIconImg.height > 0) {
-      imageMode(CENTER);
-      image(settingIconImg, 0, 0, 50, 50);
-  } else {
-      noFill();
-      stroke(200);
-      strokeWeight(3);
-      ellipse(0, 0, 30, 30);
-      fill(200);
-      noStroke();
-      for(let i=0; i<8; i++) {
-          push();
-          rotate(TWO_PI * i / 8);
-          rect(0, -18, 6, 8);
-          pop();
-      }
-      fill(30);
-      ellipse(0, 0, 10, 10);
-  }
-  pop();
-
+  // --- Interactive Icons ---
+  drawInteractiveStatusIcon(width - 110, statusHeight / 2, 50, helpIconImg, 'HELP');
+  drawInteractiveStatusIcon(width - 50, statusHeight / 2, 50, settingIconImg, 'GEAR');
+  
   // --- Left Section: HP ---
   textAlign(LEFT, CENTER);
   fill(200);
@@ -2421,14 +2543,24 @@ function drawStatusBar() {
       strokeWeight(2);
       rect(900, 55, 50, 50, 5);
       
-      fill(255, 100, 0);
-      textSize(20);
-      textStyle(BOLD);
-      noStroke();
-      text("X", 900, 55);
-      textStyle(NORMAL);
+      let icon = images && images.weaponShop ? images.weaponShop[player.currentSpecialWeapon] : null;
+      if (icon && icon.width > 0) {
+          imageMode(CENTER);
+          // Fit within 40x40 box
+          let ratio = min(40 / icon.width, 40 / icon.height);
+          image(icon, 900, 55, icon.width * ratio, icon.height * ratio);
+      } else {
+          fill(255, 100, 0);
+          textSize(20);
+          textStyle(BOLD);
+          noStroke();
+          text("X", 900, 55);
+          textStyle(NORMAL);
+      }
+      
       fill(255, 180, 80);
       textSize(14);
+      noStroke();
       text("x" + (player.specialWeaponCount || 0), 900, 90);
   }
 
@@ -2650,9 +2782,14 @@ function keyPressed() {
       enterGameplayStateAfterReset();
   } else if ((key === ' ' || keyCode === ENTER) && gameState === 'TUTORIAL') {
        if (tutorialSystem) {
+           let wasIntro = tutorialSystem.activeTutorial === 'intro';
            tutorialSystem.dismiss();
-           gameState = 'PLAY';
-           totalPausedTime += millis() - pauseStartTime;
+           if (wasIntro) {
+               tutorialSystem.trigger('controls');
+           } else {
+               gameState = 'PLAY';
+               totalPausedTime += millis() - pauseStartTime;
+           }
        }
   } else if (keyCode === ESCAPE) {
       if (gameState === 'PLAY' || gameState === 'PAUSED') {
@@ -2665,10 +2802,7 @@ function keyPressed() {
   } else if (key === 'x' || key === 'X') {
       if (gameState === 'PLAY') {
           if (player.currentSpecialWeapon === WEAPON_TYPES.DONGFENG) {
-               gameState = 'MAP_SELECT';
-               mapSelectStart = 0;
-               dongfengTargetLocked = false;
-               mapSelectCharged = false;
+               enterMapSelectState();
           } else if (player.currentSpecialWeapon === WEAPON_TYPES.LOITERING) {
                launchLoiteringMunition();
           } else if (player.currentSpecialWeapon === WEAPON_TYPES.ATOMIC) {
@@ -2676,10 +2810,7 @@ function keyPressed() {
                consumeCurrentSpecialWeapon();
           }
       } else if (gameState === 'MAP_SELECT') {
-          gameState = 'PLAY';
-          mapSelectStart = 0;
-          dongfengTargetLocked = false;
-          mapSelectCharged = false;
+          exitMapSelectState();
       }
   } else if (key === 'r' || key === 'R') {
       if (gameState === 'PAUSED') {
@@ -2721,14 +2852,8 @@ async function mousePressed() {
         let hoverRadius = layout.hoverRadius;
         
         if (dist(mouseX, mouseY, shopX, shopY) < hoverRadius) {
-             ensurePlayerProfile();
-             if (authUI.isLoggedIn()) {
-                 refreshUserProgress().finally(() => {
-                     gameState = 'MENU_SHOP';
-                 });
-             } else {
-                 gameState = 'MENU_SHOP';
-             }
+             await beginMenuShopFlow();
+             return;
         }
         
         if (dist(mouseX, mouseY, startX, startY) < hoverRadius) {
@@ -2745,15 +2870,15 @@ async function mousePressed() {
         }
     } else if (gameState === 'DIFFICULTY_SELECT') {
         let diffs = ['EASY', 'NORMAL', 'HARD'];
-        let startY = height/2 - 50;
         let gap = 80;
+        let startY = height/2 - gap + 20;
         
         for (let i = 0; i < diffs.length; i++) {
             let d = diffs[i];
             let btnY = startY + i * gap;
             
             // Check click on difficulty button
-            if (abs(mouseX - width/2) < 120 && abs(mouseY - btnY) < 30) {
+            if (abs(mouseX - width/2) < 140 && abs(mouseY - btnY) < 30) {
                 let backendOk = await isBackendAvailable();
                 if (!backendOk) {
                     setStartGateMessage('Backend unavailable. Cannot start game now.');
@@ -2784,11 +2909,34 @@ async function mousePressed() {
             gameState = 'PAUSED';
             return;
         }
+        
+        // Tab Click Detection
+        let tabY = layout.panelY - layout.panelH / 2 + 64;
+        let tabH = 40;
+        if (localY >= tabY && localY <= tabY + tabH) {
+            let tabW = (layout.panelW - 60) / 3;
+            let startX = layout.panelX - layout.panelW / 2 + 30;
+            let tabs = ['BASICS', 'VEHICLES', 'WEAPONS'];
+            
+            for (let i = 0; i < tabs.length; i++) {
+                let tx = startX + i * tabW;
+                // Check if click is within this tab's width (minus gap)
+                if (localX >= tx && localX <= tx + tabW - 10) {
+                    helpTab = tabs[i];
+                    return;
+                }
+            }
+        }
     } else if (gameState === 'TUTORIAL') {
          if (tutorialSystem) {
+             let wasIntro = tutorialSystem.activeTutorial === 'intro';
              tutorialSystem.dismiss();
-             gameState = 'PLAY';
-             totalPausedTime += millis() - pauseStartTime;
+             if (wasIntro) {
+                 tutorialSystem.trigger('controls');
+             } else {
+                 gameState = 'PLAY';
+                 totalPausedTime += millis() - pauseStartTime;
+             }
          }
          return;
     } else if (gameState === 'PLAY' || gameState === 'PAUSED') {
@@ -2810,12 +2958,13 @@ async function mousePressed() {
         if (gameState === 'PAUSED') {
             let localX = mouseX - gameViewX;
             let localY = mouseY - (statusHeight + gameViewY);
-            if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.68) <= 26) {
+            let layout = getPausedLayout();
+            if (abs(localX - layout.centerX) <= layout.btnW / 2 && abs(localY - layout.restartY) <= layout.btnH / 2) {
                 resetGame(true);
                 enterGameplayStateAfterReset();
                 return;
             }
-            if (abs(localX - gameWidth / 2) <= 110 && abs(localY - gameHeight * 0.78) <= 26) {
+            if (abs(localX - layout.centerX) <= layout.btnW / 2 && abs(localY - layout.menuY) <= layout.btnH / 2) {
                 gameState = 'MENU';
                 shopBuilding = null;
                 return;
@@ -2885,10 +3034,14 @@ function getHelpLayout() {
 function drawHelp() {
     push();
     let layout = getHelpLayout();
+    
+    rectMode(CORNER); // Reset to corner for background
     fill(0, 175);
     noStroke();
-    rect(layout.viewX + layout.viewW / 2, layout.viewY + layout.viewH / 2, layout.viewW, layout.viewH);
+    rect(layout.viewX, layout.viewY, layout.viewW, layout.viewH);
 
+    // Main Panel (Center)
+    rectMode(CENTER);
     fill(28, 33, 39);
     stroke(100);
     strokeWeight(2);
@@ -2900,6 +3053,8 @@ function drawHelp() {
     textAlign(CENTER, TOP);
     text("TACTICAL GUIDE", layout.panelX, layout.panelY - layout.panelH / 2 + 18);
 
+    // Close Button
+    rectMode(CENTER);
     fill(200, 60, 60);
     rect(layout.closeX, layout.closeY, layout.closeSize, layout.closeSize, 8);
     fill(255);
@@ -2907,126 +3062,276 @@ function drawHelp() {
     textAlign(CENTER, CENTER);
     text("X", layout.closeX, layout.closeY);
 
+    // TABS
+    let tabY = layout.panelY - layout.panelH / 2 + 64;
+    let tabs = ['BASICS', 'VEHICLES', 'WEAPONS'];
+    let tabW = (layout.panelW - 60) / 3;
+    let tabH = 40;
+    let startX = layout.panelX - layout.panelW / 2 + 30;
+    
+    textAlign(CENTER, CENTER);
+    textSize(16);
     rectMode(CORNER);
-    let leftX = layout.panelX - layout.panelW / 2 + 24;
-    let topY = layout.panelY - layout.panelH / 2 + 72;
-    let bottomY = layout.panelY + layout.panelH / 2 - 24;
-    let totalW = layout.panelW - 48;
-    let gapX = 18;
-    let leftW = floor(totalW * 0.34);
-    let rightW = totalW - leftW - gapX;
-    let rightX = leftX + leftW + gapX;
-    let innerH = bottomY - topY;
+    
+    for (let i = 0; i < tabs.length; i++) {
+        let t = tabs[i];
+        let id = i === 0 ? 'BASICS' : (i === 1 ? 'VEHICLES' : 'WEAPONS');
+        let tx = startX + i * tabW;
+        
+        let isActive = helpTab === id;
+        
+        fill(isActive ? color(255, 200, 0) : color(60, 70, 80));
+        rect(tx, tabY, tabW - 10, tabH, 8);
+        
+        fill(isActive ? 0 : 200);
+        text(t, tx + (tabW - 10) / 2, tabY + tabH / 2);
+    }
 
+    rectMode(CORNER);
+    let contentY = tabY + 45; // Start below tabs
+    let bottomY = layout.panelY + layout.panelH / 2 - 24;
+    let innerH = bottomY - contentY;
+    let leftX = layout.panelX - layout.panelW / 2 + 30;
+    let totalW = layout.panelW - 60;
+
+    // Content Area Background
     fill(36, 42, 50);
     stroke(70);
     strokeWeight(1);
-    rect(leftX, topY, leftW, innerH, 10);
-    rect(rightX, topY, rightW, innerH, 10);
+    rect(leftX, contentY, totalW, innerH, 10);
+    
+    let padding = 20;
+    let contentStartX = leftX + padding;
+    let contentStartY = contentY + padding;
+    let contentW = totalW - padding * 2;
 
     noStroke();
     textAlign(LEFT, TOP);
 
-    fill(255, 200, 0);
-    textSize(19);
-    text("CONTROLS", leftX + 14, topY + 12);
-
-    let keyY = topY + 46;
-    let keyCenterX = leftX + leftW * 0.5;
-    let keySize = 30;
-    imageMode(CENTER);
-    if (controlKeyImgs.W) image(controlKeyImgs.W, keyCenterX, keyY + keySize, keySize, keySize);
-    if (controlKeyImgs.A) image(controlKeyImgs.A, keyCenterX - keySize, keyY + keySize * 2, keySize, keySize);
-    if (controlKeyImgs.S) image(controlKeyImgs.S, keyCenterX, keyY + keySize * 2, keySize, keySize);
-    if (controlKeyImgs.D) image(controlKeyImgs.D, keyCenterX + keySize, keyY + keySize * 2, keySize, keySize);
-
-    fill(220);
-    textSize(14);
-    textLeading(21);
-    text("Move: WASD / Arrows\nAim & Fire: Mouse Left\nInteract / Shop: F\nPause: ESC", leftX + 14, topY + 154, leftW - 28, 110);
-
-    fill(255, 200, 0);
-    textSize(19);
-    text("ENVIRONMENT", leftX + 14, topY + 268);
-
-    let obsY = topY + 324;
-    if (images.trees && images.trees.length > 0) drawImageContain(images.trees[0], leftX + leftW * 0.25, obsY, 44, 44);
-    if (images.rocks && images.rocks.length > 0) drawImageContain(images.rocks[0], leftX + leftW * 0.5, obsY, 36, 36);
-    if (images.bushes && images.bushes.length > 0) drawImageContain(images.bushes[0], leftX + leftW * 0.75, obsY, 34, 34);
-
-    fill(220);
-    textSize(13);
-    textLeading(19);
-    text("Trees & Rocks are solid, they block movement and bullets.\nBushes are passable and can be driven through.", leftX + 14, topY + 354, leftW - 28, 92);
-
-    fill(255, 200, 0);
-    textSize(19);
-    text("MISSION", leftX + 14, topY + 456);
-
-    fill(220);
-    textSize(14);
-    textLeading(21);
-    text("Survive for " + survivalTime + " seconds.\nDefeat enemies to earn coins.\nFind shops and upgrade your build.", leftX + 14, topY + 492, leftW - 28, 120);
-
-    fill(255, 200, 0);
-    textSize(19);
-    text("WEAPON DATABASE", rightX + 14, topY + 12);
-
-    let allWeapons = [
-        WEAPON_TYPES.PISTOL,
-        WEAPON_TYPES.SHOTGUN,
-        WEAPON_TYPES.RIFLE,
-        WEAPON_TYPES.LASER,
-        WEAPON_TYPES.MOLOTOV,
-        WEAPON_TYPES.DONGFENG,
-        WEAPON_TYPES.LOITERING,
-        WEAPON_TYPES.ATOMIC
-    ];
-    
-    let rowStartY = topY + 44;
-    let rowH = 62;
-    let rowGap = 6;
-    let iconBox = 48;
-
-    for (let wType of allWeapons) {
-        let conf = WEAPON_CONFIG[wType];
-        if (!conf) continue;
-        let itemY = rowStartY;
-        if (itemY + rowH > bottomY - 10) break;
-
-        fill(45, 50, 58);
-        stroke(76);
-        rect(rightX + 10, itemY, rightW - 20, rowH, 8);
-
-        fill(58);
-        noStroke();
-        rect(rightX + 16, itemY + (rowH - iconBox) / 2, iconBox, iconBox, 6);
-
-        let icon = images.weaponShop ? images.weaponShop[wType] : null;
-        if (icon) {
-            drawImageContain(icon, rightX + 16 + iconBox / 2, itemY + rowH / 2, 40, 40);
-        }
-
-        noStroke();
-        fill(conf.type === 'special' ? color(255, 100, 100) : color(100, 200, 255));
-        textSize(15);
-        text(conf.name, rightX + 72, itemY + 7);
-
-        fill(180);
-        textSize(11);
-        let rateStr = conf.cooldown > 0 ? (1000 / conf.cooldown).toFixed(1) + "/s" : "Manual";
-        let stats = `DMG: ${conf.damage}`;
-        if (conf.cooldown > 0) stats += ` | Rate: ${rateStr}`;
-        if (conf.count && conf.count > 1) stats += ` x${conf.count}`;
-        text(stats, rightX + 72, itemY + 26);
-
+    if (helpTab === 'BASICS') {
+        // --- BASICS TAB ---
+        let colGap = 40;
+        let colW = (contentW - colGap) / 2;
+        
+        // Left Column: Controls
+        let currY = contentStartY;
+        fill(255, 200, 0);
+        textSize(22);
+        text("CONTROLS", contentStartX, currY);
+        
+        currY += 40;
+        let keySize = 34;
+        let keyGap = 10;
+        let keyGroupW = keySize * 3 + keyGap * 2;
+        let keyCenterX = contentStartX + colW / 2;
+        
+        imageMode(CENTER);
+        if (controlKeyImgs.W) image(controlKeyImgs.W, keyCenterX, currY, keySize, keySize);
+        if (controlKeyImgs.A) image(controlKeyImgs.A, keyCenterX - keySize - keyGap, currY + keySize + keyGap, keySize, keySize);
+        if (controlKeyImgs.S) image(controlKeyImgs.S, keyCenterX, currY + keySize + keyGap, keySize, keySize);
+        if (controlKeyImgs.D) image(controlKeyImgs.D, keyCenterX + keySize + keyGap, currY + keySize + keyGap, keySize, keySize);
+        
+        currY += 100;
+        
         fill(220);
-        textSize(11);
-        textLeading(15);
-        text(conf.description, rightX + 72, itemY + 41, rightW - 90, 18);
+        textSize(15);
+        textLeading(26);
+        text("Move: WASD / Arrows\nAim & Fire: Mouse Left\nInteract / Shop: F\nPause: ESC\nToggle Help: H", contentStartX, currY, colW, 200);
 
-        rowStartY += rowH + rowGap;
+        // Right Column: Environment & Mission
+        let rightX = contentStartX + colW + colGap;
+        let rightY = contentStartY;
+        
+        fill(255, 200, 0);
+        textSize(22);
+        text("ENVIRONMENT", rightX, rightY);
+        
+        rightY += 40;
+        let obsY = rightY + 20;
+        if (images.trees && images.trees.length > 0) drawImageContain(images.trees[0], rightX + colW * 0.2, obsY, 44, 44);
+        if (images.rocks && images.rocks.length > 0) drawImageContain(images.rocks[0], rightX + colW * 0.5, obsY, 36, 36);
+        if (images.bushes && images.bushes.length > 0) drawImageContain(images.bushes[0], rightX + colW * 0.8, obsY, 34, 34);
+
+        rightY += 60;
+        fill(220);
+        textSize(15);
+        textLeading(22);
+        text("Trees & Rocks are solid obstacles.\nBushes are passable cover.", rightX, rightY, colW, 80);
+
+        rightY += 80;
+        fill(255, 200, 0);
+        textSize(22);
+        text("MISSION", rightX, rightY);
+        rightY += 35;
+        fill(220);
+        textSize(15);
+        text("Survive until time runs out!\nDefeat enemies to earn coins.\nFind shops to upgrade.", rightX, rightY, colW, 100);
+
+    } else if (helpTab === 'VEHICLES') {
+        // --- VEHICLES & UPGRADES TAB ---
+        let colGap = 40;
+        let colW = (contentW - colGap) / 2;
+
+        // Left: Vehicles
+        let currY = contentStartY;
+        fill(255, 200, 0);
+        textSize(22);
+        text("VEHICLES", contentStartX, currY);
+        currY += 35;
+        
+        fill(220);
+        textSize(15);
+        textLeading(24);
+        text(
+            "STARTER\nBalanced stats. Good for beginners.\n\n" +
+            "SPEEDSTER\nHigh speed, low HP. Hit & run tactics.\n\n" +
+            "TANK\nHigh HP, slow speed. Can take a beating.\n\n" +
+            "DRIFTER\nHigh handling. Master the drift.", 
+            contentStartX, currY, colW, 400
+        );
+
+        // Right: Upgrades & Difficulty
+        let rightX = contentStartX + colW + colGap;
+        let rightY = contentStartY;
+        
+        fill(255, 200, 0);
+        textSize(22);
+        text("UPGRADES & DIFFICULTY", rightX, rightY);
+        rightY += 35;
+        
+        fill(220);
+        textSize(15);
+        textLeading(24);
+        text(
+            "STATS:\n" +
+            "• Max HP: Increases health capacity\n" +
+            "• Max Ammo: Increases magazine size\n" +
+            "• Top Speed: Increases max velocity\n" +
+            "• Acceleration: Increases pick-up speed\n\n" +
+            "DIFFICULTY CAPS:\n" +
+            "• EASY: Full Power (Max Lv 5)\n" +
+            "• NORMAL: Capped at Lv 3 (+30%)\n" +
+            "• HARD: Capped at Lv 1 (+10%)",
+            rightX, rightY, colW, 400
+        );
+
+    } else if (helpTab === 'WEAPONS') {
+        // --- WEAPONS TAB ---
+        let currY = contentStartY;
+        fill(255, 200, 0);
+        textSize(22);
+        text("WEAPON DATABASE", contentStartX, currY);
+        currY += 40;
+
+        let allWeapons = [
+            WEAPON_TYPES.PISTOL, WEAPON_TYPES.SHOTGUN, WEAPON_TYPES.RIFLE, WEAPON_TYPES.LASER,
+            WEAPON_TYPES.MOLOTOV, WEAPON_TYPES.DONGFENG, WEAPON_TYPES.LOITERING, WEAPON_TYPES.ATOMIC
+        ];
+        
+        let rowH = 60;
+        let iconBox = 48;
+        let colGap = 20;
+        let cellW = (contentW - colGap) / 2; 
+
+        for (let i = 0; i < allWeapons.length; i++) {
+            let wType = allWeapons[i];
+            let conf = WEAPON_CONFIG[wType];
+            if (!conf) continue;
+
+            let col = i % 2;
+            let row = floor(i / 2);
+            let itemX = contentStartX + col * (cellW + colGap);
+            let itemY = currY + row * (rowH + 10);
+
+            if (itemY + rowH > contentStartY + innerH) break;
+
+            // Item Box
+            fill(45, 50, 58);
+            stroke(76);
+            strokeWeight(1);
+            rect(itemX, itemY, cellW, rowH, 8);
+
+            // Icon
+            fill(58);
+            noStroke();
+            rect(itemX + 6, itemY + 6, iconBox, iconBox, 6);
+            let icon = images.weaponShop ? images.weaponShop[wType] : null;
+            if (icon) {
+                drawImageContain(icon, itemX + 6 + iconBox/2, itemY + 6 + iconBox/2, 40, 40);
+            }
+
+            // Text Info
+            noStroke();
+            fill(conf.type === 'special' ? color(255, 100, 100) : color(100, 200, 255));
+            textSize(15);
+            textAlign(LEFT, TOP);
+            text(conf.name || wType, itemX + 64, itemY + 7);
+
+            fill(180);
+            textSize(11);
+            let rateStr = conf.cooldown > 0 ? (1000 / conf.cooldown).toFixed(1) + "/s" : "Manual";
+            let stats = `DMG: ${conf.damage}`;
+            if (conf.cooldown > 0) stats += ` | Rate: ${rateStr}`;
+            if (conf.count && conf.count > 1) stats += ` x${conf.count}`;
+            text(stats, itemX + 64, itemY + 26);
+            
+            fill(220);
+            textSize(11);
+            textLeading(14);
+            text(conf.description || "", itemX + 64, itemY + 41, cellW - 70, 18);
+        }
     }
 
+    pop();
+}
+
+function drawInteractiveStatusIcon(x, y, size, img, type) {
+    let isHover = dist(mouseX, mouseY, x, y) < size / 2;
+    let isPressed = isHover && mouseIsPressed;
+    
+    push();
+    translate(x, y);
+    rectMode(CENTER);
+    imageMode(CENTER);
+    
+    if (isPressed) scale(0.9);
+    else if (isHover) {
+        scale(1.15);
+        drawingContext.shadowBlur = 15;
+        drawingContext.shadowColor = 'rgba(255, 255, 255, 0.6)';
+    }
+    
+    if (img && img.width > 0) {
+        image(img, 0, 0, size, size);
+    } else {
+        if (type === 'HELP') {
+             noFill();
+             stroke(200);
+             strokeWeight(3);
+             ellipse(0, 0, 30, 30);
+             fill(200);
+             noStroke();
+             textAlign(CENTER, CENTER);
+             textSize(20);
+             text('?', 0, 0);
+        } else if (type === 'GEAR') {
+             noFill();
+             stroke(200);
+             strokeWeight(3);
+             ellipse(0, 0, 30, 30);
+             fill(200);
+             noStroke();
+             for(let i=0; i<8; i++) {
+                 push();
+                 rotate(TWO_PI * i / 8);
+                 rect(0, -18, 6, 8);
+                 pop();
+             }
+             fill(30);
+             ellipse(0, 0, 10, 10);
+        }
+    }
+    
+    drawingContext.shadowBlur = 0;
     pop();
 }

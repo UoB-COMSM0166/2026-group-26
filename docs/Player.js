@@ -5,6 +5,8 @@ class Player extends Vehicle {
     this.carType = 'starter';
     this.bonusMaxHp = 0;
     this.bonusMaxAmmo = 0;
+    this.bonusTopSpeed = 0; // Each level gives +10% max speed
+    this.bonusAcceleration = 0; // Each level gives +10% acceleration
     this.coins = 0;
     this.maxSpeed = carData.maxSpeed;
     this.friction = carData.friction;
@@ -73,18 +75,54 @@ class Player extends Vehicle {
       this.burstTimer = 0;
   }
 
+  getUpgradeCaps() {
+    if (typeof difficulty === 'undefined') return { hp: 2, ammo: 5, speed: 5, accel: 5 };
+    if (difficulty === 'EASY') return { hp: 2, ammo: 5, speed: 5, accel: 5 };
+    if (difficulty === 'NORMAL') return { hp: 1, ammo: 3, speed: 3, accel: 3 };
+    if (difficulty === 'HARD') return { hp: 0, ammo: 1, speed: 1, accel: 1 };
+    return { hp: 2, ammo: 5, speed: 5, accel: 5 };
+  }
+
   applyCarType(carId) {
     if (!CAR_CATALOG || !CAR_CATALOG[carId]) return;
     let data = CAR_CATALOG[carId];
     this.carType = carId;
     this.color = color(data.color[0], data.color[1], data.color[2]);
-    this.maxSpeed = data.maxSpeed;
-    this.turnSpeed = data.turnSpeed;
+    
+    // Apply stats with percentage bonuses from upgrades
+    // Apply Difficulty Caps
+    const caps = this.getUpgradeCaps();
+    const effectiveSpeedBonus = Math.min(this.bonusTopSpeed, caps.speed);
+    const effectiveAccelBonus = Math.min(this.bonusAcceleration, caps.accel);
+    const effectiveHpBonus = Math.min(this.bonusMaxHp, caps.hp);
+    const effectiveAmmoBonus = Math.min(this.bonusMaxAmmo, caps.ammo);
+
+    // Top speed bonus: +10% per level
+    let topSpeedMultiplier = 1 + (effectiveSpeedBonus * 0.10);
+    this.maxSpeed = data.maxSpeed * topSpeedMultiplier;
+    
+    // Acceleration/Handling bonus: +10% per level
+    let accelMultiplier = 1 + (effectiveAccelBonus * 0.10);
+    this.turnSpeed = data.turnSpeed * accelMultiplier;
+    
     this.friction = data.friction;
-    this.maxHp = data.maxHp + this.bonusMaxHp;
-    this.maxAmmo = data.maxAmmo + this.bonusMaxAmmo;
+    this.maxHp = data.maxHp + effectiveHpBonus;
+    this.maxAmmo = data.maxAmmo + effectiveAmmoBonus;
     this.hp = min(this.hp, this.maxHp);
     this.ammo = min(this.ammo, this.maxAmmo);
+  }
+
+  getAcceleration() {
+      // Vehicle base acceleration (using default fallback if missing)
+      let baseAccel = (typeof CAR_CATALOG !== 'undefined' && CAR_CATALOG[this.carType] && CAR_CATALOG[this.carType].acceleration) || 0.5;
+      
+      // Apply Difficulty Caps
+      const caps = this.getUpgradeCaps();
+      const effectiveAccelBonus = Math.min(this.bonusAcceleration, caps.accel);
+
+      // Apply acceleration bonus
+      let accelMultiplier = 1 + (effectiveAccelBonus * 0.10);
+      return baseAccel * accelMultiplier;
   }
 
   update() {
@@ -129,7 +167,7 @@ class Player extends Vehicle {
     // Acceleration (Engine Force)
     if (keyIsDown(UP_ARROW) || keyIsDown(87)) { // Up or W
       let force = p5.Vector.fromAngle(this.heading);
-      force.mult(0.5 * timeScale); // Scale Force
+      force.mult(this.getAcceleration() * timeScale); // Scale Force
       this.applyForce(force);
     }
     

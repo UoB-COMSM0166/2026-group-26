@@ -269,14 +269,17 @@ class ShopUI {
 
   applyServerProgress(progress) {
     if (!progress || !player) return;
+    let upgradeState = progress.upgradeState && typeof progress.upgradeState === 'object' ? progress.upgradeState : {};
     player.coins = progress.coins ?? player.coins;
     player.ownedWeapons = progress.ownedWeapons || [WEAPON_TYPES.PISTOL];
     player.ownedCars = progress.ownedCars || ['starter'];
     player.currentWeapon = progress.currentWeapon || player.currentWeapon || WEAPON_TYPES.PISTOL;
     player.unlockedSpecialWeapons = progress.unlockedSpecialWeapons || [];
-    player.bonusMaxHp = progress.upgradeState && progress.upgradeState.maxHp ? progress.upgradeState.maxHp : 0;
-    player.bonusMaxAmmo = progress.upgradeState && progress.upgradeState.maxAmmo ? progress.upgradeState.maxAmmo : 0;
-    player.shieldDurationLevel = progress.upgradeState && progress.upgradeState.shieldDuration ? progress.upgradeState.shieldDuration : 0;
+    player.bonusMaxHp = constrain(Number(upgradeState.maxHp) || 0, 0, 2);
+    player.bonusMaxAmmo = constrain(Number(upgradeState.maxAmmo) || 0, 0, 5);
+    player.bonusTopSpeed = constrain(Number(upgradeState.topSpeed) || 0, 0, 5);
+    player.bonusAcceleration = constrain(Number(upgradeState.acceleration) || 0, 0, 5);
+    player.shieldDurationLevel = 0;
     let targetCar = progress.carType || 'starter';
     if (player.ownedCars.includes(targetCar)) {
       player.applyCarType(targetCar);
@@ -558,9 +561,10 @@ class ShopUI {
         let h3 = this.drawWrappedText(info.attack, x + 5, infoY, cardW - 10, 11, color(234, 210, 175));
     } else {
         let val = 0;
-        if (item.id === 'maxHp') val = player.maxHp;
-        if (item.id === 'maxAmmo') val = player.maxAmmo;
-        if (item.id === 'shieldDuration') val = (player.shieldDurationLevel || 0);
+        if (item.id === 'maxHp') val = `+${constrain(player.bonusMaxHp || 0, 0, 2)} (Max 2)`;
+        if (item.id === 'maxAmmo') val = `+${constrain(player.bonusMaxAmmo || 0, 0, 5)} (Max 5)`;
+        if (item.id === 'topSpeed') val = `+${constrain(player.bonusTopSpeed || 0, 0, 5) * 10}% (Max 50%)`;
+        if (item.id === 'acceleration') val = `+${constrain(player.bonusAcceleration || 0, 0, 5) * 10}% (Max 50%)`;
         text(`Current: ${val}`, x + cardW / 2, infoY);
     }
 
@@ -579,6 +583,10 @@ class ShopUI {
     } else if (state === 'owned') {
         btnColor = [122, 164, 220];
         btnText = "SELECT";
+    } else if (state === 'max_level') {
+        btnColor = this.colors.disabled;
+        btnText = "MAX LEVEL";
+        btnTextColor = color(200);
     } else if (state === 'too_expensive') {
         btnColor = this.colors.disabled;
         btnText = `$ ${item.price}`;
@@ -588,11 +596,13 @@ class ShopUI {
     }
 
     if (type === 'upgrade') {
-        btnText = `$ ${item.price}`;
-        if (player.coins < item.price) {
-             btnColor = this.colors.disabled;
-        } else {
-             btnColor = this.colors.accent;
+        if (state !== 'max_level') {
+            btnText = `$ ${item.price}`;
+            if (player.coins < item.price) {
+                 btnColor = this.colors.disabled;
+            } else {
+                 btnColor = this.colors.accent;
+            }
         }
     }
 
@@ -721,6 +731,14 @@ class ShopUI {
           if (player.coins < item.price) return 'too_expensive';
           return 'buyable';
       }
+      
+      // Upgrades Logic
+      if (item.id === 'maxHp' && player.bonusMaxHp >= 2) return 'max_level';
+      if (item.id === 'maxAmmo' && player.bonusMaxAmmo >= 5) return 'max_level';
+      if (item.id === 'topSpeed' && player.bonusTopSpeed >= 5) return 'max_level'; // 50% max
+      if (item.id === 'acceleration' && player.bonusAcceleration >= 5) return 'max_level'; // 50% max
+      
+      if (player.coins < item.price) return 'too_expensive';
       return 'upgrade';
   }
 
@@ -871,7 +889,7 @@ class ShopUI {
   }
   
   async handleAction(item, type, state) {
-      if (state === 'too_expensive' || state === 'unlocked' || state === 'equipped') return;
+      if (state === 'too_expensive' || state === 'unlocked' || state === 'equipped' || state === 'max_level') return;
       if (typeof authUI === 'undefined' || !authUI || !authUI.token) return;
       if (this.catalogLoading) return;
       try {
@@ -911,16 +929,27 @@ class ShopUI {
   
   applyUpgrade(id) {
       if (id === 'maxHp') {
-          player.bonusMaxHp += 1;
-          player.maxHp += 1;
-          player.hp = min(player.hp, player.maxHp);
+          if (player.bonusMaxHp < 2) {
+              player.bonusMaxHp += 1;
+              player.maxHp += 1;
+              player.hp = min(player.hp, player.maxHp);
+          }
       } else if (id === 'maxAmmo') {
-          player.bonusMaxAmmo += 10;
-          player.maxAmmo += 10;
-          player.ammo = min(player.ammo, player.maxAmmo);
-      } else if (id === 'shieldDuration') {
-          if (!player.shieldDurationLevel) player.shieldDurationLevel = 0;
-          player.shieldDurationLevel += 1;
+          if (player.bonusMaxAmmo < 5) {
+              player.bonusMaxAmmo += 1;
+              player.maxAmmo += 1;
+              player.ammo = min(player.ammo, player.maxAmmo);
+          }
+      } else if (id === 'topSpeed') {
+          if (player.bonusTopSpeed < 5) {
+              player.bonusTopSpeed += 1;
+              player.applyCarType(player.carType); // Reapply to calculate new speed
+          }
+      } else if (id === 'acceleration') {
+          if (player.bonusAcceleration < 5) {
+              player.bonusAcceleration += 1;
+              player.applyCarType(player.carType);
+          }
       }
   }
 }

@@ -6,7 +6,9 @@ class TutorialSystem {
             dongfeng: false,
             loitering: false,
             atomic: false,
-            intro: false
+            intro: false,
+            inventory_full: false,
+            controls: false
         };
         this.activeTutorial = null;
         this.introData = null;
@@ -171,6 +173,36 @@ class TutorialSystem {
                 "Press X to detonate immediately\nDestroys EVERYTHING nearby");
         } else if (this.activeTutorial === 'intro') {
              this.drawIntro(cx, cy, w, h);
+        } else if (this.activeTutorial === 'controls') {
+             this.drawControls(cx, cy);
+        } else if (this.activeTutorial === 'inventory_full') {
+            fill(255, 50, 50);
+            textSize(36);
+            textStyle(BOLD);
+            text("INVENTORY FULL!", cx, cy - 100);
+            
+            fill(255);
+            textSize(22);
+            textStyle(NORMAL);
+            text("You can only carry ONE special weapon at a time!", cx, cy + 60);
+            text("Use your current weapon before picking up a new one.", cx, cy + 100);
+            
+            // Draw Icon (Reuse Powerup Icon style but maybe red?)
+            push();
+            translate(cx, cy - 20);
+            scale(2);
+            fill(50); 
+            stroke(255, 50, 50);
+            strokeWeight(2);
+            rectMode(CENTER);
+            rect(0, 0, 40, 40, 5);
+            
+            noStroke();
+            fill(255, 50, 50);
+            textAlign(CENTER, CENTER);
+            textSize(24);
+            text("!", 0, 0);
+            pop();
         }
         
         // Pulse effect for "Click to Continue"
@@ -210,6 +242,96 @@ class TutorialSystem {
         noFill();
         rectMode(CENTER);
         rect(cx, cy, 400, 300, 20);
+    }
+    
+    drawControls(cx, cy) {
+        fill(255);
+        textSize(42);
+        textStyle(BOLD);
+        text("VEHICLE CONTROLS", cx, cy - 200);
+        
+        textSize(20);
+        textStyle(NORMAL);
+        fill(200);
+        text("Master your vehicle to survive", cx, cy - 160);
+
+        // Layout Constants
+        let keySize = 60; // Slightly larger
+        let gap = 15;
+        let startY = cy + 20; // Shift down to avoid title overlap
+
+        // Draw W
+        this.drawKey(cx, startY - keySize - gap, 'W', keySize);
+        // Label Above W
+        fill(100, 200, 255);
+        textSize(16);
+        textStyle(BOLD);
+        text("ACCELERATE", cx, startY - keySize - gap - 45);
+
+        // Draw A / S / D
+        this.drawKey(cx - keySize - gap, startY, 'A', keySize);
+        this.drawKey(cx, startY, 'S', keySize);
+        this.drawKey(cx + keySize + gap, startY, 'D', keySize);
+        
+        // Labels for A/D (Steer)
+        fill(100, 200, 255);
+        text("STEER", cx - keySize - gap, startY + 45);
+        text("STEER", cx + keySize + gap, startY + 45);
+        
+        // Label for S (Brake)
+        text("BRAKE / REV", cx, startY + 45);
+        
+        // Draw Space (Drift)
+        let spaceW = keySize * 3 + gap * 2;
+        let spaceY = startY + keySize + gap + 40;
+        this.drawKey(cx, spaceY, 'SPACE', keySize, false, spaceW);
+        
+        // Label for Space
+        text("DRIFT / HANDBRAKE (HOLD)", cx, spaceY + 45);
+        
+        // Small hint about arrows
+        fill(150);
+        textSize(14);
+        textStyle(ITALIC);
+        text("(Arrow Keys also supported)", cx, spaceY + 80);
+    }
+
+    drawKey(x, y, label, size, isArrow = false, widthOverride = null) {
+        let w = widthOverride || size;
+        let h = size;
+        
+        push();
+        translate(x, y);
+        
+        // Simple animation: "Press" every 2 seconds
+        let press = (millis() % 2000) < 1000;
+        // Alternate press for different keys to make it lively
+        if (label === 'W' || label === '▲') press = (millis() % 2000) < 500;
+        else if (label === 'S' || label === '▼') press = (millis() % 2000) > 1000 && (millis() % 2000) < 1500;
+        
+        let offset = press ? 2 : 0;
+        
+        fill(220);
+        stroke(50);
+        strokeWeight(2);
+        rectMode(CENTER);
+        
+        // Key Base
+        rect(0, 0, w, h, 8);
+        
+        // Key Top
+        fill(isArrow ? 240 : 255);
+        if (press) fill(200);
+        rect(0, -4 + offset, w - 6, h - 6, 6);
+        
+        fill(50);
+        textSize(isArrow ? size * 0.5 : size * 0.4);
+        if (widthOverride) textSize(size * 0.35); // Smaller text for SPACE
+        textStyle(BOLD);
+        textAlign(CENTER, CENTER);
+        text(label, 0, -4 + offset);
+        
+        pop();
     }
     
     drawWeaponTutorial(cx, cy, title, subtitle, instructions) {

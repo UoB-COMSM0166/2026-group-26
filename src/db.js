@@ -121,8 +121,9 @@ async function initDb() {
     ['tank', 'vehicle', 'car', 'Tank', 150, 22],
     ['drifter', 'vehicle', 'car', 'Drifter', 110, 23],
     ['maxHp', 'upgrade', 'stat', 'Max HP +1', 60, 30],
-    ['maxAmmo', 'upgrade', 'stat', 'Max Ammo +10', 50, 31],
-    ['shieldDuration', 'upgrade', 'stat', 'Buff Duration', 100, 32]
+    ['maxAmmo', 'upgrade', 'stat', 'Max Ammo +1', 50, 31],
+    ['topSpeed', 'upgrade', 'stat', 'Top Speed +10%', 80, 32],
+    ['acceleration', 'upgrade', 'stat', 'Acceleration +10%', 80, 33]
   ];
 
   for (const item of shopSeeds) {
@@ -131,6 +132,7 @@ async function initDb() {
       item
     );
   }
+  await run("DELETE FROM shop_catalog WHERE id = 'shieldDuration'");
 }
 
 module.exports = {

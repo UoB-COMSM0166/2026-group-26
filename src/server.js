@@ -60,10 +60,18 @@ function authMiddleware(req, res, next) {
 function normalizeProgress(payload) {
   const coins = Number.isInteger(payload.coins) && payload.coins >= 0 ? payload.coins : 0;
   const unlockedWeapons = Array.isArray(payload.unlockedWeapons) ? payload.unlockedWeapons : ['pistol'];
-  const upgradeState = payload.upgradeState && typeof payload.upgradeState === 'object' ? payload.upgradeState : {};
+  const unlockedSpecialWeapons = Array.isArray(payload.unlockedSpecialWeapons) ? payload.unlockedSpecialWeapons : [];
+  const upgradeStateRaw = payload.upgradeState && typeof payload.upgradeState === 'object' ? payload.upgradeState : {};
+  const upgradeState = {
+    maxHp: Math.max(0, Math.min(2, Number(upgradeStateRaw.maxHp) || 0)),
+    maxAmmo: Math.max(0, Math.min(5, Number(upgradeStateRaw.maxAmmo) || 0)),
+    topSpeed: Math.max(0, Math.min(5, Number(upgradeStateRaw.topSpeed) || 0)),
+    acceleration: Math.max(0, Math.min(5, Number(upgradeStateRaw.acceleration) || 0))
+  };
   return {
     coins,
     unlockedWeapons,
+    unlockedSpecialWeapons,
     upgradeState
   };
 }
@@ -91,10 +99,17 @@ function safeParseObject(value, fallback = {}) {
 }
 
 function progressToClient(row) {
+  const rawUpgrade = safeParseObject(row.upgrade_state, {});
+  const upgradeState = {
+    maxHp: Math.max(0, Math.min(2, Number(rawUpgrade.maxHp) || 0)),
+    maxAmmo: Math.max(0, Math.min(5, Number(rawUpgrade.maxAmmo) || 0)),
+    topSpeed: Math.max(0, Math.min(5, Number(rawUpgrade.topSpeed) || 0)),
+    acceleration: Math.max(0, Math.min(5, Number(rawUpgrade.acceleration) || 0))
+  };
   return {
     coins: row.coins,
     unlockedWeapons: safeParseArray(row.unlocked_weapons, ['pistol']),
-    upgradeState: safeParseObject(row.upgrade_state, {}),
+    upgradeState,
     ownedWeapons: safeParseArray(row.owned_weapons, ['pistol']),
     ownedCars: safeParseArray(row.owned_cars, ['starter']),
     currentWeapon: row.current_weapon || 'pistol',
@@ -439,9 +454,21 @@ app.post('/api/shop/purchase', authMiddleware, async (req, res) => {
         res.status(400).json({ error: '金币不足' });
         return;
       }
-      coins -= charge;
+      
       const key = catalogItem.id;
       const current = Number(upgradeState[key] || 0);
+      
+      // Upgrade caps
+      if (key === 'maxHp' && current >= 2) return res.status(400).json({ error: '已达到最高等级' });
+      if (key === 'maxAmmo' && current >= 5) return res.status(400).json({ error: '已达到最高等级' });
+      if (key === 'topSpeed' && current >= 5) return res.status(400).json({ error: '已达到最高等级' });
+      if (key === 'acceleration' && current >= 5) return res.status(400).json({ error: '已达到最高等级' });
+      if (!['maxHp', 'maxAmmo', 'topSpeed', 'acceleration'].includes(key)) {
+        res.status(400).json({ error: '不支持的升级类型' });
+        return;
+      }
+
+      coins -= charge;
       upgradeState[key] = current + 1;
     } else {
       res.status(400).json({ error: '不支持的商品类型' });
@@ -458,7 +485,7 @@ app.post('/api/shop/purchase', authMiddleware, async (req, res) => {
         currentWeapon,
         carType,
         JSON.stringify(unlockedSpecialWeapons),
-        JSON.stringify(unlockedSpecialWeapons),
+        JSON.stringify(ownedWeapons),
         req.user.userId
       ]
     );
@@ -562,7 +589,7 @@ app.put('/api/progress', authMiddleware, async (req, res) => {
       [
         normalized.coins,
         JSON.stringify(normalized.unlockedWeapons),
-        JSON.stringify(normalized.unlockedWeapons),
+        JSON.stringify(normalized.unlockedSpecialWeapons),
         JSON.stringify(normalized.upgradeState),
         req.user.userId
       ]

@@ -132,5 +132,50 @@ class Enemy extends Vehicle {
     }
 
     pop();
+
+    // Draw Health Bar
+    this.drawHealthBar();
+  }
+
+  drawHealthBar() {
+    // Only show health bar if enemy is damaged, or we can show it always
+    if (this.hp >= this.maxHp && !this.isShielded) return; // Optional: hide when full health
+
+    push();
+    translate(this.pos.x, this.pos.y);
+    
+    let barWidth = 40;
+    let barHeight = 6;
+    let yOffset = -(this.height || 30) / 2 - 15; // Position above the car
+
+    // Background (gray)
+    fill(50, 50, 50, 200);
+    noStroke();
+    rectMode(CENTER);
+    rect(0, yOffset, barWidth, barHeight, 3);
+
+    // Health (red to green depending on hp percentage)
+    let hpPercent = Math.max(0, this.hp / this.maxHp);
+    
+    // Shield color override
+    if (this.isShielded) {
+        fill(100, 200, 255); // Shield color
+    } else {
+        if (hpPercent > 0.6) fill(50, 200, 50); // Green
+        else if (hpPercent > 0.3) fill(255, 200, 0); // Yellow
+        else fill(255, 50, 50); // Red
+    }
+
+    rectMode(CORNER);
+    rect(-barWidth / 2, yOffset - barHeight / 2, barWidth * hpPercent, barHeight, 3);
+
+    // Outline
+    noFill();
+    stroke(20, 20, 20);
+    strokeWeight(1);
+    rectMode(CENTER);
+    rect(0, yOffset, barWidth, barHeight, 3);
+    
+    pop();
   }
 }

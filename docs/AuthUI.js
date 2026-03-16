@@ -71,32 +71,21 @@ class AuthUI {
 
     let box = createDiv('');
     box.parent(this.container);
-    box.style('background', '#2c3e50');
-    box.style('padding', '40px');
-    box.style('border-radius', '10px');
-    box.style('box-shadow', '0 0 20px rgba(0,0,0,0.5)');
-    box.style('width', '400px');
-    box.style('text-align', 'center');
-    box.style('color', '#ecf0f1');
-    box.style('font-family', 'sans-serif');
+    box.addClass('auth-box');
 
     let title = createElement('h2', this.getTitle());
     title.parent(box);
-    title.style('margin-bottom', '30px');
-    title.style('color', '#f1c40f');
+    title.addClass('auth-title');
 
     // Error Message Area
     this.msgBox = createDiv('');
     this.msgBox.parent(box);
-    this.msgBox.style('color', '#e74c3c');
-    this.msgBox.style('margin-bottom', '15px');
-    this.msgBox.style('min-height', '20px');
-    this.msgBox.style('font-size', '14px');
+    this.msgBox.addClass('auth-msg-error');
 
     if (this.state === 'login') {
       this.createInput(box, 'email', 'Email', 'email');
-      this.createInput(box, 'password', 'Password', 'password');
-      this.createButton(box, 'LOGIN', () => this.handleLogin());
+      this.createInput(box, 'password', 'Password', 'password', '', () => this.handleLogin());
+      this.createButton(box, 'LOGIN', () => this.handleLogin(), 'primary');
       
       let links = createDiv('');
       links.parent(box);
@@ -105,22 +94,19 @@ class AuthUI {
       
       let regLink = createSpan('Register');
       regLink.parent(links);
-      regLink.style('color', '#3498db');
-      regLink.style('cursor', 'pointer');
-      regLink.style('margin-right', '15px');
+      regLink.addClass('auth-link');
       regLink.mousePressed(() => { this.state = 'register'; this.render(); });
 
       let forgotLink = createSpan('Forgot Password?');
       forgotLink.parent(links);
-      forgotLink.style('color', '#95a5a6');
-      forgotLink.style('cursor', 'pointer');
+      forgotLink.addClass('auth-link');
       forgotLink.mousePressed(() => { this.state = 'forgot'; this.render(); });
 
     } else if (this.state === 'register') {
       this.createInput(box, 'username', 'Username', 'text');
       this.createInput(box, 'email', 'Email', 'email');
       this.createInput(box, 'password', 'Password', 'password');
-      this.createButton(box, 'REGISTER', () => this.handleRegister());
+      this.createButton(box, 'REGISTER', () => this.handleRegister(), 'primary');
 
       let links = createDiv('');
       links.parent(box);
@@ -129,8 +115,7 @@ class AuthUI {
       
       let loginLink = createSpan('Back to Login');
       loginLink.parent(links);
-      loginLink.style('color', '#3498db');
-      loginLink.style('cursor', 'pointer');
+      loginLink.addClass('auth-link');
       loginLink.mousePressed(() => { this.state = 'login'; this.render(); });
 
     } else if (this.state === 'verify') {
@@ -142,8 +127,8 @@ class AuthUI {
 
       this.createInput(box, 'verify-email', 'Email', 'email', this.pendingVerificationEmail);
       this.createInput(box, 'verify-code', 'Verification Code', 'text');
-      this.createButton(box, 'VERIFY EMAIL', () => this.handleVerifyCode());
-      this.createButton(box, 'RESEND CODE', () => this.handleResendCode(), '#95a5a6', '#ecf0f1');
+      this.createButton(box, 'VERIFY EMAIL', () => this.handleVerifyCode(), 'primary');
+      this.createButton(box, 'RESEND CODE', () => this.handleResendCode(), 'secondary');
 
       let links = createDiv('');
       links.parent(box);
@@ -152,8 +137,7 @@ class AuthUI {
 
       let loginLink = createSpan('Back to Login');
       loginLink.parent(links);
-      loginLink.style('color', '#3498db');
-      loginLink.style('cursor', 'pointer');
+      loginLink.addClass('auth-link');
       loginLink.mousePressed(() => { this.state = 'login'; this.render(); });
 
     } else if (this.state === 'forgot') {
@@ -164,7 +148,7 @@ class AuthUI {
       desc.style('color', '#bdc3c7');
 
       this.createInput(box, 'email', 'Email', 'email');
-      this.createButton(box, 'SEND RESET LINK', () => this.handleForgot());
+      this.createButton(box, 'SEND RESET LINK', () => this.handleForgot(), 'primary');
 
       let links = createDiv('');
       links.parent(box);
@@ -173,13 +157,12 @@ class AuthUI {
       
       let loginLink = createSpan('Back to Login');
       loginLink.parent(links);
-      loginLink.style('color', '#3498db');
-      loginLink.style('cursor', 'pointer');
+      loginLink.addClass('auth-link');
       loginLink.mousePressed(() => { this.state = 'login'; this.render(); });
     }
   }
 
-  createInput(parent, id, placeholder, type, value = '') {
+  createInput(parent, id, placeholder, type, value = '', onEnter = null) {
     let wrapper = createDiv('');
     wrapper.parent(parent);
     wrapper.style('margin-bottom', '15px');
@@ -190,27 +173,26 @@ class AuthUI {
     inp.attribute('type', type);
     inp.attribute('placeholder', placeholder);
     if (value) inp.value(value);
-    inp.style('width', '100%');
-    inp.style('padding', '10px');
-    inp.style('border-radius', '5px');
-    inp.style('border', 'none');
-    inp.style('background', '#34495e');
-    inp.style('color', 'white');
-    inp.style('box-sizing', 'border-box');
+    inp.addClass('auth-input');
+    if (onEnter) {
+      inp.elt.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.repeat) {
+          event.preventDefault();
+          onEnter();
+        }
+      });
+    }
   }
 
-  createButton(parent, text, onClick, bg = '#f1c40f', fg = '#2c3e50') {
+  createButton(parent, text, onClick, type = 'primary') {
     let btn = createButton(text);
     btn.parent(parent);
-    btn.style('width', '100%');
-    btn.style('padding', '12px');
-    btn.style('background', bg);
-    btn.style('border', 'none');
-    btn.style('border-radius', '5px');
-    btn.style('color', fg);
-    btn.style('font-weight', 'bold');
-    btn.style('cursor', 'pointer');
-    btn.style('margin-top', '10px');
+    btn.addClass('auth-btn');
+    if (type === 'primary') {
+        btn.addClass('auth-btn-primary');
+    } else {
+        btn.addClass('auth-btn-secondary');
+    }
     btn.mousePressed(onClick);
   }
 
