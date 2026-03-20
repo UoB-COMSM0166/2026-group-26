@@ -217,11 +217,6 @@ Applying these categories and constraints, we generated the following test cases
 
 This systematic testing approach helped us quickly identify and resolve edge-case UI bugs where buttons previously displayed incorrect interactive states, ensuring a smooth progression system for the player.
 
-### Technical challenges
-
-1. Unintended bugs caused by the interaction of the timer and shop mechanics
-
-2. Missile flying out of the map indefinitely (which locks player control) bug.
 
 ## Your Group
 
