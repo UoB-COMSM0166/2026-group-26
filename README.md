@@ -186,6 +186,37 @@ So the null hypothesis was not rejected at a 95% confidence interval. This meant
 The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too close to each other in terms of gameplay experience, **so the 3 difficulties should be readjusted.**
 
 
+### Description of Code Testing (Black-Box Testing)
+
+To ensure the reliability of our core game logic and UI state management, we applied the **Equivalence Partitioning (EP)** method for black-box testing, strictly following the four-step process.
+
+**Step 1: Decide on functional unit**
+We selected the `getItemState` function within our `ShopUI.js` module. This function is a critical unit that handles complex state evaluations based on multiple variables (player currency, item price, item type, and current inventory) to determine the interactive state of shop buttons.
+
+**Step 2: Identify categories of inputs**
+We analyzed the input parameters and player states to define valid equivalence classes, focusing on the 'Weapon' category as our test model:
+* **Category A (Ownership State):** A1 (Already Equipped), A2 (Owned but not equipped), A3 (Not Owned)
+* **Category B (Weapon Type):** B1 (Basic Weapon), B2 (Special Drop Weapon)
+* **Category C (Affordability):** C1 (`player.coins < item.price`), C2 (`player.coins >= item.price`)
+
+**Step 3: Identify constraints across categories**
+Not all input categories can be logically combined due to our game's economic rules. We identified the following constraints:
+* **Constraint 1:** If a weapon is A1 (Equipped) or A2 (Owned), Category C (Affordability) becomes irrelevant because the player cannot repurchase owned items. 
+* **Constraint 2:** Special Drop Weapons (B2) cannot be 'Equipped' directly from the shop; they can only be 'Unlocked', restricting the combination of B2 and A1.
+
+**Step 4: Define test cases**
+Applying these categories and constraints, we generated the following test cases. These tests were manually executed and verified during the gameplay loop by simulating different wallet balances and inventory states:
+
+| Test Case | Inputs (Combined Categories) | Expected Output | Observed Output | Result |
+| :--- | :--- | :--- | :--- | :--- |
+| **TC-01** | B1 + A1 + (C irrelevant) | `equipped` | `equipped` | ✅ Pass |
+| **TC-02** | B1 + A2 + (C irrelevant) | `owned` | `owned` | ✅ Pass |
+| **TC-03** | B1 + A3 + C1 | `too_expensive` | `too_expensive` | ✅ Pass |
+| **TC-04** | B1 + A3 + C2 | `buyable` | `buyable` | ✅ Pass |
+| **TC-05** | B2 + A3 + C2 | `buyable_unlock`| `buyable_unlock`| ✅ Pass |
+
+This systematic testing approach helped us quickly identify and resolve edge-case UI bugs where buttons previously displayed incorrect interactive states, ensuring a smooth progression system for the player.
+
 ### Technical challenges
 
 1. Unintended bugs caused by the interaction of the timer and shop mechanics
