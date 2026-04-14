@@ -191,6 +191,15 @@ Another valuable aspect of our process was that evaluation genuinely fed back in
 
 Overall, our development process was practical, communicative, and adaptable. We did not rely on complex formal management methods, but on frequent communication, shared visibility of issues, and a willingness to adjust our plans when necessary. This worked particularly well for a project where gameplay ideas, technical implementation, and evaluation results were all evolving at the same time. At the same time, the project also showed us that flexibility alone is not always enough. If we were to repeat the project, we would keep the same strengths of open communication, shared documentation, and branch-based collaboration, but we would define ownership of major systems earlier and plan integration testing more explicitly. The main lesson from our process is that effective teamwork in software development depends not just on dividing work, but on maintaining clear communication, recording issues systematically, and adapting quickly when design or technical challenges emerge.
 
+
+## AI statement 
+
+Our team used AI as a supporting tool in a limited and targeted way during this project. Its main use was in the preparation and refinement of visual assets for the game interface and environment, including icons, animated visual elements, weapon models, and parts of the map. Our usual workflow was to first search online for reference materials or source assets that we felt were suitable, and then use AI-assisted tools to adjust aspects such as orientation, viewing angle, placement, and overall visual style so that the materials better matched the look and feel of our game. This was particularly helpful because our team does not have specialist UI or visual design experience, so AI provided practical support in improving consistency and presentation.
+
+AI was also used occasionally during development to help identify the possible causes of errors and support debugging. In these cases, it was used to suggest likely sources of problems or provide possible directions for troubleshooting, rather than to replace our own testing and implementation work.
+
+Importantly, all AI-assisted outputs were reviewed, selected, and integrated manually by the team. Final decisions about which assets to use, how they should appear in the game, and how technical issues should be resolved were made by us. AI was therefore used as an assistive tool to support visual refinement and debugging, while the overall design, implementation, testing, and report writing remained the team’s own work.
+
 ## Your Group
 
 GROUP PHOTO. 
