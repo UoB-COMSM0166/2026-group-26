@@ -1,4 +1,3 @@
-![IMG_3751](https://github.com/user-attachments/assets/ed1e73dd-f1d0-4ed7-8c78-b687e7c586f6)
 Play the game here: https://uob-comsm0166.github.io/2026-group-26/
 
 # 2026-group-26
@@ -48,8 +47,13 @@ We then developed two paper prototype ideas. The first was a top-down vehicle su
 |:---:|:---:|
 | ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)|![IMG_3751](https://github.com/user-attachments/assets/63be1e5e-0680-43a0-9856-fb50a0960278)|
 
-- [🎬 Play Video](./video/IMG_3466.mov)
-- [🎬 Play Video](./video/IMG_3470.mov)
+<video src="./video/IMG_3466.mov" controls="controls" width="100%">
+</video>
+
+<br>
+
+<video src="./video/IMG_3470.mov" controls="controls" width="100%">
+</video>
 
 
 The main reason for this decision was that the vehicle prototype produced a clearer and more focused gameplay loop. It created tension through survival over time, gave the player a strong sense of movement and risk, and allowed more room for environmental interaction. By contrast, the ricochet shooter idea would have required more complex balancing between multiple players, projectile behaviour, and arena control. As a result, we decided to focus on the vehicle survival concept and refine it into a single-player game in which the player controls an evader and attempts to survive until the timer ends.
