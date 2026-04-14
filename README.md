@@ -15,105 +15,79 @@ You will be developing your game using [P5.js](https://p5js.org) a javascript li
 - [P5.js tutorials](https://p5js.org/tutorials/) 
 - [Coding Train P5.js](https://thecodingtrain.com/tracks/code-programming-with-p5-js) course - go here for enthusiastic video tutorials from Dan Shiffman (recommended!)
 
-## Inspiration & Initial Idea
+---
+## Introduction
 
-### Inspiration
+Our game is a top-down vehicle survival game in which the player controls an evader and must stay alive until the timer ends. The game combines fast-paced driving, enemy avoidance, combat, and resource management within an interactive urban map. Players can enter buildings such as hospitals and weapon shops to restore health, buy weapons, and unlock new attack options. The game also includes easy, normal, and difficult modes to support different levels of challenge.
+
+What makes our game novel is its combination of timed survival driving with meaningful map interaction. Buildings are not just background objects, but strategic spaces that shape player decisions. This turns the game from a simple evasion experience into a layered survival loop built around movement, upgrades, and risk-reward choice.
+
+### *The game is based on.*
 
 Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
 - Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
 - Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
----
-### Initial Idea
-
-We proposed four distinct directions:
-1.  Text-Based Adventure: A narrative-heavy game focusing on choices and story.
-2.  Simulation/Construction Game: A "Design Game" allowing players to build structures or manage resources.
-3.  Top-Down Stealth: A slow-paced strategy game focusing on vision cones and sneaking.
-4.  Chase & Evasion: A fast-paced action game focusing on reaction speed and movement.
-![99d9df15929ce33a47a437c35f938bcf](https://github.com/user-attachments/assets/d0e35714-b8f4-446c-a7a6-94ee79cab433)
-
-## Two paper prototype ideas
-### Chase & Evasion:
-
-1: **Top-Down Vehicle Survival (Chase & Evasion)**
-- Role: The player acts as the Evader.
-- Controls The player navigates a vehicle using directional keys (Up/Down/Left/Right) and a Braking mechanic to control momentum and make tight turns.
-- Item System:
-    1.  Repair Kit Restores Health Points (HP) but cannot exceed the maximum HP cap.
-    2.  Shield Generator Provides a temporary barrier that negates damage from one collision with the Chaser. The shield breaks immediately after use.
-- Win Condition: Survival. The player must avoid the Chaser and keep their HP above zero for 10 minutes.
-- [🎬 Play Video](./video/IMG_3466.mov)
-
----
-2: **Ricochet Space Arena (Multiplayer Shooter)**
-- Setup: Four players each control a spaceship within their own designated quadrant of the map.
-- Combat Mechanics:
-    1. Players shoot projectiles that ricochet (bounce) off map boundaries.
-    2. Escalating Difficulty: Projectile speed increases over time, making the arena progressively more dangerous.
-- Elimination System:
-    1. Each player starts with 3 HP. Being hit reduces HP by 1.
-    2. When a player reaches 0 HP, they are eliminated, and their quadrant is permanently closed.
-    3. Closed quadrants become solid walls, further reducing the play area and increasing the frequency of bullet reflections.
-- Win Condition: Battle Royale style—the last surviving player wins.
-- [🎬 Play Video](./video/IMG_3470.mov)
-
-## Hotline Escape
-
-### Final idea
-
-Our final idea is a vehicle-based chase and evasion game featuring asymmetric gameplay. Players can choose to play as either the Chaser or the Evader.
-
-#### Role: The Evader
-
-The Evader's goal is to survive while being hunted.
-- Health System: The Evader has a limited number of lives (HP). Each collision with the Chaser results in -1 HP. If HP drops to zero, the game ends.
-- Victory Condition:  We are currently discussing whether the win condition should be based on surviving for a set duration or collecting a specific number of items.
--  Power-ups: The Evader can collect items in the game environment to gain temporary buffs, such as:
-  - Speed Boost: Increases movement speed.
-  - Shield: Negates the damage from the next collision.
-  - Repair: Restores 1 HP (up to the maximum limit).
----
-#### Role: The Chaser
-The Chaser's goal is to destroy the Evader within the time limit.
-- Mechanics: The Chaser is invulnerable (no HP limit).
-- Objective: The primary goal is to collide with the Evader. Successfully reducing the Evader's HP to zero results in Victory.
-- Defeat Condition: If the time limit expires before the Evader is destroyed, the Chaser loses.
-- Power-ups: We are currently discussing whether the Chaser will also have access to specific power-ups to aid in the pursuit.
-
-#### Paper prototype
-![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)
-
 
 ## Requirements
 
+### Ideation and concept selection
+
+At the beginning of the project, our team explored four possible game directions: a text-based adventure, a simulation/construction game, a top-down stealth game, and a chase-and-evasion game. These ideas reflected different design priorities, ranging from narrative depth to strategy and fast-paced action. After discussion, we became most interested in the chase-and-evasion direction because it offered a clear core gameplay loop, immediate player feedback, and strong potential for tension and replayability.
+
+Our early goal was to create a game that was easy to understand at a basic level but still allowed for strategic decision-making during play. Compared with the other three ideas, the chase-and-evasion concept seemed the most suitable for this because it combined simple controls with opportunities for map design, item systems, and escalating challenge. It also matched the team's interest in building a game centred on movement, pressure, and survival rather than narrative or construction mechanics.
+![99d9df15929ce33a47a437c35f938bcf](https://github.com/user-attachments/assets/d0e35714-b8f4-446c-a7a6-94ee79cab433)
+
+
+### Paper prototyping and early design decisions
+
+We then developed two paper prototype ideas. The first was a top-down vehicle survival game focused on evasion, movement control, and power-ups. The second was a multiplayer ricochet space shooter based on bouncing projectiles and shrinking play areas. Although both ideas were promising, the vehicle survival prototype was chosen as the stronger foundation for further development.
+
+| **Idea 1 (The version ultimately adopted)** | **Idea 2 (One of the dismissed case)** |
+|:---:|:---:|
+| ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)| ![]() |
+- 
+
+- [🎬 Play Video](./video/IMG_3466.mov)
+- [🎬 Play Video](./video/IMG_3470.mov)
+
+
+The main reason for this decision was that the vehicle prototype produced a clearer and more focused gameplay loop. It created tension through survival over time, gave the player a strong sense of movement and risk, and allowed more room for environmental interaction. By contrast, the ricochet shooter idea would have required more complex balancing between multiple players, projectile behaviour, and arena control. As a result, we decided to focus on the vehicle survival concept and refine it into a single-player game in which the player controls an evader and attempts to survive until the timer ends.
+
+During this stage, we also made an important scope decision. Earlier ideas included a playable chaser role, but we later narrowed the project to a single playable evader role. This allowed us to concentrate development effort on polishing the survival loop, improving map interaction, and implementing progression systems such as weapon unlocking and recovery options.
+
 ### List of Stakeholders
 
-- **Game Designers**
+- The primary stakeholder group is **players**, who require a game that is understandable, responsive, fair, and engaging over repeated play sessions. Their needs directly shaped decisions such as adding difficulty settings, improving interaction clarity, and introducing meaningful choices through buildings and upgrades.
 
-- **Players**
-
-
-### Epics and User Stories
-
-1. **Epic:** 
-  Vehicle Locomotion System 
-- **User Story:**
-  As a Game Designer, I want to implement the vehicle steering logic (Vehicle Class), So that the player receives correct directional feedback when making a turn.
+- A second stakeholder group is the **development team**, who needed requirements that were feasible within the time and technical constraints of the module. This influenced our decision to reduce scope, prioritise a single polished gameplay loop, and focus on features that could be realistically implemented and tested.
 
 
-2. **Epic:**
-  Strategic Environment Interaction
-- **User Story:**
-  As a Player, I want to interact with map elements (e.g., doors, traps), So that I can create obstacles for pursuers and gain a strategic advantage.
+### Core functional requirements
 
-### Reflection
-**Epics and User Stories:**
-- We learned that Epics serve as necessary high-level anchors that prevent us from getting lost in details too early. Initially, we struggled to separate abstract ideas from code tasks. However, by breaking down our core "Chase & Evasion" concept into specific User Stories, we realized that development becomes more efficient when viewed strictly from a Stakeholder’s perspective. For instance, instead of simply listing "add car physics," writing stories from the "Evader's" point of view helped us prioritize mechanics that directly enhance the thrill of the chase, ensuring technical features always serve the player's experience.
+From the ideation and prototyping stages, we identified the following core functional requirements:
 
+- The player must be able to control a vehicle in a top-down environment.
+- The game must include a survival-based win condition linked to a countdown timer.
+- The player must be able to take damage and lose the game if health reaches zero.
+- The map must contain interactive buildings, including a hospital and a weapon shop.
+- The hospital must allow the player to restore health.
+- The weapon shop must allow the player to purchase or unlock new attack options.
+- The game must provide multiple difficulty levels: easy, normal, and difficult.
 
-**Acceptance Criteria:**  
-- The most challenging lesson involved defining Acceptance Criteria. We discovered that while User Stories describe what is needed, Acceptance Criteria define when it is finished. As a team, we found it difficult to apply measurable metrics to subjective qualities like "game feel" or "maintenance hours." This struggle taught us that vague criteria lead to vague implementation. We learned that rigorous, quantifiable criteria are essential to bridge the gap between a design concept and a testable software deliverable.
+### User stories
+
+- As a player, I want to control the vehicle smoothly, so that movement feels responsive and survival depends on skill.
+- As a player, I want a clear survival timer and health display, so that I can understand my current progress and risk.
+- As a player, I want to enter buildings such as hospitals and weapon shops, so that exploration becomes strategically useful.
+- As a player, I want to unlock or obtain stronger weapons, so that I gain more options for dealing with threats.
+- As a player, I want to choose between easy, normal, and difficult modes, so that the challenge matches my skill level.
+
+### Acceptance criteria
+
+These user stories were translated into practical acceptance criteria during development. For example, the vehicle controls needed to be stable and learnable, buildings needed to trigger an interaction menu when entered, and the game needed to end consistently in either victory (timer completed) or defeat (health depleted). Similarly, difficulty modes needed to produce observable differences in challenge rather than acting as cosmetic labels only.
+
+Overall, the requirements process helped us move from a broad concept to a more realistic and implementable game. It also helped us identify where reducing scope improved quality, particularly in the decision to focus on one playable role and a stronger core survival experience.
 
 ## Evaluation
 
