@@ -44,11 +44,9 @@ Our early goal was to create a game that was easy to understand at a basic level
 
 We then developed two paper prototype ideas. The first was a top-down vehicle survival game focused on evasion, movement control, and power-ups. The second was a multiplayer ricochet space shooter based on bouncing projectiles and shrinking play areas. Although both ideas were promising, the vehicle survival prototype was chosen as the stronger foundation for further development.
 
-| **Idea 1 (The version ultimately adopted)** | **Idea 2 (One of the dismissed case)** |
+| **The version ultimately adopted** | **One of the dismissed case** |
 |:---:|:---:|
-| ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)|![IMG_3751](https://github.com/user-attachments/assets/d72005e3-eede-47d2-8196-5c8db6d0e41e)|
-- 
-
+| ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)|![IMG_3751](https://github.com/user-attachments/assets/63be1e5e-0680-43a0-9856-fb50a0960278)|
 
 - [🎬 Play Video](./video/IMG_3466.mov)
 - [🎬 Play Video](./video/IMG_3470.mov)
