@@ -1,3 +1,4 @@
+![IMG_3751](https://github.com/user-attachments/assets/ed1e73dd-f1d0-4ed7-8c78-b687e7c586f6)
 Play the game here: https://uob-comsm0166.github.io/2026-group-26/
 
 # 2026-group-26
@@ -45,8 +46,9 @@ We then developed two paper prototype ideas. The first was a top-down vehicle su
 
 | **Idea 1 (The version ultimately adopted)** | **Idea 2 (One of the dismissed case)** |
 |:---:|:---:|
-| ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)| ![]() |
+| ![IMG_3473](https://github.com/user-attachments/assets/4e81a92a-ebd1-44c2-ab46-44a279080995)|![IMG_3751](https://github.com/user-attachments/assets/d72005e3-eede-47d2-8196-5c8db6d0e41e)|
 - 
+
 
 - [🎬 Play Video](./video/IMG_3466.mov)
 - [🎬 Play Video](./video/IMG_3470.mov)
