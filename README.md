@@ -34,9 +34,11 @@ Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted.
 ### Ideation and concept selection
 
 At the beginning of the project, our team explored four possible game directions: a text-based adventure, a simulation/construction game, a top-down stealth game, and a chase-and-evasion game. These ideas reflected different design priorities, ranging from narrative depth to strategy and fast-paced action. After discussion, we became most interested in the chase-and-evasion direction because it offered a clear core gameplay loop, immediate player feedback, and strong potential for tension and replayability.
+![IMG_3752 2](https://github.com/user-attachments/assets/24780d1e-357d-4f97-aee4-c4f696794bd2)
 
 Our early goal was to create a game that was easy to understand at a basic level but still allowed for strategic decision-making during play. Compared with the other three ideas, the chase-and-evasion concept seemed the most suitable for this because it combined simple controls with opportunities for map design, item systems, and escalating challenge. It also matched the team's interest in building a game centred on movement, pressure, and survival rather than narrative or construction mechanics.
-![99d9df15929ce33a47a437c35f938bcf](https://github.com/user-attachments/assets/d0e35714-b8f4-446c-a7a6-94ee79cab433)
+
+
 
 
 ### Paper prototyping and early design decisions
@@ -57,6 +59,7 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 - A second stakeholder group is the **development team**, who needed requirements that were feasible within the time and technical constraints of the module. This influenced our decision to reduce scope, prioritise a single polished gameplay loop, and focus on features that could be realistically implemented and tested.
 
+<img width="936" height="889" alt="Onion" src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" />
 
 ### Core functional requirements
 
