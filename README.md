@@ -55,9 +55,9 @@ The main reason for this decision was that the vehicle prototype produced a clea
 During this stage, we also made an important scope decision. Earlier ideas included a playable chaser role, but we later narrowed the project to a single playable evader role. This allowed us to concentrate development effort on polishing the survival loop, improving map interaction, and implementing progression systems such as weapon unlocking and recovery options.
 
 
-| Early stage design |
+| Early stage diagram design |
 | :---: |
-| <img width="753" height="394" alt="use case diagram" src="https://github.com/user-attachments/assets/0b23df4d-b065-4ad0-a361-0faf22cbcc60" /> |
+| <img width="793" height="414" alt="UCD" src="https://github.com/user-attachments/assets/5b7ae93f-2a12-4ed0-8b65-44d195c51a46" />|
 
 
 ### List of Stakeholders
