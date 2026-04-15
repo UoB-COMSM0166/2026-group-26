@@ -54,6 +54,12 @@ The main reason for this decision was that the vehicle prototype produced a clea
 
 During this stage, we also made an important scope decision. Earlier ideas included a playable chaser role, but we later narrowed the project to a single playable evader role. This allowed us to concentrate development effort on polishing the survival loop, improving map interaction, and implementing progression systems such as weapon unlocking and recovery options.
 
+
+| Early stage design |
+| :---: |
+| <img width="753" height="394" alt="use case diagram" src="https://github.com/user-attachments/assets/0b23df4d-b065-4ad0-a361-0faf22cbcc60" /> |
+
+
 ### List of Stakeholders
 
 - The primary stakeholder group is **players**, who require a game that is understandable, responsive, fair, and engaging over repeated play sessions. Their needs directly shaped decisions such as adding difficulty settings, improving interaction clarity, and introducing meaningful choices through buildings and upgrades.
