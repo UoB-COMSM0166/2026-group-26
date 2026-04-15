@@ -204,10 +204,10 @@ Importantly, all AI-assisted outputs were reviewed, selected, and integrated man
 
 |  |  |  |
 |---|---|---|
-| |  |  |
-|  |  | |
-|  |  |  |
-|  |  |  |
+| <img src="https://github.com/user-attachments/assets/4dd5a0fa-698f-4a2d-bd1d-1fc963927119" width="180"> | <img src="https://github.com/user-attachments/assets/1b80e0a7-39f7-4487-8766-5c9045b6ace2" width="180"> | <img src="https://github.com/user-attachments/assets/4b770f9a-bab4-4a26-a794-3a25e3992f16" width="180"> |
+| <img src="https://github.com/user-attachments/assets/95348988-5c3c-4732-9eb1-b20a748a5dc0" width="180"> | <img src="https://github.com/user-attachments/assets/3b930309-6309-40ce-81af-74888e6974c1" width="180"> | <img src="https://github.com/user-attachments/assets/a568b880-f1bd-4460-8f0a-073e4a6f0e3e" width="180"> |
+| <img src="https://github.com/user-attachments/assets/f3f7c0c5-a9b7-4196-a34d-b2793d2fe8d9" width="180"> | <img src="https://github.com/user-attachments/assets/8d1e3d7c-5237-452b-8e78-319095294052" width="180"> | <img src="https://github.com/user-attachments/assets/f7270953-c3f6-4ec9-aaa9-6c51176cce14" width="180"> |
+| <img src="https://github.com/user-attachments/assets/92d85539-3005-453c-b58a-b415abb7f72f" width="180"> | <img src="https://github.com/user-attachments/assets/efd22639-da4e-4a4a-a022-3252e26ef59b" width="180"> | <img src="https://github.com/user-attachments/assets/37aea2a5-4f84-41ac-97c9-06d635444f42" width="180"> |
 
 
 ## Your Group
