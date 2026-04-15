@@ -200,6 +200,16 @@ AI was also used occasionally during development to help identify the possible c
 
 Importantly, all AI-assisted outputs were reviewed, selected, and integrated manually by the team. Final decisions about which assets to use, how they should appear in the game, and how technical issues should be resolved were made by us. AI was therefore used as an assistive tool to support visual refinement and debugging, while the overall design, implementation, testing, and report writing remained the team’s own work.
 
+### Sample AI Assets
+
+|  |  |  |
+|---|---|---|
+| |  |  |
+|  |  | |
+|  |  |  |
+|  |  |  |
+
+
 ## Your Group
 
 GROUP PHOTO. 
