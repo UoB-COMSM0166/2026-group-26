@@ -114,11 +114,11 @@ Overall, the requirements process helped us move from a broad concept to a more 
 
 - **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups lack visibility. The overall interface aesthetics could also be improved.
 
-- **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players often suddenly crash into walls, highlighting a severe lack of advance map boundary cues.
+- **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players often suddenly crash into walls, highlighting a severe lack of advanced map boundary cues.
 
 - **Cognitive Load & Onboarding:** The initial version lacks clear interaction prompts, increasing the user's memory load. Explicit movement instructions should be placed at the top of the interface. Furthermore, there is no transition prompt indicating "press to start" before gameplay begins.
 
-- **Gameplay Clarity:** The core mechanics are poorly communicated; players are not explicitly informed of the win conditions, nor is it clear whether they should dodge or collide with NPCs.
+- **Gameplay Clarity:** The core mechanics are poorly communicated; players need to know win conditions and whether they should dodge or collide with NPCs.
 
 - **System Flexibility:** The game currently lacks a difficulty selection system, failing to accommodate players of different skill levels.
 ---
@@ -129,7 +129,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 Despite the asymmetric "Chase & Evasion" design, the UI fails to convey these rules. Players experience a steep learning curve due to confusion over victory conditions and NPC interaction logic. Mandatory movement and objective prompts must be integrated directly into the HUD.
 
 - **Visual Hierarchy and Player Frustration:** 
-Essential interactive elements like player vehicles, health packs, and shields blend into the background due to low contrast. Combined with the lack of collision warnings at map boundaries, this results in "cheap" deaths (e.g., sudden wall crashes) that punish players for UI shortcomings.
+Essential interactive elements like player vehicles and shields blend into the background due to low contrast. Combined with the lack of collision warnings at map boundaries, this results in "cheap" deaths (e.g., sudden wall crashes) that punish players for UI shortcomings.
 
 - **Lack of Dynamic Progression and Replayability:** 
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for all players.
@@ -165,7 +165,7 @@ So the null hypothesis was not rejected at a 95% confidence interval. This meant
 
 ### Findings of Quantitative Evaluation
 
-The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too similar, **so the 3 difficulties should be readjusted.**
+The low average SUS score and NASA TLX score demonstrate the **necesscity for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one test user) is an excellent way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests shows no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too similar, **so the 3 difficulties should be readjusted.**
 
 
 ### Technical challenges
