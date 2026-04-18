@@ -135,7 +135,7 @@ Essential interactive elements—such as player vehicles, health packs, and shie
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types, such as projectiles that ricochet off buildings. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for both novice and expert players.
 
 
-### Quantitative Evaluation
+### Quantitative Evaluation (as of week8)
 |                     | User 1  | User 2  | User 3  | User 4  | User 5  | User 6 | User 7  | Average  |
 | ------------------- | ------- | ------- | ------- | ------- | ------- | ------ | ------- | -------- |
 | easy SUS score      | 55      | 50      | 62.5    | 95      | 55      | 50     | 52.5    | 60       |
@@ -165,7 +165,7 @@ So the null hypothesis was not rejected at a 95% confidence interval. This meant
 
 ### Findings of Quantitative Evaluation
 
-The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too close to each other in terms of gameplay experience, **so the 3 difficulties should be readjusted.**
+The low average SUS score and NASA TLX score themselves show that it is **necessary for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one of the test users) is a very good way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests showing no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too similar, **so the 3 difficulties should be readjusted.**
 
 
 ### Technical challenges
