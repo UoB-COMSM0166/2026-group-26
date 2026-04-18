@@ -112,9 +112,9 @@ Overall, the requirements process helped us move from a broad concept to a more 
 ---
 ### Findings of User's Evaluation
 
-- **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups like health packs and shields lack visibility and are easily overlooked by players. The overall aesthetics of the game interface could also be improved.
+- **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups like health packs and shields lack visibility. The overall aesthetics of the game interface could also be improved.
 
-- **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players frequently crash into walls without warning, highlighting a severe lack of advance map boundary cues.
+- **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players often suddenly crash into walls, highlighting a severe lack of advance map boundary cues.
 
 - **Cognitive Load & Onboarding:** The initial version lacks clear interaction prompts, increasing the user's memory load. There are no explicit movement instructions (e.g., move/stop), which should be placed at the top of the interface. Furthermore, there is no transition prompt indicating "press to start" before gameplay begins.
 
