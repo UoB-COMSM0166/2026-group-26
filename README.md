@@ -112,7 +112,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 ---
 ### Findings of User's Evaluation
 
-- **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups like health packs and shields lack visibility. The overall aesthetics of the game interface could also be improved.
+- **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups lack visibility. The overall aesthetics of the game interface could also be improved.
 
 - **User Control & Error Prevention:** The main gameplay interface lacks obvious pause and restart buttons. Due to restricted vision, players often suddenly crash into walls, highlighting a severe lack of advance map boundary cues.
 
@@ -126,13 +126,13 @@ Overall, the requirements process helped us move from a broad concept to a more 
 ### Qualitative Evaluation
 
 - **Misalignment in Core Objective Communication:** 
-Despite the asymmetric "Chase & Evasion" design, the UI fails to convey these rules. Players experience a steep learning curve due to confusion over victory conditions and NPC interaction logic (i.e., damage vs. evasion). Mandatory movement and objective prompts must be integrated directly into the HUD.
+Despite the asymmetric "Chase & Evasion" design, the UI fails to convey these rules. Players experience a steep learning curve due to confusion over victory conditions and NPC interaction logic. Mandatory movement and objective prompts must be integrated directly into the HUD.
 
 - **Visual Hierarchy and Player Frustration:** 
 Essential interactive elements—such as player vehicles, health packs, and shields—blend into the background due to low contrast. Combined with the lack of collision warnings at map boundaries, this results in "cheap" deaths (e.g., sudden wall crashes) that punish players for UI shortcomings rather than lack of skill.
 
 - **Lack of Dynamic Progression and Replayability:** 
-The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types, such as projectiles that ricochet off buildings. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for both novice and expert players.
+The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for all players.
 
 
 ### Quantitative Evaluation (as of week8)
