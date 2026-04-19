@@ -4,6 +4,17 @@ let loiteringMissile = null;
 let missileStrikes = []; // Array to manage active missile effects
 let atomicStrikes = [];
 
+function clearSpecialWeaponEffects() {
+    loiteringMissile = null;
+    missileStrikes = [];
+    atomicStrikes = [];
+    mapSelectStart = 0;
+    dongfengTargetLocked = false;
+    mapSelectCharged = false;
+    mapSelectLockX = 0;
+    mapSelectLockY = 0;
+}
+
 class MissileStrike {
     constructor(targetX, targetY) {
         this.target = createVector(targetX, targetY);

@@ -134,3 +134,41 @@ canvas {
   min-height: 20px;
   text-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
 }
+
+/* Close Button */
+.auth-close-btn {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  width: 36px !important;
+  height: 36px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  line-height: 34px !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
+  text-decoration: none !important;
+}
+
+.auth-close-btn:hover {
+  background: rgba(231, 76, 60, 0.9) !important;
+  border-color: rgba(231, 76, 60, 1) !important;
+  transform: scale(1.1) rotate(90deg) !important;
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.5) !important;
+}
+
+.auth-close-btn:active {
+  transform: scale(0.95) rotate(90deg) !important;
+}
+

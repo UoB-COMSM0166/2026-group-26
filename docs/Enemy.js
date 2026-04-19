@@ -138,15 +138,13 @@ class Enemy extends Vehicle {
   }
 
   drawHealthBar() {
-    // Only show health bar if enemy is damaged, or we can show it always
-    if (this.hp >= this.maxHp && !this.isShielded) return; // Optional: hide when full health
-
     push();
-    translate(this.pos.x, this.pos.y);
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
     
     let barWidth = 40;
     let barHeight = 6;
-    let yOffset = -(this.height || 30) / 2 - 15; // Position above the car
+    let yOffset = -(this.width || 20) / 2 - 20; // Position above the car in iso space
 
     // Background (gray)
     fill(50, 50, 50, 200);

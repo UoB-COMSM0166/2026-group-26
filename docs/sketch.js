@@ -4,7 +4,7 @@ let powerups = [];
 let particles = [];
 let buildings = [];
 let projectiles = [];
-let gameState = 'MENU'; // MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP, AUTH
+let gameState = 'BOOT_LOADING'; // BOOT_LOADING, MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP, AUTH
 let shopBuilding = null; // Store which building opened the shop
 let lastShotTime = 0; // For weapon cooldown
 let startTime;
@@ -35,11 +35,47 @@ let lastCoverRect = null;
 let shopUI;
 let authUI;
 let tutorialSystem;
+let deferredMenuVisualsRequested = false;
+let deferredMenuVisualsTimer = null;
+let shopSupportAssetsRequested = false;
+let gameplayAssetsRequested = false;
+let endingVideosRequested = false;
+let bootLoadingStartedAt = 0;
 let startGateMessage = '';
 let startGateMessageColor = [255, 80, 80];
 let startGateMessageUntil = 0;
 let startGatePending = false;
+let difficultyStartPending = false;
+let menuAccountOpen = false;
+let menuAccountIconRect = null;
+let menuAccountPopupRect = null;
+let menuAccountPrimaryButtonRect = null;
+let menuAccountSecondaryButtonRect = null;
 let helpTab = 'BASICS'; // BASICS, VEHICLES, WEAPONS
+const BUILDING_INTERACTION_CONFIG = {
+  armory: {
+    title: 'ARMORY',
+    itemLabel: 'Ammo Pack',
+    price: 8,
+    amount: 5,
+    accent: [255, 160, 80],
+    description: 'Purchase extra bullets for your current vehicle.'
+  },
+  hospital: {
+    title: 'HOSPITAL',
+    itemLabel: 'Medical Aid',
+    price: 12,
+    amount: 1,
+    accent: [100, 220, 140],
+    description: 'Restore one heart using your saved coins.'
+  }
+};
+let buildingInteractionUI = {
+  closeRect: null,
+  actionRect: null,
+  inputOffsetX: 0,
+  inputOffsetY: 0
+};
 
 // Game Settings
 let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
@@ -79,44 +115,31 @@ let tileSize = 100; // Size of each tile (pixels)
 let mapCols, mapRows;
 let roadCenters = [];
 let mapTextureRefreshDone = false;
+const BOOT_LOADING_MIN_MS = 1600;
+const BOOT_LOADING_MAX_MS = 30000;
+
+const CITY_BUILDING_FILES = [
+  { file: 'Anna_house.png', label: 'Residence' },
+  { file: 'Ben_house.png', label: 'Residence' },
+  { file: 'David_house.png', label: 'Residence' },
+  { file: 'Emma_house.png', label: 'Residence' },
+  { file: 'Grace_house.png', label: 'Residence' },
+  { file: 'Jack_house.png', label: 'Residence' },
+  { file: 'Leo_house.png', label: 'Residence' },
+  { file: 'Lily_house.png', label: 'Residence' },
+  { file: 'Lucy_house.png', label: 'Residence' },
+  { file: 'Mike_house.png', label: 'Residence' },
+  { file: 'Sarah_house.png', label: 'Residence' },
+  { file: 'Tom_house.png', label: 'Residence' },
+  { file: 'cafe.webp', label: 'Cafe' },
+  { file: 'garden.webp', label: 'Garden' },
+  { file: 'school.webp', label: 'School' },
+  { file: 'supermarket.webp', label: 'Supermarket' }
+];
 
 function preloadAssets() {
-  hospitalImg = loadImage('icon/BUILDING/hospital.png');
-  armoryImg = loadImage('icon/BUILDING/arms.png');
-  
-  gameCoverImg = loadImage('icon/game_cover.png');
-  startBtnImg = loadImage('icon/start.png');
-  exitBtnImg = loadImage('icon/exit.png');
-  shopBtnImg = loadImage('icon/basic/store_mainpage.png');
-  shopBoardImg = loadImage('icon/shop_board.png');
-  victoryImg = null;
-  defeatImg = null;
-  settingIconImg = loadImage('icon/basic/setting.png');
-  helpIconImg = loadImage('icon/basic/help.png');
-  bulletIconImg = loadImage('icon/basic/bullet.png');
-  controlKeyImgs = {
-    W: loadImage('icon/basic/keyboard_W.png'),
-    A: loadImage('icon/basic/keyboard_A.png'),
-    S: loadImage('icon/basic/keyboard_S.png'),
-    D: loadImage('icon/basic/keyboard_D.png'),
-    X: loadImage('icon/basic/keyboard_X.png'),
-    UP: loadImage('icon/basic/keyboard_up.png'),
-    DOWN: loadImage('icon/basic/keyboard_down.png'),
-    LEFT: loadImage('icon/basic/keyboard_left.png'),
-    RIGHT: loadImage('icon/basic/keyboard_right.png')
-  };
-  images.weaponShop = {
-    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.png'),
-    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.png'),
-    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.png'),
-    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.png'),
-    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.png'),
-    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.png'),
-    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.png'),
-    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.png')
-  };
-  
-  // Load terrain and environment assets
+  // Keep boot-time requests minimal: only map base textures are required to render
+  // the initial world buffer. UI, shop, gameplay props, and ending videos load later.
   images.grass = loadImage('icon/grass_1.png');
   images.grassAlt1 = loadImage('icon/Grass.png');
   images.asphalt = loadImage('icon/asphalt.png');
@@ -143,8 +166,80 @@ function preloadAssets() {
   images.tCross2 = loadImage('icon/road_t_cross_2.png');
   images.tCross3 = loadImage('icon/road_t_cross_3.png');
   images.tCross4 = loadImage('icon/road_t_cross_4.png');
-  
-  // Obstacles
+
+  images.grassVariants = [images.grass, images.grassAlt1];
+  images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
+  images.roadVVariants = [images.roadV, images.roadV, images.roadVAlt];
+  images.roadHVariants = [images.roadH, images.roadH, images.roadHAlt];
+}
+
+function isDataSaverEnabled() {
+  return !!(navigator.connection && navigator.connection.saveData);
+}
+
+function createMutedVideoAsset(path, preloadMode = 'metadata') {
+  let video = createVideo(path);
+  video.volume(0);
+  video.elt.muted = true;
+  video.elt.playsInline = true;
+  video.elt.preload = preloadMode;
+  video.hide();
+  video.elt.load();
+  return video;
+}
+
+function ensureCoverMedia() {
+  if (!gameCoverVideo) {
+    gameCoverVideo = createMutedVideoAsset('icon/game_cover_video.mp4', 'auto');
+  }
+}
+
+function loadDeferredMenuVisualAssets() {
+  if (deferredMenuVisualsRequested) return;
+  deferredMenuVisualsRequested = true;
+  gameCoverImg = loadImage('icon/game_cover.webp');
+  startBtnImg = loadImage('icon/start.webp');
+  exitBtnImg = loadImage('icon/exit.webp');
+  shopBtnImg = loadImage('icon/basic/store_mainpage.webp');
+  settingIconImg = loadImage('icon/basic/setting.webp');
+  helpIconImg = loadImage('icon/basic/help.webp');
+}
+
+
+function loadShopSupportAssets() {
+  if (shopSupportAssetsRequested) return;
+  shopSupportAssetsRequested = true;
+  shopBoardImg = loadImage('icon/shop_board.webp');
+  bulletIconImg = loadImage('icon/basic/bullet.webp');
+  controlKeyImgs = {
+    W: loadImage('icon/basic/keyboard_W.png'),
+    A: loadImage('icon/basic/keyboard_A.png'),
+    S: loadImage('icon/basic/keyboard_S.png'),
+    D: loadImage('icon/basic/keyboard_D.png'),
+    X: loadImage('icon/basic/keyboard_X.png'),
+    UP: loadImage('icon/basic/keyboard_up.png'),
+    DOWN: loadImage('icon/basic/keyboard_down.png'),
+    LEFT: loadImage('icon/basic/keyboard_left.png'),
+    RIGHT: loadImage('icon/basic/keyboard_right.png')
+  };
+  images.weaponShop = {
+    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.webp'),
+    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.webp'),
+    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.webp'),
+    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.webp'),
+    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.webp'),
+    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.webp'),
+    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.webp'),
+    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.webp')
+  };
+}
+
+function loadGameplayAssets() {
+  if (gameplayAssetsRequested) return;
+  gameplayAssetsRequested = true;
+  loadShopSupportAssets();
+  hospitalImg = loadImage('icon/BUILDING/hospital.webp');
+  armoryImg = loadImage('icon/BUILDING/arms.webp');
   images.tree1 = loadImage('icon/tree_1.png');
   images.tree2 = loadImage('icon/tree 2.png');
   images.tree3 = loadImage('icon/tree 3.png');
@@ -166,39 +261,21 @@ function preloadAssets() {
   images.bush6 = loadImage('icon/bush_6.png');
   images.bush7 = loadImage('icon/bush_7.png');
   images.bush8 = loadImage('icon/bush_8.png');
-
-  images.police = loadImage('icon/BUILDING/police_dept.png');
-  images.police = loadImage('icon/BUILDING/police_dept.png');
+  images.police = loadImage('icon/BUILDING/police_dept.webp');
   images.cityBuildings = [];
-  let buildingFiles = [
-    { file: 'Anna_house.png', label: 'Residence' },
-    { file: 'Ben_house.png', label: 'Residence' },
-    { file: 'David_house.png', label: 'Residence' },
-    { file: 'Emma_house.png', label: 'Residence' },
-    { file: 'Grace_house.png', label: 'Residence' },
-    { file: 'Jack_house.png', label: 'Residence' },
-    { file: 'Leo_house.png', label: 'Residence' },
-    { file: 'Lily_house.png', label: 'Residence' },
-    { file: 'Lucy_house.png', label: 'Residence' },
-    { file: 'Mike_house.png', label: 'Residence' },
-    { file: 'Sarah_house.png', label: 'Residence' },
-    { file: 'Tom_house.png', label: 'Residence' },
-    { file: 'cafe.png', label: 'Cafe' },
-    { file: 'garden.png', label: 'Garden' },
-    { file: 'school.png', label: 'School' },
-    { file: 'supermarket.png', label: 'Supermarket' }
-  ];
-  for (let f of buildingFiles) {
-      images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
+  for (let f of CITY_BUILDING_FILES) {
+    images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
   }
-
-  images.grassVariants = [images.grass, images.grassAlt1];
-  images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
-  images.roadVVariants = [images.roadV, images.roadV, images.roadVAlt];
-  images.roadHVariants = [images.roadH, images.roadH, images.roadHAlt];
   images.trees = [images.tree1, images.tree2, images.tree3, images.tree4, images.tree5, images.pine1, images.pine2];
   images.rocks = [images.rock1, images.rock2, images.rock3, images.rock4, images.rock5, images.rock6];
   images.bushes = [images.bush1, images.bush2, images.bush3, images.bush4, images.bush5, images.bush6, images.bush7, images.bush8];
+}
+
+function loadEndingVideos() {
+  if (endingVideosRequested) return;
+  endingVideosRequested = true;
+  defeatVideo = createMutedVideoAsset('icon/basic/defeat.mp4', 'metadata');
+  victoryVideo = createMutedVideoAsset('icon/basic/victory.mp4', 'metadata');
 }
 
 function isMapTextureReady(img) {
@@ -216,6 +293,31 @@ function areMapBaseTexturesReady() {
   );
 }
 
+function areMenuVisualAssetsReady() {
+  return (
+    isMapTextureReady(gameCoverImg) &&
+    isMapTextureReady(startBtnImg) &&
+    isMapTextureReady(exitBtnImg) &&
+    isMapTextureReady(shopBtnImg)
+  );
+}
+
+function isCoverVideoReadyForMenu() {
+  if (!gameCoverVideo || !gameCoverVideo.elt) return false;
+  let el = gameCoverVideo.elt;
+  if (el.videoWidth <= 0 || el.readyState < 3) return false;
+  if (!ensureVideoPlayable(gameCoverVideo)) return false;
+  return !el.paused && !el.seeking && el.currentTime > 0.05;
+}
+
+function isBootLoadingComplete() {
+  let elapsed = millis() - bootLoadingStartedAt;
+  if (elapsed < BOOT_LOADING_MIN_MS) return false;
+  if (!areMapBaseTexturesReady() || !areMenuVisualAssetsReady()) return false;
+  if (isCoverVideoReadyForMenu()) return true;
+  return elapsed >= BOOT_LOADING_MAX_MS;
+}
+
 // Global Offset for Iso Map centering
 let mapOffsetX, mapOffsetY;
 
@@ -226,6 +328,7 @@ function setup() {
   gameHeight = windowHeight - statusHeight;
   
   createCanvas(gameWidth, gameHeight + statusHeight);
+  bootLoadingStartedAt = millis();
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
   imageMode(CENTER);
@@ -251,27 +354,8 @@ function setup() {
   if (authUI.isLoggedIn()) {
       refreshUserProgress();
   }
-
-  gameCoverVideo = createVideo('icon/game_cover_video.mp4');
-  gameCoverVideo.volume(0);
-  gameCoverVideo.elt.muted = true;
-  gameCoverVideo.elt.playsInline = true;
-  gameCoverVideo.loop();
-  gameCoverVideo.hide();
-  defeatVideo = createVideo('icon/basic/defeat.mp4');
-  defeatVideo.volume(0);
-  defeatVideo.elt.muted = true;
-  defeatVideo.elt.playsInline = true;
-  defeatVideo.elt.preload = 'auto';
-  defeatVideo.elt.load();
-  defeatVideo.hide();
-  victoryVideo = createVideo('icon/basic/victory.mp4');
-  victoryVideo.volume(0);
-  victoryVideo.elt.muted = true;
-  victoryVideo.elt.playsInline = true;
-  victoryVideo.elt.preload = 'auto';
-  victoryVideo.elt.load();
-  victoryVideo.hide();
+  ensureCoverMedia();
+  loadDeferredMenuVisualAssets();
   updateGameplayViewport();
 }
 
@@ -331,6 +415,10 @@ function projectIsoVector(x, y) {
 
 function resetGame(keepProgress = false) {
   let oldPlayer = player;
+
+  if (typeof clearSpecialWeaponEffects === 'function') {
+      clearSpecialWeaponEffects();
+  }
   
   player = new Player(mapWidth / 2, mapHeight / 2); // Start in middle of large map
   
@@ -338,6 +426,8 @@ function resetGame(keepProgress = false) {
       player.coins = oldPlayer.coins;
       player.bonusMaxHp = oldPlayer.bonusMaxHp;
       player.bonusMaxAmmo = oldPlayer.bonusMaxAmmo;
+      player.bonusTopSpeed = oldPlayer.bonusTopSpeed || 0;
+      player.bonusAcceleration = oldPlayer.bonusAcceleration || 0;
       player.currentWeapon = oldPlayer.currentWeapon;
       player.ownedWeapons = Array.isArray(oldPlayer.ownedWeapons) ? [...oldPlayer.ownedWeapons] : [WEAPON_TYPES.PISTOL];
       player.ownedCars = Array.isArray(oldPlayer.ownedCars) ? [...oldPlayer.ownedCars] : ['starter'];
@@ -829,6 +919,43 @@ function generateCity() {
 }
 
 function draw() {
+  if (gameState === 'BOOT_LOADING') {
+      background(15, 20, 25);
+      
+      if (isBootLoadingComplete()) {
+          gameState = 'MENU';
+          return;
+      }
+      
+      push();
+      translate(width / 2, height / 2);
+      
+      // Outer rotating ring
+      noFill();
+      stroke(255, 196, 70, 150);
+      strokeWeight(4);
+      let angle = millis() * 0.003;
+      arc(0, 0, 60, 60, angle, angle + PI + QUARTER_PI);
+      
+      // Inner rotating ring
+      stroke(255, 80, 80, 200);
+      strokeWeight(2);
+      let angle2 = -millis() * 0.004;
+      arc(0, 0, 40, 40, angle2, angle2 + PI + HALF_PI);
+      
+      // Loading Text
+      fill(255, 200);
+      noStroke();
+      textAlign(CENTER, CENTER);
+      textSize(18);
+      let dots = '';
+      let t = floor(millis() / 400) % 4;
+      for (let i = 0; i < t; i++) dots += '.';
+      text("LOADING" + dots, 0, 60);
+      pop();
+      return;
+  }
+
   // 0. Menu Handling (Full Screen, No Camera/Status Bar Offset)
   if (gameState === 'MENU') {
       if (defeatVideo) defeatVideo.pause();
@@ -994,10 +1121,10 @@ function draw() {
 
   drawStatusBar();
   
-  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || (gameState === 'SHOP' && !isBuildingInteractionOpen()) || gameState === 'MAP_SELECT') {
       drawMiniMap();
   }
-  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT' || gameState === 'MISSILE_CONTROL') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || (gameState === 'SHOP' && !isBuildingInteractionOpen()) || gameState === 'MAP_SELECT' || gameState === 'MISSILE_CONTROL') {
       drawControlGuidePanel();
   }
 }
@@ -1490,6 +1617,9 @@ function getCoverRect(viewW = width, viewH = height, sourceOverride = null, forc
 function drawCoverBackground(dimValue = 255) {
   let rect = getCoverRect();
   lastCoverRect = rect;
+
+  // Clear the whole canvas first so previous gameplay UI cannot bleed into menu side margins.
+  background(0);
   
   if (rect.source) {
       imageMode(CORNER);
@@ -1521,6 +1651,169 @@ function getMenuButtonLayout() {
   let labelOffsetX = 100;
   
   return { shopX, shopY, startX, startY, exitX, exitY, iconSize, hoverRadius, labelOffsetX };
+}
+
+function getMenuAccountLayout() {
+  let rect = lastCoverRect || getCoverRect();
+  let iconSize = 64;
+  let margin = 32;
+  let iconX = rect.x + rect.w - margin - iconSize / 2;
+  let iconY = rect.y + margin + iconSize / 2;
+  let popupW = 320;
+  let popupH = authUI && authUI.isLoggedIn() ? 240 : 180;
+  let popupX = iconX - popupW + iconSize / 2;
+  let popupY = iconY + iconSize / 2 + 16;
+  return { iconX, iconY, iconSize, popupX, popupY, popupW, popupH };
+}
+
+async function openMenuLoginDialog() {
+    gameState = 'AUTH';
+    authUI.state = 'login';
+    authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
+    authUI.onLoginSuccess = async () => {
+        let loaded = await refreshUserProgress();
+        if (!loaded) {
+            setStartGateMessage('Unable to load profile data. Please login again.');
+            gameState = 'MENU';
+            return;
+        }
+        menuAccountOpen = false;
+        gameState = 'MENU';
+    };
+}
+
+function drawMenuAccountPanel() {
+  let layout = getMenuAccountLayout();
+  let isHover = dist(mouseX, mouseY, layout.iconX, layout.iconY) <= layout.iconSize / 2;
+  let isLoggedIn = authUI && authUI.isLoggedIn();
+  let user = authUI && authUI.user ? authUI.user : null;
+  let initials = '?';
+  if (isLoggedIn && user && user.username) initials = String(user.username).trim().charAt(0).toUpperCase() || 'U';
+  else if (isLoggedIn && user && user.email) initials = String(user.email).trim().charAt(0).toUpperCase() || 'U';
+
+  menuAccountIconRect = { x: layout.iconX - layout.iconSize / 2, y: layout.iconY - layout.iconSize / 2, w: layout.iconSize, h: layout.iconSize };
+  menuAccountPopupRect = null;
+  menuAccountPrimaryButtonRect = null;
+  menuAccountSecondaryButtonRect = null;
+
+  // Draw Avatar Icon
+  push();
+  // Outer glow
+  drawingContext.shadowBlur = isHover || menuAccountOpen ? 25 : 12;
+  drawingContext.shadowColor = isLoggedIn ? 'rgba(70, 150, 255, 0.6)' : 'rgba(0,0,0,0.5)';
+  
+  // Background circle
+  fill(isLoggedIn ? color(35, 45, 60, 245) : color(45, 50, 55, 245));
+  stroke(isLoggedIn ? color(100, 170, 255, 200) : color(120, 130, 140, 200));
+  strokeWeight(3);
+  ellipse(layout.iconX, layout.iconY, layout.iconSize, layout.iconSize);
+  
+  // Inner avatar styling
+  drawingContext.shadowBlur = 0;
+  noStroke();
+  if (isLoggedIn) {
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      textSize(28);
+      text(initials, layout.iconX, layout.iconY + 2);
+  } else {
+      // Draw a simple user silhouette
+      fill(180);
+      ellipse(layout.iconX, layout.iconY - 6, 18, 18);
+      arc(layout.iconX, layout.iconY + 16, 36, 24, PI, 0, CHORD);
+  }
+  pop();
+
+  if (!menuAccountOpen) return;
+
+  let buttonW = layout.popupW - 40;
+  let buttonH = 44;
+  let primaryY = layout.popupY + layout.popupH - 64;
+  let secondaryY = primaryY - 56;
+  menuAccountPopupRect = { x: layout.popupX, y: layout.popupY, w: layout.popupW, h: layout.popupH };
+
+  // Draw Popup Background
+  push();
+  rectMode(CORNER);
+  drawingContext.shadowBlur = 30;
+  drawingContext.shadowColor = 'rgba(0,0,0,0.6)';
+  fill(25, 30, 38, 250);
+  stroke(60, 75, 90, 220);
+  strokeWeight(2);
+  rect(layout.popupX, layout.popupY, layout.popupW, layout.popupH, 16);
+  drawingContext.shadowBlur = 0;
+
+  // Popup Header
+  fill(35, 45, 60, 250);
+  noStroke();
+  // Draw header rect with top rounded corners
+  rect(layout.popupX, layout.popupY, layout.popupW, 46, 14, 14, 0, 0);
+  
+  fill(255);
+  textAlign(LEFT, CENTER);
+  textStyle(BOLD);
+  textSize(16);
+  text('ACCOUNT INFO', layout.popupX + 20, layout.popupY + 23);
+
+  // Content Area
+  fill(200);
+  textStyle(NORMAL);
+  textSize(14);
+  let emailText = isLoggedIn && user && user.email ? user.email : 'Guest User';
+  let userText = isLoggedIn && user && user.username ? user.username : 'Not logged in';
+  
+  textAlign(LEFT, TOP);
+  if (isLoggedIn) {
+      text(`Email:`, layout.popupX + 20, layout.popupY + 62);
+      fill(255);
+      textStyle(BOLD);
+      text(`${emailText}`, layout.popupX + 70, layout.popupY + 62);
+      
+      fill(200);
+      textStyle(NORMAL);
+      text(`User:`, layout.popupX + 20, layout.popupY + 86);
+      fill(255);
+      textStyle(BOLD);
+      text(`${userText}`, layout.popupX + 70, layout.popupY + 86);
+  } else {
+      textAlign(CENTER, TOP);
+      text('You are currently playing as a Guest.\nLogin to save your progress!', layout.popupX + layout.popupW/2, layout.popupY + 65);
+  }
+
+  // Draw Buttons
+  let isPrimaryHover = mouseX >= layout.popupX + 20 && mouseX <= layout.popupX + 20 + buttonW && mouseY >= primaryY && mouseY <= primaryY + buttonH;
+  let isSecondaryHover = isLoggedIn && mouseX >= layout.popupX + 20 && mouseX <= layout.popupX + 20 + buttonW && mouseY >= secondaryY && mouseY <= secondaryY + buttonH;
+
+  if (isLoggedIn) {
+      menuAccountSecondaryButtonRect = { x: layout.popupX + 20, y: secondaryY, w: buttonW, h: buttonH };
+      fill(isSecondaryHover ? color(80, 95, 110) : color(60, 75, 90));
+      rect(menuAccountSecondaryButtonRect.x, menuAccountSecondaryButtonRect.y, buttonW, buttonH, 10);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      textSize(14);
+      text('CLOSE', menuAccountSecondaryButtonRect.x + buttonW / 2, menuAccountSecondaryButtonRect.y + buttonH / 2);
+  }
+
+  menuAccountPrimaryButtonRect = { x: layout.popupX + 20, y: primaryY, w: buttonW, h: buttonH };
+  
+  if (isLoggedIn) {
+      fill(isPrimaryHover ? color(220, 80, 80) : color(190, 60, 60)); // Red for logout
+  } else {
+      fill(isPrimaryHover ? color(60, 180, 100) : color(45, 150, 80)); // Green for login
+  }
+  
+  rect(menuAccountPrimaryButtonRect.x, menuAccountPrimaryButtonRect.y, buttonW, buttonH, 10);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textStyle(BOLD);
+  textSize(15);
+  text(isLoggedIn ? 'LOGOUT' : 'LOGIN TO ACCOUNT', menuAccountPrimaryButtonRect.x + buttonW / 2, menuAccountPrimaryButtonRect.y + buttonH / 2);
+  pop();
 }
 
 function drawMainMenu() {
@@ -1569,9 +1862,6 @@ function drawMainMenu() {
           fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
           text("START", startX + labelOffsetX, startY);
       }
-  } else {
-      fill(0, 255, 0); rect(startX, startY, 150, 60, 10);
-      fill(0); textAlign(CENTER, CENTER); text("START", startX, startY);
   }
   
   if (exitBtnImg) {
@@ -1588,9 +1878,6 @@ function drawMainMenu() {
           fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
           text("EXIT", exitX + labelOffsetX, exitY);
       }
-  } else {
-      fill(255, 0, 0); rect(exitX, exitY, 150, 60, 10);
-      fill(255); text("EXIT", exitX, exitY);
   }
 
   if (startGatePending || millis() < startGateMessageUntil) {
@@ -1601,6 +1888,8 @@ function drawMainMenu() {
       let msg = startGatePending ? 'Checking backend service...' : startGateMessage;
       text(msg, width / 2, height - 50);
   }
+
+  drawMenuAccountPanel();
 }
 
 function drawDifficultySelect() {
@@ -1851,6 +2140,9 @@ function playGame() {
   let remaining = survivalTime - elapsed;
   
   if (remaining <= 0) {
+    if (typeof clearSpecialWeaponEffects === 'function') {
+        clearSpecialWeaponEffects();
+    }
     gameState = 'WIN';
   }
 
@@ -1858,7 +2150,8 @@ function playGame() {
         if (authUI && authUI.isLoggedIn()) {
             let data = {
                 coins: player.coins,
-                unlockedWeapons: player.unlockedSpecialWeapons,
+                unlockedWeapons: Array.isArray(player.ownedWeapons) ? player.ownedWeapons : [WEAPON_TYPES.PISTOL],
+                unlockedSpecialWeapons: Array.isArray(player.unlockedSpecialWeapons) ? player.unlockedSpecialWeapons : [],
                 upgradeState: {
                     maxHp: player.bonusMaxHp,
                     maxAmmo: player.bonusMaxAmmo,
@@ -1967,26 +2260,19 @@ function playGame() {
 
   drawGameObjects();
   
-  // Interactions check for 'F' key
-  if (!isPlayerControlLocked() && keyIsDown(70)) { // F key
-      for (let b of buildings) {
-          if (b.isInteractable() && p5.Vector.dist(player.pos, b.pos) < b.w) {
-              gameState = 'SHOP';
-              pauseStartTime = millis();
-              shopBuilding = b;
-              break;
-          }
-      }
-  }
 }
 
 function drawGameObjects() {
   let shouldUpdate = gameState === 'PLAY' || gameState === 'MISSILE_CONTROL';
   let playerLocked = shouldUpdate && isPlayerControlLocked();
+  let hideBuildingLabels = isBuildingInteractionOpen();
   // Draw Buildings
   for (let b of buildings) {
     b.display();
-    b.showTooltip(player); // Show tooltip if close
+    if (!hideBuildingLabels) {
+      b.showNameLabel();
+      b.showTooltip(player); // Show tooltip if close
+    }
   }
 
   // Update & Display Particles
@@ -2039,6 +2325,10 @@ function drawGameObjects() {
 
       if (p.isDead()) {
           projectiles.splice(i, 1);
+          continue;
+      }
+
+      if (p.isLaserBeam) {
           continue;
       }
       
@@ -2144,10 +2434,12 @@ function drawGameObjects() {
             let p = projectiles[j];
             if (p.checkCollision(e)) {
                 let config = WEAPON_CONFIG[p.type];
-                let dmg = config ? config.damage : 1;
+                let dmg = config ? (p.isLaserBeam ? (config.damagePerFrame || config.damage || 1) : config.damage) : 1;
                 
                 e.hp -= dmg;
-                createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 5);
+                if (!p.isLaserBeam) {
+                    createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 5);
+                }
                 
                 if (e.hp <= 0) {
                     createExplosion(e.pos.x, e.pos.y, color(255, 50, 0), 15);
@@ -2156,8 +2448,10 @@ function drawGameObjects() {
                     shakeAmount = 5;
                 } else {
                     // Knockback?
-                    let push = p5.Vector.sub(e.pos, p.pos).normalize().mult(2);
-                    e.pos.add(push);
+                    if (!p.isLaserBeam) {
+                        let push = p5.Vector.sub(e.pos, p.pos).normalize().mult(2);
+                        e.pos.add(push);
+                    }
                 }
                 
                 if (!config || !config.penetrates && !p.isFireArea) {
@@ -2186,6 +2480,9 @@ function drawGameObjects() {
                 player.hp--;
                 enemies.splice(i, 1); 
                 if (player.hp <= 0) {
+                  if (typeof clearSpecialWeaponEffects === 'function') {
+                      clearSpecialWeaponEffects();
+                  }
                   gameState = 'GAMEOVER';
                 }
               }
@@ -2264,11 +2561,28 @@ async function continueStartAfterAuth() {
         return;
     }
     authUI.hide();
+    loadGameplayAssets();
     gameState = 'DIFFICULTY_SELECT';
+}
+
+async function prepareGameplayStartFromDifficultySelect() {
+    if (!authUI || !authUI.isLoggedIn()) {
+        setStartGateMessage('Please login before starting the game.');
+        return false;
+    }
+
+    let loaded = await refreshUserProgress();
+    if (!loaded) {
+        setStartGateMessage('Unable to reach backend or load profile. Cannot start game now.');
+        return false;
+    }
+
+    return true;
 }
 
 async function beginMenuShopFlow() {
     ensurePlayerProfile();
+    loadShopSupportAssets();
     let backendOk = await isBackendAvailable();
     if (!backendOk) {
         setStartGateMessage('Backend unavailable. Please start login service first.');
@@ -2284,7 +2598,11 @@ async function beginMenuShopFlow() {
         return;
     }
     gameState = 'AUTH';
+    authUI.state = 'login';
     authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
     authUI.onLoginSuccess = async () => {
         let loaded = await refreshUserProgress();
         if (!loaded) {
@@ -2313,13 +2631,18 @@ async function beginStartFlow() {
             startGatePending = false;
             return;
         }
+        loadGameplayAssets();
         gameState = 'DIFFICULTY_SELECT';
         startGatePending = false;
         return;
     }
 
     gameState = 'AUTH';
+    authUI.state = 'login';
     authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
     authUI.onLoginSuccess = async () => {
         await continueStartAfterAuth();
     };
@@ -2373,7 +2696,246 @@ function drawShopMenu() {
 }
 
 function drawShop() {
+    if (shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory')) {
+        drawBuildingInteractionPanel(gameWidth, gameHeight, 0, 0, gameViewX, statusHeight + gameViewY);
+        return;
+    }
     shopUI.draw(gameWidth, gameHeight, 0, 0, gameViewX, statusHeight + gameViewY);
+}
+
+function isBuildingInteractionOpen() {
+    return gameState === 'SHOP' && !!shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory');
+}
+
+function openBuildingInteraction(building) {
+    if (!building || !building.isInteractable()) return false;
+    gameState = 'SHOP';
+    pauseStartTime = millis();
+    shopBuilding = building;
+    return true;
+}
+
+function tryOpenNearbyBuildingInteraction() {
+    if (gameState !== 'PLAY' || !player || isPlayerControlLocked()) return false;
+
+    let nearestBuilding = null;
+    let nearestDistance = Infinity;
+    for (let b of buildings) {
+        if (!b.isPlayerInRange(player)) continue;
+        let center = typeof b.getInteractionCenter === 'function' ? b.getInteractionCenter() : b.getCollisionCenter();
+        let distanceToBuilding = dist(player.pos.x, player.pos.y, center.x, center.y);
+        if (distanceToBuilding < nearestDistance) {
+            nearestDistance = distanceToBuilding;
+            nearestBuilding = b;
+        }
+    }
+
+    return openBuildingInteraction(nearestBuilding);
+}
+
+function getBuildingInteractionDetails(building = shopBuilding) {
+    if (!building || !player) return null;
+    let config = BUILDING_INTERACTION_CONFIG[building.type];
+    if (!config) return null;
+
+    let currentValue = 0;
+    let maxValue = 0;
+    if (building.type === 'armory') {
+        currentValue = player.ammo || 0;
+        maxValue = player.maxAmmo || 0;
+    } else if (building.type === 'hospital') {
+        currentValue = player.hp || 0;
+        maxValue = player.maxHp || 0;
+    }
+
+    let missing = max(0, maxValue - currentValue);
+    let purchaseAmount = min(config.amount, missing);
+    let affordable = player.coins >= config.price;
+    let atMax = purchaseAmount <= 0;
+    let actionLabel = building.type === 'armory'
+        ? `Buy +${config.amount} Ammo`
+        : `Buy +${config.amount} HP`;
+    let statusText = '';
+
+    if (atMax) {
+        statusText = building.type === 'armory' ? 'Ammo is already full.' : 'Health is already full.';
+    } else if (!affordable) {
+        statusText = `Need ${config.price} coins.`;
+    } else {
+        statusText = `Spend ${config.price} coins for +${purchaseAmount}.`;
+    }
+
+    return {
+        building,
+        config,
+        currentValue,
+        maxValue,
+        purchaseAmount,
+        affordable,
+        atMax,
+        canBuy: !atMax && affordable,
+        actionLabel,
+        statusText
+    };
+}
+
+function purchaseBuildingInteraction() {
+    let details = getBuildingInteractionDetails();
+    if (!details || !details.canBuy) return false;
+
+    player.coins -= details.config.price;
+    if (details.building.type === 'armory') {
+        player.ammo = min(player.maxAmmo, player.ammo + details.purchaseAmount);
+    } else if (details.building.type === 'hospital') {
+        player.hp = min(player.maxHp, player.hp + details.purchaseAmount);
+    }
+
+    details.building.lastInteractionTime = millis();
+    return true;
+}
+
+function isPointInUiRect(px, py, rect) {
+    return !!rect && px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+}
+
+function drawInteractionHeartIcon(x, y, scaleFactor = 1) {
+    push();
+    translate(x, y);
+    scale(scaleFactor);
+    fill(255, 70, 70);
+    stroke(180, 0, 0);
+    strokeWeight(1);
+    beginShape();
+    vertex(0, 0);
+    bezierVertex(-5, -5, -10, 0, 0, 10);
+    bezierVertex(10, 0, 5, -5, 0, 0);
+    endShape(CLOSE);
+    pop();
+}
+
+function drawBuildingInteractionPanel(viewW, viewH, viewX = 0, viewY = 0, inputOffsetX = 0, inputOffsetY = 0) {
+    let details = getBuildingInteractionDetails();
+    if (!details) {
+        shopUI.draw(viewW, viewH, viewX, viewY, inputOffsetX, inputOffsetY);
+        return;
+    }
+
+    buildingInteractionUI.inputOffsetX = inputOffsetX;
+    buildingInteractionUI.inputOffsetY = inputOffsetY;
+
+    let panelW = min(540, viewW * 0.7);
+    let panelH = min(470, viewH * 0.78);
+    let panelX = viewX + (viewW - panelW) / 2;
+    let panelY = viewY + (viewH - panelH) / 2;
+    let accent = details.config.accent;
+    let closeSize = 34;
+    let closeX = panelX + panelW - closeSize - 18;
+    let closeY = panelY + 18;
+    let buttonW = min(280, panelW - 80);
+    let buttonH = 54;
+    let buttonX = panelX + (panelW - buttonW) / 2;
+    let cardY = panelY + 150;
+    let cardH = 110;
+    let priceY = cardY + cardH + 26;
+    let buttonY = priceY + 26;
+    let statusY = buttonY + buttonH + 24;
+    let escY = statusY + 36;
+    let actionHover = isPointInUiRect(mouseX - inputOffsetX, mouseY - inputOffsetY, { x: buttonX, y: buttonY, w: buttonW, h: buttonH });
+    let closeHover = isPointInUiRect(mouseX - inputOffsetX, mouseY - inputOffsetY, { x: closeX, y: closeY, w: closeSize, h: closeSize });
+
+    buildingInteractionUI.closeRect = { x: closeX, y: closeY, w: closeSize, h: closeSize };
+    buildingInteractionUI.actionRect = { x: buttonX, y: buttonY, w: buttonW, h: buttonH };
+
+    push();
+    rectMode(CORNER);
+    noStroke();
+    fill(0, 0, 0, 215);
+    rect(viewX, viewY, viewW, viewH, 20);
+
+    fill(48, 36, 28, 252);
+    stroke(accent[0], accent[1], accent[2]);
+    strokeWeight(3);
+    rect(panelX, panelY, panelW, panelH, 18);
+
+    noStroke();
+    fill(255, 244, 225);
+    textAlign(CENTER, TOP);
+    textSize(30);
+    text(details.config.title, panelX + panelW / 2, panelY + 24);
+
+    textSize(16);
+    fill(225, 214, 190);
+    text(details.config.description, panelX + panelW / 2, panelY + 70);
+
+    fill(255, 215, 120);
+    textSize(18);
+    text(`Coins: ${player.coins}`, panelX + panelW / 2, panelY + 116);
+
+    fill(94, 68, 48, 240);
+    rect(panelX + 40, cardY, panelW - 80, cardH, 14);
+    fill(255, 240, 215);
+    textSize(20);
+    text(details.config.itemLabel, panelX + panelW / 2, panelY + 170);
+
+    fill(230, 220, 205);
+    textSize(16);
+    if (details.building.type === 'armory') {
+        text(`Ammo: ${details.currentValue} / ${details.maxValue}`, panelX + panelW / 2, panelY + 210);
+    } else {
+        text(`Health: ${details.currentValue} / ${details.maxValue}`, panelX + panelW / 2, panelY + 210);
+        drawInteractionHeartIcon(panelX + panelW / 2, panelY + 240, 1.2);
+    }
+
+    fill(210, 196, 170);
+    textSize(15);
+    text(`Price: ${details.config.price} coins`, panelX + panelW / 2, priceY);
+
+    if (details.canBuy) {
+        fill(actionHover ? color(accent[0] + 20, accent[1] + 20, accent[2] + 20) : color(accent[0], accent[1], accent[2]));
+    } else {
+        fill(110, 110, 110);
+    }
+    noStroke();
+    rect(buttonX, buttonY, buttonW, buttonH, 12);
+
+    fill(30);
+    textSize(18);
+    textAlign(CENTER, CENTER);
+    text(`${details.actionLabel}  ($${details.config.price})`, buttonX + buttonW / 2, buttonY + buttonH / 2);
+
+    fill(details.canBuy ? 210 : 255, details.canBuy ? 225 : 170, details.canBuy ? 190 : 170);
+    textSize(14);
+    text(details.statusText, panelX + panelW / 2, statusY);
+
+    if (closeHover) fill(accent[0], accent[1], accent[2]);
+    else fill(156, 110, 78);
+    rect(closeX, closeY, closeSize, closeSize, 8);
+    stroke(35, 24, 15);
+    strokeWeight(2.5);
+    line(closeX + 9, closeY + 9, closeX + closeSize - 9, closeY + closeSize - 9);
+    line(closeX + closeSize - 9, closeY + 9, closeX + 9, closeY + closeSize - 9);
+    noStroke();
+
+    fill(235, 220, 200);
+    textAlign(CENTER, CENTER);
+    textSize(14);
+    text("Press ESC to Close", panelX + panelW / 2, escY);
+    pop();
+}
+
+function handleBuildingInteractionClick() {
+    let localX = mouseX - buildingInteractionUI.inputOffsetX;
+    let localY = mouseY - buildingInteractionUI.inputOffsetY;
+
+    if (isPointInUiRect(localX, localY, buildingInteractionUI.closeRect)) {
+        closeShopFromUI();
+        return true;
+    }
+    if (isPointInUiRect(localX, localY, buildingInteractionUI.actionRect)) {
+        purchaseBuildingInteraction();
+        return true;
+    }
+    return false;
 }
 
 function createExplosion(x, y, col, count) {
@@ -2418,7 +2980,7 @@ function applyPowerUp(p) {
 }
 
 function drawStatusBar() {
-  if (gameState === 'MENU' || gameState === 'DIFFICULTY_SELECT' || gameState === 'MENU_SHOP') return;
+  if (gameState === 'BOOT_LOADING' || gameState === 'MENU' || gameState === 'DIFFICULTY_SELECT' || gameState === 'MENU_SHOP') return;
 
   // Background
   fill(30);
@@ -2438,96 +3000,148 @@ function drawStatusBar() {
   }
   let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
+  let statusSections = [
+      { key: 'health', label: 'HEALTH', width: 250 },
+      { key: 'ammo', label: 'AMMO', width: 180 },
+      { key: 'coins', label: 'COINS', width: 130 },
+      { key: 'time', label: 'TIME', width: 120 },
+      { key: 'mode', label: 'MODE', width: 100 }
+  ];
+  if (player.hasShield) statusSections.push({ key: 'shield', label: 'SHIELD', width: 82 });
+  if (player.currentSpecialWeapon) statusSections.push({ key: 'special', label: 'SPECIAL', width: 88 });
+
+  let sectionGap = 16;
+  let iconReservedW = 150;
+  let layoutLeft = 20;
+  let layoutRight = width - iconReservedW;
+  let totalSectionW = statusSections.reduce((sum, section) => sum + section.width, 0) + sectionGap * (statusSections.length - 1);
+  let startX = max(layoutLeft, layoutLeft + (layoutRight - layoutLeft - totalSectionW) / 2);
+  let sectionMap = {};
+  let cursorX = startX;
+  for (let section of statusSections) {
+      sectionMap[section.key] = {
+          x: cursorX,
+          w: section.width,
+          cx: cursorX + section.width / 2
+      };
+      cursorX += section.width + sectionGap;
+  }
 
   // --- Interactive Icons ---
   drawInteractiveStatusIcon(width - 110, statusHeight / 2, 50, helpIconImg, 'HELP');
   drawInteractiveStatusIcon(width - 50, statusHeight / 2, 50, settingIconImg, 'GEAR');
   
-  // --- Left Section: HP ---
-  textAlign(LEFT, CENTER);
+  // --- Health ---
+  let healthSection = sectionMap.health;
   fill(200);
   textSize(16);
   noStroke();
-  text("HEALTH", 30, 25);
+  textAlign(CENTER, CENTER);
+  text("HEALTH", healthSection.cx, 25);
   
-  // Heart Icons
-  for (let i = 0; i < player.hp; i++) {
-      push();
-      translate(40 + i * 30, 55);
-      scale(1.5); 
-      fill(255, 50, 50);
-      stroke(200, 0, 0);
-      strokeWeight(1);
-      beginShape();
-      vertex(0, 0);
-      bezierVertex(-5, -5, -10, 0, 0, 10);
-      bezierVertex(10, 0, 5, -5, 0, 0);
-      endShape(CLOSE);
-      pop();
+  let heartCols = 6;
+  let heartSpacingX = 38;
+  let heartSpacingY = 28;
+  let heartBaseY = 52;
+  let heartScale = 1.35;
+  let totalHearts = max(0, floor(player.hp));
+  let heartRows = max(1, ceil(totalHearts / heartCols));
+  for (let row = 0; row < heartRows; row++) {
+      let heartsInRow = min(heartCols, totalHearts - row * heartCols);
+      let rowStartX = healthSection.cx - ((heartsInRow - 1) * heartSpacingX) / 2;
+      for (let col = 0; col < heartsInRow; col++) {
+          push();
+          translate(rowStartX + col * heartSpacingX, heartBaseY + row * heartSpacingY);
+          scale(heartScale);
+          fill(255, 50, 50);
+          stroke(200, 0, 0);
+          strokeWeight(1);
+          beginShape();
+          vertex(0, 0);
+          bezierVertex(-5, -5, -10, 0, 0, 10);
+          bezierVertex(10, 0, 5, -5, 0, 0);
+          endShape(CLOSE);
+          pop();
+      }
   }
 
-  // --- Middle Left: Ammo ---
+  // --- Ammo ---
+  let ammoSection = sectionMap.ammo;
   fill(200);
   noStroke();
-  text("AMMO", 250, 25);
+  textAlign(CENTER, CENTER);
+  text("AMMO", ammoSection.cx, 25);
   
-  // Bullet Icons
-  let maxCols = 10;
-  for (let i = 0; i < player.ammo; i++) {
-      let col = i % maxCols;
-      let row = floor(i / maxCols);
-      
-      push();
-      translate(260 + col * 15, 55 + row * 25);
-      fill(255, 215, 0); // Gold
-      stroke(200, 150, 0);
-      strokeWeight(1);
-      rect(0, 0, 8, 20, 2);
-      pop();
+  let ammoCols = 10;
+  let ammoSpacingX = 15;
+  let ammoSpacingY = 25;
+  let ammoBaseY = 52;
+  let totalAmmo = max(0, floor(player.ammo));
+  let ammoRows = max(1, ceil(totalAmmo / ammoCols));
+  for (let row = 0; row < ammoRows; row++) {
+      let bulletsInRow = min(ammoCols, totalAmmo - row * ammoCols);
+      let rowStartX = ammoSection.cx - ((bulletsInRow - 1) * ammoSpacingX) / 2;
+      for (let col = 0; col < bulletsInRow; col++) {
+          push();
+          translate(rowStartX + col * ammoSpacingX, ammoBaseY + row * ammoSpacingY);
+          fill(255, 215, 0);
+          stroke(200, 150, 0);
+          strokeWeight(1);
+          rect(0, 0, 8, 20, 2);
+          pop();
+      }
   }
   
-  // --- Middle Right: COINS ---
+  // --- Coins ---
+  let coinsSection = sectionMap.coins;
   fill(200);
   noStroke();
-  text("COINS", 500, 25);
+  textAlign(CENTER, CENTER);
+  text("COINS", coinsSection.cx, 25);
   
   fill(255, 215, 0);
   textSize(32);
-  text(player.coins, 500, 55);
+  text(player.coins, coinsSection.cx, 55);
 
-  // --- Right Section: Time ---
+  // --- Time ---
+  let timeSection = sectionMap.time;
   fill(200);
   textSize(16);
-  text("TIME", 700, 25);
+  text("TIME", timeSection.cx, 25);
   
   fill(255);
   textSize(32);
-  text(nf(remaining, 0, 1), 700, 55);
+  text(nf(remaining, 0, 1), timeSection.cx, 55);
   
-  // Level Indicator
-  fill(255, 255, 0);
+  // --- Mode ---
+  let modeSection = sectionMap.mode;
+  fill(200);
   textSize(14);
-  textAlign(RIGHT, TOP);
-  text("DIFFICULTY: " + difficulty, gameWidth - 10, 10);
+  text("MODE", modeSection.cx, 25);
+  fill(255, 255, 0);
+  textSize(22);
+  text(difficulty, modeSection.cx, 55);
   
-  // Shield Status
+  // --- Shield ---
   if (player.hasShield) {
+      let shieldSection = sectionMap.shield;
       fill(0, 255, 255);
       textSize(14);
       textAlign(CENTER, CENTER);
-      text("SHIELD", 820, 25);
+      text("SHIELD", shieldSection.cx, 25);
       
       noFill();
       stroke(0, 255, 255);
       strokeWeight(2);
-      ellipse(820, 55, 40, 40);
+      ellipse(shieldSection.cx, 55, 40, 40);
       fill(0, 255, 255, 100);
       noStroke();
-      ellipse(820, 55, 30, 30);
+      ellipse(shieldSection.cx, 55, 30, 30);
   }
   
-  // Special Weapon Status
+  // --- Special Weapon ---
   if (player.currentSpecialWeapon) {
+      let specialSection = sectionMap.special;
       let label = "SPECIAL";
       if (player.currentSpecialWeapon === WEAPON_TYPES.DONGFENG) label = "MISSILE";
       else if (player.currentSpecialWeapon === WEAPON_TYPES.LOITERING) label = "DRONE";
@@ -2536,32 +3150,32 @@ function drawStatusBar() {
       fill(255, 100, 0);
       textSize(14);
       textAlign(CENTER, CENTER);
-      text(label, 900, 25);
+      text(label, specialSection.cx, 25);
       
       noFill();
       stroke(255, 100, 0);
       strokeWeight(2);
-      rect(900, 55, 50, 50, 5);
+      rect(specialSection.cx, 55, 50, 50, 5);
       
       let icon = images && images.weaponShop ? images.weaponShop[player.currentSpecialWeapon] : null;
       if (icon && icon.width > 0) {
           imageMode(CENTER);
           // Fit within 40x40 box
           let ratio = min(40 / icon.width, 40 / icon.height);
-          image(icon, 900, 55, icon.width * ratio, icon.height * ratio);
+          image(icon, specialSection.cx, 55, icon.width * ratio, icon.height * ratio);
       } else {
           fill(255, 100, 0);
           textSize(20);
           textStyle(BOLD);
           noStroke();
-          text("X", 900, 55);
+          text("X", specialSection.cx, 55);
           textStyle(NORMAL);
       }
       
       fill(255, 180, 80);
       textSize(14);
       noStroke();
-      text("x" + (player.specialWeaponCount || 0), 900, 90);
+      text("x" + (player.specialWeaponCount || 0), specialSection.cx, 90);
   }
 
 }
@@ -2623,6 +3237,7 @@ function drawControlGuidePanel() {
 }
 
 function drawGameOver() {
+  loadEndingVideos();
   push();
   let videoReady = ensureVideoPlayable(defeatVideo);
   let source = videoReady ? defeatVideo : (defeatImg ? defeatImg : gameCoverImg);
@@ -2664,6 +3279,7 @@ function drawGameOver() {
 }
 
 function drawWin() {
+  loadEndingVideos();
   push();
   let videoReady = ensureVideoPlayable(victoryVideo);
   let source = videoReady ? victoryVideo : (victoryImg ? victoryImg : gameCoverImg);
@@ -2738,6 +3354,7 @@ function togglePause() {
 }
 
 function enterGameplayStateAfterReset() {
+    loadGameplayAssets();
     if (tutorialSystem && tutorialSystem.activeTutorial === 'intro') {
         gameState = 'TUTORIAL';
         pauseStartTime = millis();
@@ -2791,6 +3408,10 @@ function keyPressed() {
                totalPausedTime += millis() - pauseStartTime;
            }
        }
+  } else if (key === 'f' || key === 'F') {
+      if (gameState === 'PLAY') {
+          tryOpenNearbyBuildingInteraction();
+      }
   } else if (keyCode === ESCAPE) {
       if (gameState === 'PLAY' || gameState === 'PAUSED') {
           togglePause();
@@ -2798,6 +3419,12 @@ function keyPressed() {
           gameState = 'MENU';
       } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
           closeShopFromUI();
+      } else if (gameState === 'AUTH') {
+          if (authUI && typeof authUI.requestClose === 'function') authUI.requestClose();
+          else {
+              gameState = 'MENU';
+              if (authUI) authUI.hide();
+          }
       }
   } else if (key === 'x' || key === 'X') {
       if (gameState === 'PLAY') {
@@ -2818,20 +3445,14 @@ function keyPressed() {
           enterGameplayStateAfterReset();
       }
   }
-
-  if (gameState === 'SHOP' || gameState === 'MENU_SHOP' || gameState === 'AUTH') {
-      if (gameState === 'SHOP' && keyCode === 70) {
-          closeShopFromUI();
-      }
-      if (gameState === 'AUTH' && keyCode === ESCAPE) {
-          gameState = 'MENU';
-          authUI.hide();
-      }
-  }
 }
 
 async function mousePressed() {
     if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        if (gameState === 'SHOP' && shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory')) {
+            handleBuildingInteractionClick();
+            return;
+        }
         shopUI.handleClick();
         return;
     }
@@ -2841,7 +3462,44 @@ async function mousePressed() {
         return;
     }
     
+    if (gameState === 'BOOT_LOADING') {
+        return;
+    }
+    
     if (gameState === 'MENU') {
+        if (menuAccountIconRect && mouseX >= menuAccountIconRect.x && mouseX <= menuAccountIconRect.x + menuAccountIconRect.w && mouseY >= menuAccountIconRect.y && mouseY <= menuAccountIconRect.y + menuAccountIconRect.h) {
+            menuAccountOpen = !menuAccountOpen;
+            return;
+        }
+        if (menuAccountOpen) {
+            let inPopup = menuAccountPopupRect &&
+                mouseX >= menuAccountPopupRect.x && mouseX <= menuAccountPopupRect.x + menuAccountPopupRect.w &&
+                mouseY >= menuAccountPopupRect.y && mouseY <= menuAccountPopupRect.y + menuAccountPopupRect.h;
+            if (menuAccountPrimaryButtonRect &&
+                mouseX >= menuAccountPrimaryButtonRect.x && mouseX <= menuAccountPrimaryButtonRect.x + menuAccountPrimaryButtonRect.w &&
+                mouseY >= menuAccountPrimaryButtonRect.y && mouseY <= menuAccountPrimaryButtonRect.y + menuAccountPrimaryButtonRect.h) {
+                if (authUI && authUI.isLoggedIn()) {
+                    menuAccountOpen = false;
+                    authUI.logout();
+                } else {
+                    menuAccountOpen = false;
+                    await openMenuLoginDialog();
+                }
+                return;
+            }
+            if (menuAccountSecondaryButtonRect &&
+                mouseX >= menuAccountSecondaryButtonRect.x && mouseX <= menuAccountSecondaryButtonRect.x + menuAccountSecondaryButtonRect.w &&
+                mouseY >= menuAccountSecondaryButtonRect.y && mouseY <= menuAccountSecondaryButtonRect.y + menuAccountSecondaryButtonRect.h) {
+                menuAccountOpen = false;
+                return;
+            }
+            if (inPopup) {
+                return;
+            }
+            menuAccountOpen = false;
+            return;
+        }
+
         let layout = getMenuButtonLayout();
         let shopX = layout.shopX;
         let shopY = layout.shopY;
@@ -2879,17 +3537,12 @@ async function mousePressed() {
             
             // Check click on difficulty button
             if (abs(mouseX - width/2) < 140 && abs(mouseY - btnY) < 30) {
-                let backendOk = await isBackendAvailable();
-                if (!backendOk) {
-                    setStartGateMessage('Backend unavailable. Cannot start game now.');
+                if (difficultyStartPending) return;
+                difficultyStartPending = true;
+                let ready = await prepareGameplayStartFromDifficultySelect();
+                difficultyStartPending = false;
+                if (!ready) {
                     return;
-                }
-                if (authUI && authUI.isLoggedIn()) {
-                    let loaded = await refreshUserProgress();
-                    if (!loaded) {
-                        setStartGateMessage('Unable to load profile data. Please login again.');
-                        return;
-                    }
                 }
                 difficulty = d;
                 resetGame(true);
@@ -2973,9 +3626,11 @@ async function mousePressed() {
 
         if (gameState === 'PLAY') {
             if (mouseX >= gameViewX && mouseX <= gameViewX + gameWidth && mouseY >= statusHeight + gameViewY && mouseY <= statusHeight + gameViewY + gameHeight) {
-                if (!isPlayerControlLocked() && player.canFire()) {
+                if (!isPlayerControlLocked()) {
                     let target = getMouseWorldPos();
-                    player.fire(target.x, target.y);
+                    if (WEAPON_CONFIG[player.currentWeapon] && player.ammo >= WEAPON_CONFIG[player.currentWeapon].ammoCost) {
+                        player.fire(target.x, target.y);
+                    }
                 }
             }
         }

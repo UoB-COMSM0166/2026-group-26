@@ -1,3 +1,170 @@
+function getMouseWorldPos() {
+    let mx = mouseX - gameViewX + camX;
+    let my = mouseY - statusHeight - gameViewY + camY;
+    
+    let dx = mx - mapOffsetX;
+    let dy = my - mapOffsetY;
+    
+    let W = tileSize / 2;
+    let H = tileSize / 4;
+    
+    let gridX = (dx / W + dy / H) / 2;
+    let gridY = (dy / H - dx / W) / 2;
+    
+    return createVector(gridX * tileSize, gridY * tileSize);
+}
+
+
+const WEAPON_TYPES = {
+  PISTOL: 'pistol',
+  SHOTGUN: 'shotgun',
+  RIFLE: 'rifle',
+  LASER: 'laser',
+  MOLOTOV: 'molotov',
+  DONGFENG: 'dongfeng',
+  LOITERING: 'loitering',
+  ATOMIC: 'atomic'
+};
+
+const WEAPON_CONFIG = {
+  [WEAPON_TYPES.PISTOL]: {
+    name: 'Pistol',
+    type: 'basic', // Equipped in shop
+    damage: 1,
+    speed: 10,
+    cooldown: 200, // ms
+    ammoCost: 1,
+    color: [255, 255, 0],
+    lifespan: 60,
+    spread: 0,
+    count: 1,
+    description: "Basic sidearm. Left click to shoot single shots. Good for early game."
+  },
+  [WEAPON_TYPES.SHOTGUN]: {
+    name: 'Shotgun',
+    type: 'basic',
+    damage: 1, // Per pellet
+    speed: 12,
+    cooldown: 800,
+    ammoCost: 1, // User requested 1 ammo count per shot despite multiple pellets
+    color: [255, 100, 0],
+    lifespan: 40,
+    spread: 0.15, // Angle spread
+    count: 5, // Number of pellets
+    description: "Fires 5 pellets at once. High damage at close range. Slow fire rate."
+  },
+  [WEAPON_TYPES.RIFLE]: {
+    name: 'Assault Rifle',
+    type: 'basic',
+    damage: 1,
+    speed: 15,
+    cooldown: 100, // Fast fire rate (burst handled in logic)
+    ammoCost: 1, // Per burst? Or per shot? Let's say per burst for consistency with user request
+    color: [255, 200, 0],
+    lifespan: 70,
+    spread: 0.05,
+    count: 5, // Burst count
+    burstDelay: 5, // Frames between burst shots
+    description: "Fires 5-round bursts rapidly. Excellent for mid-range combat."
+  },
+  [WEAPON_TYPES.LASER]: {
+    name: 'Laser Gun',
+    type: 'basic',
+    damage: 12, // Displayed as per-second beam damage
+    damagePerFrame: 0.2,
+    speed: 0,
+    cooldown: 2000,
+    ammoCost: 1,
+    color: [90, 200, 255],
+    lifespan: 120,
+    duration: 120,
+    beamWidth: 26,
+    growFrames: 6,
+    fadeFrames: 12,
+    maxLength: 2200,
+    penetrates: true,
+    description: "Projects a sustained blue laser beam for 2 seconds. Damages enemies continuously until cover blocks it."
+  },
+  [WEAPON_TYPES.MOLOTOV]: {
+    name: 'Molotov',
+    type: 'basic',
+    damage: 0.1, // Continuous damage per frame
+    speed: 8, // Throw speed
+    cooldown: 1500,
+    ammoCost: 1,
+    color: [255, 50, 0],
+    lifespan: 120, // Time before explosion if not hit? Or travel time?
+    isThrown: true,
+    areaDuration: 300, // Frames fire stays on ground
+    areaRadius: 80,
+    description: "Throws a fire bottle that creates a burning area. Damages enemies over time."
+  },
+  // Special Weapons (Drops)
+  [WEAPON_TYPES.DONGFENG]: {
+    name: 'Dongfeng Missile',
+    type: 'special',
+    damage: 50,
+    cooldown: 0,
+    ammoCost: 1, // Uses the item itself
+    description: "Strategic nuke. Press Space to open Map, Click to launch missile at target area.",
+    dropWeight: 50,
+    dropRateText: "Medium"
+  },
+  [WEAPON_TYPES.LOITERING]: {
+    name: 'Loitering Munition',
+    type: 'special',
+    damage: 20,
+    cooldown: 0,
+    ammoCost: 1,
+    speed: 5, // Initial speed
+    maxSpeed: 20,
+    turnSpeed: 0.1,
+    description: "Drone missile. Press Space to launch. Use Arrow Keys to guide it to targets.",
+    dropWeight: 30,
+    dropRateText: "Low"
+  },
+  [WEAPON_TYPES.ATOMIC]: {
+    name: 'Atomic Bomb',
+    type: 'special',
+    damage: 9999,
+    cooldown: 0,
+    ammoCost: 1,
+    description: "The ultimate weapon. Press Space to detonate. Destroys EVERYTHING on screen.",
+    dropWeight: 5,
+    dropRateText: "Very Rare"
+  }
+};
+
+class Particle {
+  constructor(x, y, color) {
+    this.pos = createVector(x, y);
+    this.vel = p5.Vector.random2D();
+    this.vel.mult(random(1, 3));
+    this.acc = createVector(0, 0);
+    this.lifespan = 255;
+    this.color = color;
+    this.r = 4;
+  }
+
+  update() {
+    this.vel.add(this.acc);
+    this.vel.mult(0.95);
+    this.pos.add(this.vel);
+    this.lifespan -= 5;
+  }
+
+  display() {
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    noStroke();
+    fill(red(this.color), green(this.color), blue(this.color), this.lifespan);
+    ellipse(isoPos.x, isoPos.y, this.r * 2);
+  }
+
+  isDead() {
+    return this.lifespan < 0;
+  }
+}
+
 const CAR_CATALOG = {
   starter: { name: 'Starter', color: [0, 255, 0], maxSpeed: 12, turnSpeed: 0.05, friction: 0.96, maxHp: 5, maxAmmo: 10, price: 0 },
   speedster: { name: 'Speedster', color: [0, 180, 255], maxSpeed: 16, turnSpeed: 0.06, friction: 0.97, maxHp: 4, maxAmmo: 10, price: 120 },
@@ -245,6 +412,7 @@ class Vehicle {
     }
   }
 }
+
 class Player extends Vehicle {
   constructor(x, y) {
     let carData = CAR_CATALOG ? CAR_CATALOG.starter : { color: [0, 255, 0], maxSpeed: 12, turnSpeed: 0.05, friction: 0.96, maxHp: 5, maxAmmo: 10 };
@@ -302,6 +470,10 @@ class Player extends Vehicle {
         projectiles.push(new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon));
         // Schedule remaining shots
         this.startBurst(config.count - 1, config.burstDelay);
+    } else if (this.currentWeapon === WEAPON_TYPES.LASER) {
+        let laser = new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon);
+        laser.attachToEntity(this, this.length * 0.55);
+        projectiles.push(laser);
     } else if (this.currentWeapon === WEAPON_TYPES.MOLOTOV) {
         // Calculate velocity to reach target
         // tx, ty are World Coordinates (not Screen)
@@ -556,6 +728,7 @@ class Player extends Vehicle {
   
   display() {
     super.display();
+    this.drawHealthHearts();
     if (this.hasShield) {
         push();
         let isoPos = projectIso(this.pos.x, this.pos.y);
@@ -584,7 +757,36 @@ class Player extends Vehicle {
         pop();
     }
   }
+
+  drawHealthHearts() {
+    push();
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
+
+    let heartCount = max(0, floor(this.hp));
+    let spacing = 14;
+    let startX = -((heartCount - 1) * spacing) / 2;
+    let yOffset = -(this.width || 20) / 2 - 24;
+
+    for (let i = 0; i < heartCount; i++) {
+      push();
+      translate(startX + i * spacing, yOffset);
+      scale(0.8);
+      fill(255, 50, 50);
+      stroke(200, 0, 0);
+      strokeWeight(1);
+      beginShape();
+      vertex(0, 0);
+      bezierVertex(-5, -5, -10, 0, 0, 10);
+      bezierVertex(10, 0, 5, -5, 0, 0);
+      endShape(CLOSE);
+      pop();
+    }
+
+    pop();
+  }
 }
+
 class Enemy extends Vehicle {
   constructor(x, y) {
     super(x, y, color(255, 0, 0));
@@ -725,15 +927,13 @@ class Enemy extends Vehicle {
   }
 
   drawHealthBar() {
-    // Only show health bar if enemy is damaged, or we can show it always
-    if (this.hp >= this.maxHp && !this.isShielded) return; // Optional: hide when full health
-
     push();
-    translate(this.pos.x, this.pos.y);
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
     
     let barWidth = 40;
     let barHeight = 6;
-    let yOffset = -(this.height || 30) / 2 - 15; // Position above the car
+    let yOffset = -(this.width || 20) / 2 - 20; // Position above the car in iso space
 
     // Background (gray)
     fill(50, 50, 50, 200);
@@ -766,6 +966,353 @@ class Enemy extends Vehicle {
     pop();
   }
 }
+
+
+class Projectile {
+  constructor(x, y, heading, type) {
+    this.pos = createVector(x, y);
+    this.origin = this.pos.copy();
+    this.type = type;
+    this.heading = heading;
+    this.direction = p5.Vector.fromAngle(heading);
+    this.vel = this.direction.copy();
+    this.hitList = []; // For penetrating weapons
+    
+    let config = WEAPON_CONFIG[type];
+    if (!config) {
+        // Fallback or error
+        config = WEAPON_CONFIG['pistol'];
+    }
+
+    this.r = config.r || 4;
+    this.lifespan = config.lifespan || 60;
+    this.color = config.color ? color(config.color[0], config.color[1], config.color[2]) : color(255);
+    this.speed = config.speed || 10;
+
+    // Special handling
+    this.isLaserBeam = (type === WEAPON_TYPES.LASER);
+    this.isMolotov = (type === WEAPON_TYPES.MOLOTOV);
+    this.isFireArea = false;
+    this.target = null;
+
+    if (this.isLaserBeam) {
+        this.duration = config.duration || this.lifespan;
+        this.maxBeamLength = config.maxLength || max(
+            typeof mapWidth !== 'undefined' ? mapWidth : 0,
+            typeof mapHeight !== 'undefined' ? mapHeight : 0,
+            2200
+        );
+        this.beamWidth = config.beamWidth || 26;
+        this.growFrames = config.growFrames || 6;
+        this.fadeFrames = config.fadeFrames || 12;
+        this.beamEnd = this.origin.copy();
+        this.sourceEntity = null;
+        this.sourceForwardOffset = 0;
+        this.vel.mult(0);
+        this.updateLaserGeometry();
+    } else {
+        this.vel.mult(this.speed);
+    }
+  }
+
+  attachToEntity(entity, forwardOffset = 0) {
+      this.sourceEntity = entity || null;
+      this.sourceForwardOffset = forwardOffset || 0;
+      this.refreshLaserAnchor();
+  }
+
+  refreshLaserAnchor() {
+      if (!this.isLaserBeam || !this.sourceEntity) return;
+
+      this.heading = this.sourceEntity.heading;
+      this.direction = p5.Vector.fromAngle(this.heading);
+
+      let forward = this.direction.copy().mult(this.sourceForwardOffset);
+      this.origin = p5.Vector.add(this.sourceEntity.pos, forward);
+      this.pos = this.origin.copy();
+  }
+
+  getLaserThickness() {
+      if (!this.isLaserBeam) return this.r * 2;
+
+      let age = max(0, this.duration - this.lifespan);
+      let maxWidth = this.beamWidth;
+
+      if (age < this.growFrames) {
+          return lerp(2, maxWidth, age / max(1, this.growFrames));
+      }
+      if (this.lifespan < this.fadeFrames) {
+          return lerp(2, maxWidth, this.lifespan / max(1, this.fadeFrames));
+      }
+      return maxWidth;
+  }
+
+  isBlockingBuildingPoint(point, building) {
+      let size = building.getCollisionSize ? building.getCollisionSize() : { w: building.w, h: building.h };
+      let center = building.getCollisionCenter ? building.getCollisionCenter() : building.pos;
+      let halfW = size.w / 2;
+      let halfH = size.h / 2;
+      return (
+          point.x >= center.x - halfW &&
+          point.x <= center.x + halfW &&
+          point.y >= center.y - halfH &&
+          point.y <= center.y + halfH
+      );
+  }
+
+  isBlockingObstaclePoint(point, obstacle) {
+      return obstacle.isSolid && p5.Vector.dist(point, obstacle.pos) <= obstacle.w / 2;
+  }
+
+  updateLaserGeometry() {
+      if (!this.isLaserBeam) return;
+
+      let step = 12;
+      let lastFreeDistance = 0;
+      for (let distance = step; distance <= this.maxBeamLength; distance += step) {
+          let sample = p5.Vector.add(this.origin, p5.Vector.mult(this.direction, distance));
+          let blocked = false;
+
+          for (let b of buildings) {
+              if (this.isBlockingBuildingPoint(sample, b)) {
+                  blocked = true;
+                  break;
+              }
+          }
+
+          if (!blocked) {
+              for (let o of obstacles) {
+                  if (this.isBlockingObstaclePoint(sample, o)) {
+                      blocked = true;
+                      break;
+                  }
+              }
+          }
+
+          if (blocked) {
+              break;
+          }
+          lastFreeDistance = distance;
+      }
+
+      this.beamLength = lastFreeDistance;
+      this.beamEnd = p5.Vector.add(this.origin, p5.Vector.mult(this.direction, this.beamLength));
+  }
+
+  pointToSegmentDistance(point, segStart, segEnd) {
+      let segment = p5.Vector.sub(segEnd, segStart);
+      let segmentLengthSq = segment.magSq();
+      if (segmentLengthSq <= 0.0001) {
+          return p5.Vector.dist(point, segStart);
+      }
+
+      let toPoint = p5.Vector.sub(point, segStart);
+      let t = constrain(toPoint.dot(segment) / segmentLengthSq, 0, 1);
+      let projection = p5.Vector.add(segStart, p5.Vector.mult(segment, t));
+      return p5.Vector.dist(point, projection);
+  }
+
+  setTarget(tx, ty) {
+      if (this.isMolotov) {
+          this.target = createVector(tx, ty);
+          // Calculate velocity to reach target in ~30 frames?
+          // Or move at constant speed?
+          // Let's move at constant speed.
+          let dir = p5.Vector.sub(this.target, this.pos);
+          let dist = dir.mag();
+          dir.normalize();
+          this.vel = dir.mult(this.speed);
+          this.lifespan = dist / this.speed + 10; // Ensure it reaches
+      }
+  }
+
+  update() {
+    if (this.isLaserBeam) {
+        this.lifespan--;
+        this.refreshLaserAnchor();
+        this.updateLaserGeometry();
+        return;
+    }
+
+    if (this.isFireArea) {
+        this.lifespan--;
+        return;
+    }
+
+    this.pos.add(this.vel);
+    this.lifespan--;
+
+    if (this.isMolotov && this.target) {
+        // Check if reached target
+        if (this.pos.dist(this.target) < this.speed) {
+            // Explode!
+            this.becomeFireArea();
+        }
+    }
+  }
+
+  becomeFireArea() {
+      this.isFireArea = true;
+      this.vel.mult(0);
+      let config = WEAPON_CONFIG[WEAPON_TYPES.MOLOTOV];
+      this.lifespan = config.areaDuration || 300;
+      this.r = config.areaRadius || 60; // AOE Radius
+      this.fireParticles = []; // Initialize fire particles
+  }
+
+  display() {
+    if (this.isLaserBeam) {
+        push();
+        let startIso = projectIso(this.origin.x, this.origin.y);
+        let endIso = projectIso(this.beamEnd.x, this.beamEnd.y);
+        let beamWidth = this.getLaserThickness() * (0.96 + 0.08 * sin(frameCount * 0.6));
+
+        strokeCap(ROUND);
+        noFill();
+
+        stroke(40, 120, 255, 35);
+        strokeWeight(beamWidth * 2.1);
+        line(startIso.x, startIso.y, endIso.x, endIso.y);
+
+        stroke(70, 180, 255, 90);
+        strokeWeight(beamWidth * 1.35);
+        line(startIso.x, startIso.y, endIso.x, endIso.y);
+
+        stroke(140, 235, 255, 180);
+        strokeWeight(beamWidth * 0.72);
+        line(startIso.x, startIso.y, endIso.x, endIso.y);
+
+        stroke(235, 250, 255, 235);
+        strokeWeight(max(2, beamWidth * 0.2));
+        line(startIso.x, startIso.y, endIso.x, endIso.y);
+
+        noStroke();
+        fill(150, 230, 255, 180);
+        ellipse(startIso.x, startIso.y, beamWidth * 1.35, beamWidth * 1.35);
+        fill(200, 245, 255, 150);
+        ellipse(endIso.x, endIso.y, beamWidth * 0.85, beamWidth * 0.85);
+        pop();
+        return;
+    }
+
+    push();
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
+    
+    if (this.isFireArea) {
+        // --- Enhanced Fire Effect ---
+        
+        // 1. Scorch Mark (Base)
+        noStroke();
+        fill(20, 10, 5, 100);
+        ellipse(0, 0, this.r * 2.2, this.r * 1.1); // Slightly larger dark patch
+        
+        // 2. Heat Haze / Glow (Pulsing)
+        let pulse = sin(frameCount * 0.1);
+        fill(255, 80, 0, 30 + pulse * 10);
+        ellipse(0, 0, this.r * 2.5, this.r * 1.25);
+        
+        // 3. Fire Particles
+        // Generate new particles occasionally
+        if (frameCount % 2 === 0) {
+            let angle = random(TWO_PI);
+            let dist = random(this.r * 0.8);
+            // Elliptical distribution for ISO
+            let px = cos(angle) * dist;
+            let py = sin(angle) * dist * 0.5;
+            
+            this.fireParticles.push({
+                x: px,
+                y: py,
+                size: random(10, 25),
+                life: 255,
+                decay: random(5, 15),
+                driftX: random(-0.5, 0.5),
+                driftY: random(-1, -3), // Rise up
+                colorOffset: random(0, 50)
+            });
+        }
+        
+        // Update & Draw Particles
+        for (let i = this.fireParticles.length - 1; i >= 0; i--) {
+            let p = this.fireParticles[i];
+            p.life -= p.decay;
+            p.x += p.driftX;
+            p.y += p.driftY;
+            p.size *= 0.95; // Shrink
+            
+            if (p.life <= 0) {
+                this.fireParticles.splice(i, 1);
+                continue;
+            }
+            
+            // Color gradient: White -> Yellow -> Orange -> Red -> Smoke
+            let c;
+            if (p.life > 180) c = color(255, 255, 100, p.life); // Yellow-White
+            else if (p.life > 100) c = color(255, 150 + p.colorOffset, 0, p.life); // Orange
+            else c = color(150, 50, 50, p.life); // Dark Red/Smoke
+            
+            fill(c);
+            ellipse(p.x, p.y, p.size, p.size);
+        }
+        
+    } else if (this.type === WEAPON_TYPES.MOLOTOV) {
+        // Draw Bottle
+        fill(this.color);
+        stroke(255);
+        strokeWeight(1);
+        rectMode(CENTER);
+        
+        // Spin effect
+        rotate(frameCount * 0.2);
+        rect(0, 0, 10, 20);
+    } else {
+        fill(this.color);
+        noStroke();
+        ellipse(0, 0, this.r * 2);
+    }
+    pop();
+  }
+
+  isDead() {
+    return this.lifespan < 0;
+  }
+
+  checkCollision(enemy) {
+    if (this.isLaserBeam) {
+        let effectiveRadius = this.getLaserThickness() * 0.45 + enemy.r * 0.75;
+        return this.pointToSegmentDistance(enemy.pos, this.origin, this.beamEnd) <= effectiveRadius;
+    }
+
+    if (this.isFireArea) {
+        // AOE damage
+        let d = p5.Vector.dist(this.pos, enemy.pos);
+        if (d < this.r + enemy.r) {
+            // Apply damage every frame? Or throttled?
+            // Usually fire does continuous damage.
+            // Let's return true but NOT kill the projectile.
+            // But we need to avoid applying damage every single frame if it's too high.
+            // Let's assume damage is low per frame.
+            return true;
+        }
+        return false;
+    }
+
+    let d = p5.Vector.dist(this.pos, enemy.pos);
+    if (d < this.r + enemy.r) {
+        if (this.hitList.includes(enemy)) return false; // Already hit this enemy
+
+        let config = WEAPON_CONFIG[this.type];
+        if (config && config.penetrates) {
+            this.hitList.push(enemy);
+            return true; // Hit, but don't destroy projectile
+        }
+        return true; // Hit and destroy
+    }
+    return false;
+  }
+}
+
 class PowerUp {
   constructor(x, y, type) {
     this.pos = createVector(x, y);
@@ -920,35 +1467,7 @@ class PowerUp {
     return d < this.r + vehicle.r + extraRange;
   }
 }
-class Particle {
-  constructor(x, y, color) {
-    this.pos = createVector(x, y);
-    this.vel = p5.Vector.random2D();
-    this.vel.mult(random(1, 3));
-    this.acc = createVector(0, 0);
-    this.lifespan = 255;
-    this.color = color;
-    this.r = 4;
-  }
 
-  update() {
-    this.vel.add(this.acc);
-    this.vel.mult(0.95);
-    this.pos.add(this.vel);
-    this.lifespan -= 5;
-  }
-
-  display() {
-    let isoPos = projectIso(this.pos.x, this.pos.y);
-    noStroke();
-    fill(red(this.color), green(this.color), blue(this.color), this.lifespan);
-    ellipse(isoPos.x, isoPos.y, this.r * 2);
-  }
-
-  isDead() {
-    return this.lifespan < 0;
-  }
-}
 class Building {
   constructor(x, y, w, h, type = 'normal', img = null, label = null) {
     this.pos = createVector(x, y);
@@ -998,6 +1517,16 @@ class Building {
     if (displayImg) {
       let drawSize = this.getImageDrawSize(displayImg);
       return { x: this.pos.x, y: this.pos.y - drawSize.h / 4 };
+    }
+    return { x: this.pos.x, y: this.pos.y };
+  }
+
+  getInteractionCenter() {
+    let displayImg = this.getDisplayImage();
+    if (displayImg) {
+      let drawSize = this.getImageDrawSize(displayImg);
+      // Interactions should happen near the building footprint rather than the roof center.
+      return { x: this.pos.x, y: this.pos.y + drawSize.h * 0.08 };
     }
     return { x: this.pos.x, y: this.pos.y };
   }
@@ -1313,6 +1842,18 @@ class Building {
       return this.type === 'hospital' || this.type === 'armory';
   }
 
+  getInteractionRange(player) {
+      let size = this.getCollisionSize();
+      let playerRadius = player && Number.isFinite(player.r) ? player.r : 20;
+      return max(size.w, size.h) * 0.6 + playerRadius + 36;
+  }
+
+  isPlayerInRange(player) {
+      if (!player || !this.isInteractable()) return false;
+      let center = this.getInteractionCenter();
+      return dist(player.pos.x, player.pos.y, center.x, center.y) <= this.getInteractionRange(player);
+  }
+
   getDisplayName() {
       if (this.label) return this.label;
       if (this.type === 'hospital') return 'Hospital';
@@ -1321,21 +1862,51 @@ class Building {
       return 'Residence';
   }
 
+  showNameLabel() {
+      let size = this.getCollisionSize();
+      let center = this.getCollisionCenter();
+      let label = this.getDisplayName();
+      if (!label) return;
+
+      push();
+      let isoPos = projectIso(center.x, center.y);
+      let offset = max(size.w, size.h) * 0.6 + 8;
+      translate(isoPos.x, isoPos.y - offset);
+      rectMode(CENTER);
+      textAlign(CENTER, CENTER);
+      textSize(12);
+
+      let paddingX = 14;
+      let boxW = max(96, textWidth(label) + paddingX * 2);
+      fill(0, 0, 0, 170);
+      noStroke();
+      rect(0, 0, boxW, 24, 6);
+
+      fill(255);
+      text(label, 0, 1);
+      pop();
+  }
+
   showTooltip(player) {
+      if (!player || !this.isPlayerInRange(player)) return;
       let size = this.getCollisionSize();
       push();
       let center = this.getCollisionCenter();
       let isoPos = projectIso(center.x, center.y);
-      let offset = max(size.w, size.h) * 0.6 + 10;
+      let offset = max(size.w, size.h) * 0.6 + 36;
       translate(isoPos.x, isoPos.y - offset);
       fill(0, 0, 0, 200);
       noStroke();
       rectMode(CENTER);
-      let lines = [this.getDisplayName()];
+      let lines = [];
       if (this.isInteractable()) {
           lines.push("Press F to Interact");
       }
-      let boxH = lines.length === 1 ? 24 : 40;
+      if (lines.length === 0) {
+          pop();
+          return;
+      }
+      let boxH = 24;
       rect(0, 0, 160, boxH, 5);
       
       fill(255);
@@ -1346,789 +1917,6 @@ class Building {
   }
 }
 
-const WEAPON_TYPES = {
-  PISTOL: 'pistol',
-  SHOTGUN: 'shotgun',
-  RIFLE: 'rifle',
-  LASER: 'laser',
-  MOLOTOV: 'molotov',
-  DONGFENG: 'dongfeng',
-  LOITERING: 'loitering',
-  ATOMIC: 'atomic'
-};
-
-const WEAPON_CONFIG = {
-  [WEAPON_TYPES.PISTOL]: {
-    name: 'Pistol',
-    type: 'basic', // Equipped in shop
-    damage: 1,
-    speed: 10,
-    cooldown: 200, // ms
-    ammoCost: 1,
-    color: [255, 255, 0],
-    lifespan: 60,
-    spread: 0,
-    count: 1,
-    description: "Basic sidearm. Left click to shoot single shots. Good for early game."
-  },
-  [WEAPON_TYPES.SHOTGUN]: {
-    name: 'Shotgun',
-    type: 'basic',
-    damage: 1, // Per pellet
-    speed: 12,
-    cooldown: 800,
-    ammoCost: 1, // User requested 1 ammo count per shot despite multiple pellets
-    color: [255, 100, 0],
-    lifespan: 40,
-    spread: 0.15, // Angle spread
-    count: 5, // Number of pellets
-    description: "Fires 5 pellets at once. High damage at close range. Slow fire rate."
-  },
-  [WEAPON_TYPES.RIFLE]: {
-    name: 'Assault Rifle',
-    type: 'basic',
-    damage: 1,
-    speed: 15,
-    cooldown: 100, // Fast fire rate (burst handled in logic)
-    ammoCost: 1, // Per burst? Or per shot? Let's say per burst for consistency with user request
-    color: [255, 200, 0],
-    lifespan: 70,
-    spread: 0.05,
-    count: 3, // Burst count
-    burstDelay: 5, // Frames between burst shots
-    description: "Fires 3-round bursts rapidly. Excellent for mid-range combat."
-  },
-  [WEAPON_TYPES.LASER]: {
-    name: 'Laser Gun',
-    type: 'basic',
-    damage: 2, // Higher damage?
-    speed: 25,
-    cooldown: 1000,
-    ammoCost: 1,
-    color: [0, 255, 255],
-    lifespan: 60,
-    penetrates: true,
-    description: "Fires a high-energy beam that pierces through multiple enemies."
-  },
-  [WEAPON_TYPES.MOLOTOV]: {
-    name: 'Molotov',
-    type: 'basic',
-    damage: 0.1, // Continuous damage per frame
-    speed: 8, // Throw speed
-    cooldown: 1500,
-    ammoCost: 1,
-    color: [255, 50, 0],
-    lifespan: 120, // Time before explosion if not hit? Or travel time?
-    isThrown: true,
-    areaDuration: 300, // Frames fire stays on ground
-    areaRadius: 80,
-    description: "Throws a fire bottle that creates a burning area. Damages enemies over time."
-  },
-  // Special Weapons (Drops)
-  [WEAPON_TYPES.DONGFENG]: {
-    name: 'Dongfeng Missile',
-    type: 'special',
-    damage: 50,
-    cooldown: 0,
-    ammoCost: 1, // Uses the item itself
-    description: "Strategic nuke. Press Space to open Map, Click to launch missile at target area.",
-    dropWeight: 50,
-    dropRateText: "Medium"
-  },
-  [WEAPON_TYPES.LOITERING]: {
-    name: 'Loitering Munition',
-    type: 'special',
-    damage: 20,
-    cooldown: 0,
-    ammoCost: 1,
-    speed: 5, // Initial speed
-    maxSpeed: 20,
-    turnSpeed: 0.1,
-    description: "Drone missile. Press Space to launch. Use Arrow Keys to guide it to targets.",
-    dropWeight: 30,
-    dropRateText: "Low"
-  },
-  [WEAPON_TYPES.ATOMIC]: {
-    name: 'Atomic Bomb',
-    type: 'special',
-    damage: 9999,
-    cooldown: 0,
-    ammoCost: 1,
-    description: "The ultimate weapon. Press Space to detonate. Destroys EVERYTHING on screen.",
-    dropWeight: 5,
-    dropRateText: "Very Rare"
-  }
-};
-
-class Projectile {
-  constructor(x, y, heading, type) {
-    this.pos = createVector(x, y);
-    this.type = type;
-    this.heading = heading;
-    this.vel = p5.Vector.fromAngle(heading);
-    this.hitList = []; // For penetrating weapons
-    
-    let config = WEAPON_CONFIG[type];
-    if (!config) {
-        // Fallback or error
-        config = WEAPON_CONFIG['pistol'];
-    }
-
-    this.r = config.r || 4;
-    this.lifespan = config.lifespan || 60;
-    this.color = config.color ? color(config.color[0], config.color[1], config.color[2]) : color(255);
-    this.speed = config.speed || 10;
-    
-    this.vel.mult(this.speed);
-    
-    // Special handling
-    this.isMolotov = (type === WEAPON_TYPES.MOLOTOV);
-    this.isFireArea = false;
-    this.target = null;
-  }
-
-  setTarget(tx, ty) {
-      if (this.isMolotov) {
-          this.target = createVector(tx, ty);
-          // Calculate velocity to reach target in ~30 frames?
-          // Or move at constant speed?
-          // Let's move at constant speed.
-          let dir = p5.Vector.sub(this.target, this.pos);
-          let dist = dir.mag();
-          dir.normalize();
-          this.vel = dir.mult(this.speed);
-          this.lifespan = dist / this.speed + 10; // Ensure it reaches
-      }
-  }
-
-  update() {
-    if (this.isFireArea) {
-        this.lifespan--;
-        return;
-    }
-
-    this.pos.add(this.vel);
-    this.lifespan--;
-
-    if (this.isMolotov && this.target) {
-        // Check if reached target
-        if (this.pos.dist(this.target) < this.speed) {
-            // Explode!
-            this.becomeFireArea();
-        }
-    }
-  }
-
-  becomeFireArea() {
-      this.isFireArea = true;
-      this.vel.mult(0);
-      let config = WEAPON_CONFIG[WEAPON_TYPES.MOLOTOV];
-      this.lifespan = config.areaDuration || 300;
-      this.r = config.areaRadius || 60; // AOE Radius
-      this.fireParticles = []; // Initialize fire particles
-  }
-
-  display() {
-    push();
-    let isoPos = projectIso(this.pos.x, this.pos.y);
-    translate(isoPos.x, isoPos.y);
-    
-    if (this.isFireArea) {
-        // --- Enhanced Fire Effect ---
-        
-        // 1. Scorch Mark (Base)
-        noStroke();
-        fill(20, 10, 5, 100);
-        ellipse(0, 0, this.r * 2.2, this.r * 1.1); // Slightly larger dark patch
-        
-        // 2. Heat Haze / Glow (Pulsing)
-        let pulse = sin(frameCount * 0.1);
-        fill(255, 80, 0, 30 + pulse * 10);
-        ellipse(0, 0, this.r * 2.5, this.r * 1.25);
-        
-        // 3. Fire Particles
-        // Generate new particles occasionally
-        if (frameCount % 2 === 0) {
-            let angle = random(TWO_PI);
-            let dist = random(this.r * 0.8);
-            // Elliptical distribution for ISO
-            let px = cos(angle) * dist;
-            let py = sin(angle) * dist * 0.5;
-            
-            this.fireParticles.push({
-                x: px,
-                y: py,
-                size: random(10, 25),
-                life: 255,
-                decay: random(5, 15),
-                driftX: random(-0.5, 0.5),
-                driftY: random(-1, -3), // Rise up
-                colorOffset: random(0, 50)
-            });
-        }
-        
-        // Update & Draw Particles
-        for (let i = this.fireParticles.length - 1; i >= 0; i--) {
-            let p = this.fireParticles[i];
-            p.life -= p.decay;
-            p.x += p.driftX;
-            p.y += p.driftY;
-            p.size *= 0.95; // Shrink
-            
-            if (p.life <= 0) {
-                this.fireParticles.splice(i, 1);
-                continue;
-            }
-            
-            // Color gradient: White -> Yellow -> Orange -> Red -> Smoke
-            let c;
-            if (p.life > 180) c = color(255, 255, 100, p.life); // Yellow-White
-            else if (p.life > 100) c = color(255, 150 + p.colorOffset, 0, p.life); // Orange
-            else c = color(150, 50, 50, p.life); // Dark Red/Smoke
-            
-            fill(c);
-            ellipse(p.x, p.y, p.size, p.size);
-        }
-        
-    } else if (this.type === WEAPON_TYPES.LASER) {
-        // Draw laser trail projected to Iso
-        stroke(this.color);
-        strokeWeight(2);
-        let tail = p5.Vector.mult(this.vel, -2); // Length of tail in World Units
-        let isoTail = projectIsoVector(tail.x, tail.y);
-        line(0, 0, isoTail.x, isoTail.y);
-        
-        fill(255);
-        noStroke();
-        ellipse(0, 0, this.r * 2);
-    } else if (this.type === WEAPON_TYPES.MOLOTOV) {
-        // Draw Bottle
-        fill(this.color);
-        stroke(255);
-        strokeWeight(1);
-        rectMode(CENTER);
-        
-        // Spin effect
-        rotate(frameCount * 0.2);
-        rect(0, 0, 10, 20);
-    } else {
-        fill(this.color);
-        noStroke();
-        ellipse(0, 0, this.r * 2);
-    }
-    pop();
-  }
-
-  isDead() {
-    return this.lifespan < 0;
-  }
-
-  checkCollision(enemy) {
-    if (this.isFireArea) {
-        // AOE damage
-        let d = p5.Vector.dist(this.pos, enemy.pos);
-        if (d < this.r + enemy.r) {
-            // Apply damage every frame? Or throttled?
-            // Usually fire does continuous damage.
-            // Let's return true but NOT kill the projectile.
-            // But we need to avoid applying damage every single frame if it's too high.
-            // Let's assume damage is low per frame.
-            return true;
-        }
-        return false;
-    }
-
-    let d = p5.Vector.dist(this.pos, enemy.pos);
-    if (d < this.r + enemy.r) {
-        if (this.hitList.includes(enemy)) return false; // Already hit this enemy
-
-        let config = WEAPON_CONFIG[this.type];
-        if (config && config.penetrates) {
-            this.hitList.push(enemy);
-            return true; // Hit, but don't destroy projectile
-        }
-        return true; // Hit and destroy
-    }
-    return false;
-  }
-}
-function getMouseWorldPos() {
-    let mx = mouseX - gameViewX + camX;
-    let my = mouseY - statusHeight - gameViewY + camY;
-    
-    let dx = mx - mapOffsetX;
-    let dy = my - mapOffsetY;
-    
-    let W = tileSize / 2;
-    let H = tileSize / 4;
-    
-    let gridX = (dx / W + dy / H) / 2;
-    let gridY = (dy / H - dx / W) / 2;
-    
-    return createVector(gridX * tileSize, gridY * tileSize);
-}
-
-let mapSelectStart = 0;
-let loiteringMissile = null;
-let missileStrikes = []; // Array to manage active missile effects
-let atomicStrikes = [];
-
-class MissileStrike {
-    constructor(targetX, targetY) {
-        this.target = createVector(targetX, targetY);
-        this.startHeight = max(520, gameHeight * 0.85);
-        this.currentHeight = this.startHeight;
-        this.warningFrames = 0;
-        this.fallFrame = 0;
-        this.fallDuration = 120;
-        this.hasExploded = false;
-        this.explosionRadius = 300;
-        this.explosionDuration = 60;
-        this.explosionTimer = 0;
-    }
-
-    update() {
-        if (!this.hasExploded) {
-            if (this.warningFrames > 0) {
-                this.warningFrames--;
-                return;
-            }
-            this.fallFrame++;
-            let t = min(1, this.fallFrame / this.fallDuration);
-            let eased = t * t;
-            this.currentHeight = lerp(this.startHeight, 0, eased);
-            if (t >= 1) {
-                this.currentHeight = 0;
-                this.explode();
-            }
-        } else {
-            this.explosionTimer++;
-        }
-    }
-    
-    explode() {
-        this.hasExploded = true;
-        createExplosion(this.target.x, this.target.y, color(255, 100, 50), 100);
-        shakeAmount = 30;
-        
-        // Damage Logic
-        for (let i = enemies.length - 1; i >= 0; i--) {
-            let e = enemies[i];
-            if (dist(e.pos.x, e.pos.y, this.target.x, this.target.y) < this.explosionRadius) {
-                e.hp -= 50;
-                if (e.hp <= 0) enemies.splice(i, 1);
-            }
-        }
-    }
-    
-    display() {
-        let isoPos = projectIso(this.target.x, this.target.y);
-
-        push();
-        translate(isoPos.x, isoPos.y);
-        noFill();
-        stroke(255, 0, 0, 140 + sin(frameCount * 0.45) * 90);
-        strokeWeight(3);
-        let ringBase = this.warningFrames > 0 ? 40 + this.warningFrames * 2.4 : 120 * (this.currentHeight / this.startHeight);
-        let ringW = 80 + max(0, ringBase);
-        let ringH = 40 + max(0, ringBase * 0.5);
-        ellipse(0, 0, ringW, ringH);
-        stroke(255, 70, 70, 180);
-        line(-20, 0, 20, 0);
-        line(0, -10, 0, 10);
-        pop();
-
-        if (this.hasExploded) {
-            if (this.explosionTimer < this.explosionDuration) {
-                push();
-                translate(isoPos.x, isoPos.y);
-                noFill();
-                stroke(255, 200, 50, 255 - (this.explosionTimer * 4));
-                strokeWeight(10);
-                let r = (this.explosionTimer / this.explosionDuration) * this.explosionRadius * 2;
-                ellipse(0, 0, r, r * 0.5);
-                fill(255, 50, 0, 100 - this.explosionTimer);
-                noStroke();
-                ellipse(0, 0, r * 0.8, r * 0.4);
-                pop();
-            }
-            return;
-        }
-
-        if (this.warningFrames > 0) {
-            push();
-            translate(isoPos.x, isoPos.y);
-            stroke(255, 100, 80, 120);
-            strokeWeight(2);
-            line(0, -20, 0, 20);
-            pop();
-            return;
-        }
-
-        let screenX = isoPos.x;
-        let visibleTop = camY + 30;
-        let visibleBottom = camY + gameHeight - 140;
-        let screenY = constrain(isoPos.y - this.currentHeight, visibleTop, visibleBottom);
-
-        push();
-        translate(screenX, screenY);
-        fill(200);
-        stroke(100);
-        rectMode(CENTER);
-        rect(0, 0, 20, 80);
-        fill(100);
-        triangle(-10, -40, -25, -60, -10, -60);
-        triangle(10, -40, 25, -60, 10, -60);
-        fill(255, 0, 0);
-        triangle(-10, 40, 10, 40, 0, 60);
-        fill(255, 150, 0);
-        noStroke();
-        triangle(-8, -40, 8, -40, 0, -100 - random(30));
-        pop();
-
-        push();
-        translate(isoPos.x, isoPos.y);
-        let progress = 1 - (this.currentHeight / this.startHeight);
-        stroke(255, 180, 120, 120 + progress * 120);
-        strokeWeight(2);
-        line(0, -600 * progress, 0, -20);
-        noStroke();
-        fill(0, 0, 0, 100 * progress);
-        ellipse(0, 0, 40 * progress, 20 * progress);
-        pop();
-    }
-    
-    isDead() {
-        return this.hasExploded && this.explosionTimer >= this.explosionDuration;
-    }
-}
-
-class AtomicStrike {
-    constructor(targetX, targetY) {
-        this.target = createVector(targetX, targetY);
-        this.startHeight = max(760, gameHeight * 1.2);
-        this.currentHeight = this.startHeight;
-        this.fallFrame = 0;
-        this.fallDuration = 150;
-        this.hasExploded = false;
-        this.explosionTimer = 0;
-        this.explosionDuration = 120;
-    }
-
-    update() {
-        if (!this.hasExploded) {
-            this.fallFrame++;
-            let t = min(1, this.fallFrame / this.fallDuration);
-            this.currentHeight = lerp(this.startHeight, 0, t * t);
-            if (t >= 1) {
-                this.currentHeight = 0;
-                this.explode();
-            }
-            return;
-        }
-        this.explosionTimer++;
-        if (this.explosionTimer < 45) {
-            let decay = 1 - this.explosionTimer / 45;
-            shakeAmount = max(shakeAmount, 25 + decay * 120);
-        }
-    }
-
-    explode() {
-        this.hasExploded = true;
-        shakeAmount = 150;
-        createExplosion(this.target.x, this.target.y, color(255, 255, 255), 360);
-        for (let e of enemies) {
-            createExplosion(e.pos.x, e.pos.y, color(255, 255, 255), 28);
-        }
-        enemies = [];
-    }
-
-    display() {
-        let isoPos = projectIso(this.target.x, this.target.y);
-        if (this.hasExploded) {
-            let t = min(1, this.explosionTimer / this.explosionDuration);
-            let flashAlpha = max(0, 220 - this.explosionTimer * 3);
-            push();
-            translate(isoPos.x, isoPos.y);
-            noStroke();
-            fill(255, 255, 255, flashAlpha);
-            ellipse(0, 0, 2200 * t, 1200 * t);
-            fill(180, 255, 240, max(0, 200 - this.explosionTimer * 2));
-            ellipse(0, -220 * t, 1100 * t, 680 * t);
-            fill(120, 220, 255, max(0, 170 - this.explosionTimer * 2));
-            ellipse(0, 0, 2500 * t, 1280 * t);
-            fill(240, 120, 80, max(0, 140 - this.explosionTimer * 2));
-            rectMode(CENTER);
-            rect(0, -120 * t, 180 * t, 360 * t, 55 * t);
-            pop();
-            return;
-        }
-
-        push();
-        translate(isoPos.x, isoPos.y);
-        noFill();
-        stroke(100, 255, 230, 190 + sin(frameCount * 0.35) * 60);
-        strokeWeight(5);
-        ellipse(0, 0, 340, 180);
-        stroke(150, 210, 255, 170);
-        ellipse(0, 0, 460, 240);
-        line(-40, 0, 40, 0);
-        line(0, -24, 0, 24);
-        pop();
-
-        let screenX = isoPos.x;
-        let visibleTop = camY + 20;
-        let visibleBottom = camY + gameHeight - 160;
-        let screenY = constrain(isoPos.y - this.currentHeight, visibleTop, visibleBottom);
-
-        push();
-        translate(screenX, screenY);
-        let atomicIcon = images && images.weaponShop ? images.weaponShop[WEAPON_TYPES.ATOMIC] : null;
-        if (atomicIcon && atomicIcon.width > 0 && atomicIcon.height > 0) {
-            imageMode(CENTER);
-            let iconW = 66;
-            let iconH = 102;
-            let ratio = min(iconW / atomicIcon.width, iconH / atomicIcon.height);
-            tint(255, 250);
-            push();
-            rotate(PI);
-            image(atomicIcon, 0, 0, atomicIcon.width * ratio, atomicIcon.height * ratio);
-            pop();
-            noTint();
-        } else {
-            fill(120, 130, 145);
-            stroke(70, 80, 90);
-            strokeWeight(2);
-            rectMode(CENTER);
-            rect(0, 0, 34, 120, 10);
-            fill(95, 105, 120);
-            triangle(-17, -60, -34, -84, -17, -84);
-            triangle(17, -60, 34, -84, 17, -84);
-            fill(220, 70, 70);
-            triangle(-17, 60, 17, 60, 0, 88);
-        }
-        noStroke();
-        fill(210, 255, 255, 220);
-        ellipse(0, -72, 12, 46 + random(30));
-        pop();
-    }
-
-    isDead() {
-        return this.hasExploded && this.explosionTimer >= this.explosionDuration;
-    }
-}
-
-function updateMissileStrikes() {
-    for (let i = missileStrikes.length - 1; i >= 0; i--) {
-        let m = missileStrikes[i];
-        m.update();
-        if (m.isDead()) {
-            missileStrikes.splice(i, 1);
-        }
-    }
-}
-
-function drawMissileStrikes() {
-    for (let m of missileStrikes) {
-        m.display();
-    }
-}
-
-function updateAtomicStrikes() {
-    for (let i = atomicStrikes.length - 1; i >= 0; i--) {
-        let n = atomicStrikes[i];
-        n.update();
-        if (n.isDead()) {
-            atomicStrikes.splice(i, 1);
-        }
-    }
-}
-
-function drawAtomicStrikes() {
-    for (let n of atomicStrikes) {
-        n.display();
-    }
-}
-
-function hasActiveMissileStrike() {
-    return missileStrikes.length > 0;
-}
-
-function getActiveMissileStrikeTarget() {
-    if (missileStrikes.length === 0) return null;
-    let m = missileStrikes[0];
-    return m && m.target ? m.target : null;
-}
-
-function fireDongfengStrike(targetX, targetY) {
-    // Instead of instant explosion, spawn a MissileStrike object
-    missileStrikes.push(new MissileStrike(targetX, targetY));
-    
-    gameState = 'PLAY';
-    if (typeof consumeCurrentSpecialWeapon === 'function') {
-        consumeCurrentSpecialWeapon();
-    } else {
-        player.currentSpecialWeapon = null;
-    }
-    mapSelectStart = 0;
-}
-
-function triggerAtomicBomb() {
-    if (!player) return;
-    atomicStrikes.push(new AtomicStrike(player.pos.x, player.pos.y));
-    shakeAmount = max(shakeAmount, 25);
-}
-
-function launchLoiteringMunition() {
-    // Switch player control to missile?
-    // User said: "Player stops controlling car, starts controlling missile".
-    // So we can just swap 'player' reference temporarily? Or have a flag?
-    // Better to have a flag `isControllingMissile`.
-    
-    loiteringMissile = new Vehicle(player.pos.x, player.pos.y, color(255, 0, 0));
-    loiteringMissile.maxSpeed = 5;
-    loiteringMissile.heading = player.heading;
-    loiteringMissile.vel = p5.Vector.fromAngle(player.heading).mult(5);
-    loiteringMissile.isMissile = true;
-    player.vel.mult(0);
-    player.acc.mult(0);
-    if (typeof consumeCurrentSpecialWeapon === 'function') {
-        consumeCurrentSpecialWeapon();
-    } else {
-        player.currentSpecialWeapon = null;
-    }
-    gameState = 'MISSILE_CONTROL';
-}
-
-function updateLoiteringMissile() {
-    if (!loiteringMissile) return;
-    
-    // Accelerate
-    loiteringMissile.maxSpeed += 0.05;
-    loiteringMissile.maxSpeed = min(loiteringMissile.maxSpeed, 20);
-    
-    // Control
-    if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) {
-        loiteringMissile.heading -= 0.1;
-    }
-    if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
-        loiteringMissile.heading += 0.1;
-    }
-    
-    loiteringMissile.vel = p5.Vector.fromAngle(loiteringMissile.heading).mult(loiteringMissile.maxSpeed);
-    loiteringMissile.pos.add(loiteringMissile.vel);
-
-    if (loiteringMissile.pos.x <= 0 || loiteringMissile.pos.x >= mapWidth || loiteringMissile.pos.y <= 0 || loiteringMissile.pos.y >= mapHeight) {
-        explodeMissile();
-        return;
-    }
-    
-    // Collision
-    for (let b of buildings) {
-        if (loiteringMissile.pos.x > b.pos.x - b.w/2 && loiteringMissile.pos.x < b.pos.x + b.w/2 &&
-            loiteringMissile.pos.y > b.pos.y - b.h/2 && loiteringMissile.pos.y < b.pos.y + b.h/2) {
-            explodeMissile();
-            return;
-        }
-    }
-    
-    for (let e of enemies) {
-        if (p5.Vector.dist(loiteringMissile.pos, e.pos) < 50) {
-            explodeMissile();
-            return;
-        }
-    }
-}
-
-function explodeMissile() {
-    createExplosion(loiteringMissile.pos.x, loiteringMissile.pos.y, color(255, 100, 0), 30);
-    // Damage nearby enemies
-    for (let i = enemies.length - 1; i >= 0; i--) {
-        let e = enemies[i];
-        if (p5.Vector.dist(e.pos, loiteringMissile.pos) < 200) {
-            e.hp -= 50; // Massive damage
-            if (e.hp <= 0) {
-                enemies.splice(i, 1);
-            }
-        }
-    }
-    loiteringMissile = null;
-    player.vel.mult(0);
-    player.acc.mult(0);
-    gameState = 'PLAY';
-}
-
-function drawMapSelect() {
-    background(0);
-    
-    // Draw Map Scaled
-    let scaleF = min(width / mapWidth, height / mapHeight);
-    let drawW = mapWidth * scaleF;
-    let drawH = mapHeight * scaleF;
-    let offX = (width - drawW) / 2;
-    let offY = (height - drawH) / 2;
-    
-    if (mapGraphics) {
-        image(mapGraphics, width/2, height/2, drawW, drawH);
-    }
-    
-    // Draw Player
-    fill(0, 255, 0);
-    noStroke();
-    let px = offX + player.pos.x * scaleF;
-    let py = offY + player.pos.y * scaleF;
-    ellipse(px, py, 10, 10);
-    
-    // Draw Cursor Target
-    let mx = mouseX;
-    let my = mouseY;
-    
-    stroke(255, 0, 0);
-    noFill();
-    line(mx - 20, my, mx + 20, my);
-    line(mx, my - 20, mx, my + 20);
-    
-    // Long Press Logic
-    if (mouseIsPressed) {
-        if (mapSelectStart === 0) mapSelectStart = millis();
-        
-        let progress = (millis() - mapSelectStart) / 2000; // 2 seconds to confirm
-        
-        // Draw Progress Circle
-        noFill();
-        stroke(255, 0, 0);
-        strokeWeight(4);
-        arc(mx, my, 60, 60, -HALF_PI, -HALF_PI + TWO_PI * progress);
-        
-        if (progress >= 1.0) {
-            let targetX = (mx - offX) / scaleF;
-            let targetY = (my - offY) / scaleF;
-            fireDongfengStrike(targetX, targetY);
-        }
-    } else {
-        mapSelectStart = 0;
-    }
-    
-    fill(255);
-    noStroke();
-    textSize(20);
-    textAlign(CENTER, BOTTOM);
-    text("Select Target. Hold Left Click to Fire.", width/2, height - 30);
-}
-
-if (typeof globalThis !== 'undefined') {
-    globalThis.updateMissileStrikes = updateMissileStrikes;
-    globalThis.drawMissileStrikes = drawMissileStrikes;
-    globalThis.updateAtomicStrikes = updateAtomicStrikes;
-    globalThis.drawAtomicStrikes = drawAtomicStrikes;
-    globalThis.hasActiveMissileStrike = hasActiveMissileStrike;
-    globalThis.getActiveMissileStrikeTarget = getActiveMissileStrikeTarget;
-    globalThis.fireDongfengStrike = fireDongfengStrike;
-    globalThis.triggerAtomicBomb = triggerAtomicBomb;
-    globalThis.launchLoiteringMunition = launchLoiteringMunition;
-    globalThis.updateLoiteringMissile = updateLoiteringMissile;
-    globalThis.drawMapSelect = drawMapSelect;
-}
 class AuthUI {
   constructor() {
     this.container = null;
@@ -2137,6 +1925,7 @@ class AuthUI {
     this.token = localStorage.getItem('authToken');
     this.user = JSON.parse(localStorage.getItem('user') || 'null');
     this.pendingVerificationEmail = '';
+    this.onCloseRequested = null;
   }
 
   resolveApiBaseUrl() {
@@ -2196,6 +1985,13 @@ class AuthUI {
     }
   }
 
+  requestClose() {
+    this.hide();
+    if (typeof this.onCloseRequested === 'function') {
+      this.onCloseRequested();
+    }
+  }
+
   render() {
     if (!this.container) return;
     this.container.html('');
@@ -2203,6 +1999,12 @@ class AuthUI {
     let box = createDiv('');
     box.parent(this.container);
     box.addClass('auth-box');
+    box.style('position', 'relative');
+
+    let closeBtn = createButton('✕');
+    closeBtn.parent(box);
+    closeBtn.addClass('auth-close-btn');
+    closeBtn.mousePressed(() => this.requestClose());
 
     let title = createElement('h2', this.getTitle());
     title.parent(box);
@@ -2532,6 +2334,7 @@ class AuthUI {
     }
   }
 }
+
 class ShopUI {
   constructor() {
     this.tabs = ['WEAPONS', 'VEHICLES', 'UPGRADES'];
@@ -3155,6 +2958,121 @@ class ShopUI {
         rect(btnX, btnY, btnW, btnH, 8);
     }
   }
+
+  drawHeartPreview(x, y, scaleFactor = 1.8) {
+      push();
+      translate(x, y);
+      scale(scaleFactor);
+      fill(255, 70, 70);
+      stroke(180, 0, 0);
+      strokeWeight(1.2);
+      beginShape();
+      vertex(0, 0);
+      bezierVertex(-5, -5, -10, 0, 0, 10);
+      bezierVertex(10, 0, 5, -5, 0, 0);
+      endShape(CLOSE);
+      pop();
+  }
+
+  drawSpeedometerPreview(x, y, previewW, previewH) {
+      let radius = min(previewW, previewH) * 0.28;
+      push();
+      translate(x, y + 8);
+      noFill();
+      stroke(255, 215, 90);
+      strokeWeight(5);
+      arc(0, 0, radius * 2, radius * 2, PI, TWO_PI);
+
+      for (let i = 0; i <= 4; i++) {
+          let angle = map(i, 0, 4, PI, TWO_PI);
+          let x1 = cos(angle) * radius * 0.72;
+          let y1 = sin(angle) * radius * 0.72;
+          let x2 = cos(angle) * radius * 0.94;
+          let y2 = sin(angle) * radius * 0.94;
+          stroke(255, 235, 170);
+          strokeWeight(2);
+          line(x1, y1, x2, y2);
+      }
+
+      stroke(255, 90, 90);
+      strokeWeight(4);
+      let needleAngle = TWO_PI - 0.55;
+      line(0, 0, cos(needleAngle) * radius * 0.8, sin(needleAngle) * radius * 0.8);
+      noStroke();
+      fill(255, 90, 90);
+      ellipse(0, 0, 10, 10);
+      pop();
+  }
+
+  drawAccelerationPreview(x, y, previewW) {
+      let trailW = min(14, previewW * 0.08);
+      push();
+      translate(x, y);
+      noStroke();
+      fill(255, 170, 70, 160);
+      rectMode(CENTER);
+      rect(-24, 0, trailW, 10, 4);
+      rect(-10, 0, trailW + 4, 14, 4);
+      fill(255, 215, 90);
+      beginShape();
+      vertex(-8, -18);
+      vertex(18, -18);
+      vertex(18, -30);
+      vertex(42, 0);
+      vertex(18, 30);
+      vertex(18, 18);
+      vertex(-8, 18);
+      endShape(CLOSE);
+      pop();
+  }
+
+  drawUpgradePreview(x, y, item, previewW, previewH) {
+      if (item.id === 'maxHp') {
+          this.drawHeartPreview(x, y + 2, 2.1);
+          return;
+      }
+
+      if (item.id === 'maxAmmo') {
+          if (typeof bulletIconImg !== 'undefined' && bulletIconImg && bulletIconImg.width > 0) {
+              push();
+              imageMode(CENTER);
+              let maxW = max(24, previewW * 0.32);
+              let ratio = min(maxW / bulletIconImg.width, (previewH * 0.58) / bulletIconImg.height);
+              image(bulletIconImg, x, y, bulletIconImg.width * ratio, bulletIconImg.height * ratio);
+              pop();
+          } else {
+              push();
+              translate(x, y);
+              rectMode(CENTER);
+              noStroke();
+              fill(212, 170, 88);
+              rect(0, 0, 18, 42, 8);
+              fill(255, 225, 120);
+              rect(0, -14, 18, 12, 6);
+              fill(120, 70, 30);
+              rect(0, 15, 18, 8, 3);
+              pop();
+          }
+          return;
+      }
+
+      if (item.id === 'topSpeed') {
+          this.drawSpeedometerPreview(x, y, previewW, previewH);
+          return;
+      }
+
+      if (item.id === 'acceleration') {
+          this.drawAccelerationPreview(x, y, previewW);
+          return;
+      }
+
+      fill(255, 215, 0);
+      ellipse(x, y, 28, 28);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(18);
+      text("+", x, y);
+  }
   
   drawItemPreview(x, y, item, type, previewW = 0, previewH = 0) {
       if (type === 'vehicle') {
@@ -3190,12 +3108,7 @@ class ShopUI {
           rect(0, 9, 9, 9);
           pop();
       } else {
-          fill(255, 215, 0);
-          ellipse(x, y, 28, 28);
-          fill(0);
-          textAlign(CENTER, CENTER);
-          textSize(18);
-          text("+", x, y);
+          this.drawUpgradePreview(x, y, item, previewW, previewH);
       }
   }
 
@@ -3219,8 +3132,8 @@ class ShopUI {
               damage = `Damage: ${cfg.damage} x${cfg.count} burst`;
               attack = "Attack: Burst fire, medium-long range";
           } else if (item.id === WEAPON_TYPES.LASER) {
-              damage = `Damage: ${cfg.damage}`;
-              attack = "Attack: Piercing beam, long range";
+              damage = `Damage: ${cfg.damage}/s`;
+              attack = "Attack: Sustained beam, blocked by cover";
           } else if (item.id === WEAPON_TYPES.MOLOTOV) {
               damage = `Damage: ${cfg.damage}/tick, radius ${cfg.areaRadius}`;
               attack = "Attack: Throw + area fire burn";
@@ -3487,6 +3400,7 @@ class ShopUI {
       }
   }
 }
+
 class TutorialSystem {
     constructor() {
         this.shown = {
@@ -3940,13 +3854,488 @@ class TutorialSystem {
         return false;
     }
 }
+
+
+let mapSelectStart = 0;
+let loiteringMissile = null;
+let missileStrikes = []; // Array to manage active missile effects
+let atomicStrikes = [];
+
+function clearSpecialWeaponEffects() {
+    loiteringMissile = null;
+    missileStrikes = [];
+    atomicStrikes = [];
+    mapSelectStart = 0;
+    dongfengTargetLocked = false;
+    mapSelectCharged = false;
+    mapSelectLockX = 0;
+    mapSelectLockY = 0;
+}
+
+class MissileStrike {
+    constructor(targetX, targetY) {
+        this.target = createVector(targetX, targetY);
+        this.startHeight = max(520, gameHeight * 0.85);
+        this.currentHeight = this.startHeight;
+        this.warningFrames = 0;
+        this.fallFrame = 0;
+        this.fallDuration = 120;
+        this.hasExploded = false;
+        this.explosionRadius = 300;
+        this.explosionDuration = 60;
+        this.explosionTimer = 0;
+    }
+
+    update() {
+        if (!this.hasExploded) {
+            if (this.warningFrames > 0) {
+                this.warningFrames--;
+                return;
+            }
+            this.fallFrame++;
+            let t = min(1, this.fallFrame / this.fallDuration);
+            let eased = t * t;
+            this.currentHeight = lerp(this.startHeight, 0, eased);
+            if (t >= 1) {
+                this.currentHeight = 0;
+                this.explode();
+            }
+        } else {
+            this.explosionTimer++;
+        }
+    }
+    
+    explode() {
+        this.hasExploded = true;
+        createExplosion(this.target.x, this.target.y, color(255, 100, 50), 100);
+        shakeAmount = 30;
+        
+        // Damage Logic
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            if (dist(e.pos.x, e.pos.y, this.target.x, this.target.y) < this.explosionRadius) {
+                e.hp -= 50;
+                if (e.hp <= 0) enemies.splice(i, 1);
+            }
+        }
+    }
+    
+    display() {
+        let isoPos = projectIso(this.target.x, this.target.y);
+
+        push();
+        translate(isoPos.x, isoPos.y);
+        noFill();
+        stroke(255, 0, 0, 140 + sin(frameCount * 0.45) * 90);
+        strokeWeight(3);
+        let ringBase = this.warningFrames > 0 ? 40 + this.warningFrames * 2.4 : 120 * (this.currentHeight / this.startHeight);
+        let ringW = 80 + max(0, ringBase);
+        let ringH = 40 + max(0, ringBase * 0.5);
+        ellipse(0, 0, ringW, ringH);
+        stroke(255, 70, 70, 180);
+        line(-20, 0, 20, 0);
+        line(0, -10, 0, 10);
+        pop();
+
+        if (this.hasExploded) {
+            if (this.explosionTimer < this.explosionDuration) {
+                push();
+                translate(isoPos.x, isoPos.y);
+                noFill();
+                stroke(255, 200, 50, 255 - (this.explosionTimer * 4));
+                strokeWeight(10);
+                let r = (this.explosionTimer / this.explosionDuration) * this.explosionRadius * 2;
+                ellipse(0, 0, r, r * 0.5);
+                fill(255, 50, 0, 100 - this.explosionTimer);
+                noStroke();
+                ellipse(0, 0, r * 0.8, r * 0.4);
+                pop();
+            }
+            return;
+        }
+
+        if (this.warningFrames > 0) {
+            push();
+            translate(isoPos.x, isoPos.y);
+            stroke(255, 100, 80, 120);
+            strokeWeight(2);
+            line(0, -20, 0, 20);
+            pop();
+            return;
+        }
+
+        let screenX = isoPos.x;
+        let visibleTop = camY + 30;
+        let visibleBottom = camY + gameHeight - 140;
+        let screenY = constrain(isoPos.y - this.currentHeight, visibleTop, visibleBottom);
+
+        push();
+        translate(screenX, screenY);
+        fill(200);
+        stroke(100);
+        rectMode(CENTER);
+        rect(0, 0, 20, 80);
+        fill(100);
+        triangle(-10, -40, -25, -60, -10, -60);
+        triangle(10, -40, 25, -60, 10, -60);
+        fill(255, 0, 0);
+        triangle(-10, 40, 10, 40, 0, 60);
+        fill(255, 150, 0);
+        noStroke();
+        triangle(-8, -40, 8, -40, 0, -100 - random(30));
+        pop();
+
+        push();
+        translate(isoPos.x, isoPos.y);
+        let progress = 1 - (this.currentHeight / this.startHeight);
+        stroke(255, 180, 120, 120 + progress * 120);
+        strokeWeight(2);
+        line(0, -600 * progress, 0, -20);
+        noStroke();
+        fill(0, 0, 0, 100 * progress);
+        ellipse(0, 0, 40 * progress, 20 * progress);
+        pop();
+    }
+    
+    isDead() {
+        return this.hasExploded && this.explosionTimer >= this.explosionDuration;
+    }
+}
+
+class AtomicStrike {
+    constructor(targetX, targetY) {
+        this.target = createVector(targetX, targetY);
+        this.startHeight = max(760, gameHeight * 1.2);
+        this.currentHeight = this.startHeight;
+        this.fallFrame = 0;
+        this.fallDuration = 150;
+        this.hasExploded = false;
+        this.explosionTimer = 0;
+        this.explosionDuration = 120;
+    }
+
+    update() {
+        if (!this.hasExploded) {
+            this.fallFrame++;
+            let t = min(1, this.fallFrame / this.fallDuration);
+            this.currentHeight = lerp(this.startHeight, 0, t * t);
+            if (t >= 1) {
+                this.currentHeight = 0;
+                this.explode();
+            }
+            return;
+        }
+        this.explosionTimer++;
+        if (this.explosionTimer < 45) {
+            let decay = 1 - this.explosionTimer / 45;
+            shakeAmount = max(shakeAmount, 25 + decay * 120);
+        }
+    }
+
+    explode() {
+        this.hasExploded = true;
+        shakeAmount = 150;
+        createExplosion(this.target.x, this.target.y, color(255, 255, 255), 360);
+        for (let e of enemies) {
+            createExplosion(e.pos.x, e.pos.y, color(255, 255, 255), 28);
+        }
+        enemies = [];
+    }
+
+    display() {
+        let isoPos = projectIso(this.target.x, this.target.y);
+        if (this.hasExploded) {
+            let t = min(1, this.explosionTimer / this.explosionDuration);
+            let flashAlpha = max(0, 220 - this.explosionTimer * 3);
+            push();
+            translate(isoPos.x, isoPos.y);
+            noStroke();
+            fill(255, 255, 255, flashAlpha);
+            ellipse(0, 0, 2200 * t, 1200 * t);
+            fill(180, 255, 240, max(0, 200 - this.explosionTimer * 2));
+            ellipse(0, -220 * t, 1100 * t, 680 * t);
+            fill(120, 220, 255, max(0, 170 - this.explosionTimer * 2));
+            ellipse(0, 0, 2500 * t, 1280 * t);
+            fill(240, 120, 80, max(0, 140 - this.explosionTimer * 2));
+            rectMode(CENTER);
+            rect(0, -120 * t, 180 * t, 360 * t, 55 * t);
+            pop();
+            return;
+        }
+
+        push();
+        translate(isoPos.x, isoPos.y);
+        noFill();
+        stroke(100, 255, 230, 190 + sin(frameCount * 0.35) * 60);
+        strokeWeight(5);
+        ellipse(0, 0, 340, 180);
+        stroke(150, 210, 255, 170);
+        ellipse(0, 0, 460, 240);
+        line(-40, 0, 40, 0);
+        line(0, -24, 0, 24);
+        pop();
+
+        let screenX = isoPos.x;
+        let visibleTop = camY + 20;
+        let visibleBottom = camY + gameHeight - 160;
+        let screenY = constrain(isoPos.y - this.currentHeight, visibleTop, visibleBottom);
+
+        push();
+        translate(screenX, screenY);
+        let atomicIcon = images && images.weaponShop ? images.weaponShop[WEAPON_TYPES.ATOMIC] : null;
+        if (atomicIcon && atomicIcon.width > 0 && atomicIcon.height > 0) {
+            imageMode(CENTER);
+            let iconW = 66;
+            let iconH = 102;
+            let ratio = min(iconW / atomicIcon.width, iconH / atomicIcon.height);
+            tint(255, 250);
+            push();
+            rotate(PI);
+            image(atomicIcon, 0, 0, atomicIcon.width * ratio, atomicIcon.height * ratio);
+            pop();
+            noTint();
+        } else {
+            fill(120, 130, 145);
+            stroke(70, 80, 90);
+            strokeWeight(2);
+            rectMode(CENTER);
+            rect(0, 0, 34, 120, 10);
+            fill(95, 105, 120);
+            triangle(-17, -60, -34, -84, -17, -84);
+            triangle(17, -60, 34, -84, 17, -84);
+            fill(220, 70, 70);
+            triangle(-17, 60, 17, 60, 0, 88);
+        }
+        noStroke();
+        fill(210, 255, 255, 220);
+        ellipse(0, -72, 12, 46 + random(30));
+        pop();
+    }
+
+    isDead() {
+        return this.hasExploded && this.explosionTimer >= this.explosionDuration;
+    }
+}
+
+function updateMissileStrikes() {
+    for (let i = missileStrikes.length - 1; i >= 0; i--) {
+        let m = missileStrikes[i];
+        m.update();
+        if (m.isDead()) {
+            missileStrikes.splice(i, 1);
+        }
+    }
+}
+
+function drawMissileStrikes() {
+    for (let m of missileStrikes) {
+        m.display();
+    }
+}
+
+function updateAtomicStrikes() {
+    for (let i = atomicStrikes.length - 1; i >= 0; i--) {
+        let n = atomicStrikes[i];
+        n.update();
+        if (n.isDead()) {
+            atomicStrikes.splice(i, 1);
+        }
+    }
+}
+
+function drawAtomicStrikes() {
+    for (let n of atomicStrikes) {
+        n.display();
+    }
+}
+
+function hasActiveMissileStrike() {
+    return missileStrikes.length > 0;
+}
+
+function getActiveMissileStrikeTarget() {
+    if (missileStrikes.length === 0) return null;
+    let m = missileStrikes[0];
+    return m && m.target ? m.target : null;
+}
+
+function fireDongfengStrike(targetX, targetY) {
+    // Instead of instant explosion, spawn a MissileStrike object
+    missileStrikes.push(new MissileStrike(targetX, targetY));
+    
+    gameState = 'PLAY';
+    if (typeof consumeCurrentSpecialWeapon === 'function') {
+        consumeCurrentSpecialWeapon();
+    } else {
+        player.currentSpecialWeapon = null;
+    }
+    mapSelectStart = 0;
+}
+
+function triggerAtomicBomb() {
+    if (!player) return;
+    atomicStrikes.push(new AtomicStrike(player.pos.x, player.pos.y));
+    shakeAmount = max(shakeAmount, 25);
+}
+
+function launchLoiteringMunition() {
+    // Switch player control to missile?
+    // User said: "Player stops controlling car, starts controlling missile".
+    // So we can just swap 'player' reference temporarily? Or have a flag?
+    // Better to have a flag `isControllingMissile`.
+    
+    loiteringMissile = new Vehicle(player.pos.x, player.pos.y, color(255, 0, 0));
+    loiteringMissile.maxSpeed = 5;
+    loiteringMissile.heading = player.heading;
+    loiteringMissile.vel = p5.Vector.fromAngle(player.heading).mult(5);
+    loiteringMissile.isMissile = true;
+    player.vel.mult(0);
+    player.acc.mult(0);
+    if (typeof consumeCurrentSpecialWeapon === 'function') {
+        consumeCurrentSpecialWeapon();
+    } else {
+        player.currentSpecialWeapon = null;
+    }
+    gameState = 'MISSILE_CONTROL';
+}
+
+function updateLoiteringMissile() {
+    if (!loiteringMissile) return;
+    
+    // Accelerate
+    loiteringMissile.maxSpeed += 0.05;
+    loiteringMissile.maxSpeed = min(loiteringMissile.maxSpeed, 20);
+    
+    // Control
+    if (keyIsDown(LEFT_ARROW) || keyIsDown(65)) {
+        loiteringMissile.heading -= 0.1;
+    }
+    if (keyIsDown(RIGHT_ARROW) || keyIsDown(68)) {
+        loiteringMissile.heading += 0.1;
+    }
+    
+    loiteringMissile.vel = p5.Vector.fromAngle(loiteringMissile.heading).mult(loiteringMissile.maxSpeed);
+    loiteringMissile.pos.add(loiteringMissile.vel);
+
+    if (loiteringMissile.pos.x <= 0 || loiteringMissile.pos.x >= mapWidth || loiteringMissile.pos.y <= 0 || loiteringMissile.pos.y >= mapHeight) {
+        explodeMissile();
+        return;
+    }
+    
+    // Collision
+    for (let b of buildings) {
+        if (loiteringMissile.pos.x > b.pos.x - b.w/2 && loiteringMissile.pos.x < b.pos.x + b.w/2 &&
+            loiteringMissile.pos.y > b.pos.y - b.h/2 && loiteringMissile.pos.y < b.pos.y + b.h/2) {
+            explodeMissile();
+            return;
+        }
+    }
+    
+    for (let e of enemies) {
+        if (p5.Vector.dist(loiteringMissile.pos, e.pos) < 50) {
+            explodeMissile();
+            return;
+        }
+    }
+}
+
+function explodeMissile() {
+    createExplosion(loiteringMissile.pos.x, loiteringMissile.pos.y, color(255, 100, 0), 30);
+    // Damage nearby enemies
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let e = enemies[i];
+        if (p5.Vector.dist(e.pos, loiteringMissile.pos) < 200) {
+            e.hp -= 50; // Massive damage
+            if (e.hp <= 0) {
+                enemies.splice(i, 1);
+            }
+        }
+    }
+    loiteringMissile = null;
+    player.vel.mult(0);
+    player.acc.mult(0);
+    gameState = 'PLAY';
+}
+
+function drawMapSelect() {
+    background(0);
+    
+    // Draw Map Scaled
+    let scaleF = min(width / mapWidth, height / mapHeight);
+    let drawW = mapWidth * scaleF;
+    let drawH = mapHeight * scaleF;
+    let offX = (width - drawW) / 2;
+    let offY = (height - drawH) / 2;
+    
+    if (mapGraphics) {
+        image(mapGraphics, width/2, height/2, drawW, drawH);
+    }
+    
+    // Draw Player
+    fill(0, 255, 0);
+    noStroke();
+    let px = offX + player.pos.x * scaleF;
+    let py = offY + player.pos.y * scaleF;
+    ellipse(px, py, 10, 10);
+    
+    // Draw Cursor Target
+    let mx = mouseX;
+    let my = mouseY;
+    
+    stroke(255, 0, 0);
+    noFill();
+    line(mx - 20, my, mx + 20, my);
+    line(mx, my - 20, mx, my + 20);
+    
+    // Long Press Logic
+    if (mouseIsPressed) {
+        if (mapSelectStart === 0) mapSelectStart = millis();
+        
+        let progress = (millis() - mapSelectStart) / 2000; // 2 seconds to confirm
+        
+        // Draw Progress Circle
+        noFill();
+        stroke(255, 0, 0);
+        strokeWeight(4);
+        arc(mx, my, 60, 60, -HALF_PI, -HALF_PI + TWO_PI * progress);
+        
+        if (progress >= 1.0) {
+            let targetX = (mx - offX) / scaleF;
+            let targetY = (my - offY) / scaleF;
+            fireDongfengStrike(targetX, targetY);
+        }
+    } else {
+        mapSelectStart = 0;
+    }
+    
+    fill(255);
+    noStroke();
+    textSize(20);
+    textAlign(CENTER, BOTTOM);
+    text("Select Target. Hold Left Click to Fire.", width/2, height - 30);
+}
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.updateMissileStrikes = updateMissileStrikes;
+    globalThis.drawMissileStrikes = drawMissileStrikes;
+    globalThis.updateAtomicStrikes = updateAtomicStrikes;
+    globalThis.drawAtomicStrikes = drawAtomicStrikes;
+    globalThis.hasActiveMissileStrike = hasActiveMissileStrike;
+    globalThis.getActiveMissileStrikeTarget = getActiveMissileStrikeTarget;
+    globalThis.fireDongfengStrike = fireDongfengStrike;
+    globalThis.triggerAtomicBomb = triggerAtomicBomb;
+    globalThis.launchLoiteringMunition = launchLoiteringMunition;
+    globalThis.updateLoiteringMissile = updateLoiteringMissile;
+    globalThis.drawMapSelect = drawMapSelect;
+}
+
 let player;
 let enemies = [];
 let powerups = [];
 let particles = [];
 let buildings = [];
 let projectiles = [];
-let gameState = 'MENU'; // MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP, AUTH
+let gameState = 'BOOT_LOADING'; // BOOT_LOADING, MENU, MENU_SHOP, PLAY, PAUSED, GAMEOVER, WIN, SHOP, AUTH
 let shopBuilding = null; // Store which building opened the shop
 let lastShotTime = 0; // For weapon cooldown
 let startTime;
@@ -3977,11 +4366,47 @@ let lastCoverRect = null;
 let shopUI;
 let authUI;
 let tutorialSystem;
+let deferredMenuVisualsRequested = false;
+let deferredMenuVisualsTimer = null;
+let shopSupportAssetsRequested = false;
+let gameplayAssetsRequested = false;
+let endingVideosRequested = false;
+let bootLoadingStartedAt = 0;
 let startGateMessage = '';
 let startGateMessageColor = [255, 80, 80];
 let startGateMessageUntil = 0;
 let startGatePending = false;
+let difficultyStartPending = false;
+let menuAccountOpen = false;
+let menuAccountIconRect = null;
+let menuAccountPopupRect = null;
+let menuAccountPrimaryButtonRect = null;
+let menuAccountSecondaryButtonRect = null;
 let helpTab = 'BASICS'; // BASICS, VEHICLES, WEAPONS
+const BUILDING_INTERACTION_CONFIG = {
+  armory: {
+    title: 'ARMORY',
+    itemLabel: 'Ammo Pack',
+    price: 8,
+    amount: 5,
+    accent: [255, 160, 80],
+    description: 'Purchase extra bullets for your current vehicle.'
+  },
+  hospital: {
+    title: 'HOSPITAL',
+    itemLabel: 'Medical Aid',
+    price: 12,
+    amount: 1,
+    accent: [100, 220, 140],
+    description: 'Restore one heart using your saved coins.'
+  }
+};
+let buildingInteractionUI = {
+  closeRect: null,
+  actionRect: null,
+  inputOffsetX: 0,
+  inputOffsetY: 0
+};
 
 // Game Settings
 let difficulty = 'NORMAL'; // EASY, NORMAL, HARD
@@ -4021,44 +4446,31 @@ let tileSize = 100; // Size of each tile (pixels)
 let mapCols, mapRows;
 let roadCenters = [];
 let mapTextureRefreshDone = false;
+const BOOT_LOADING_MIN_MS = 1600;
+const BOOT_LOADING_MAX_MS = 30000;
+
+const CITY_BUILDING_FILES = [
+  { file: 'Anna_house.png', label: 'Residence' },
+  { file: 'Ben_house.png', label: 'Residence' },
+  { file: 'David_house.png', label: 'Residence' },
+  { file: 'Emma_house.png', label: 'Residence' },
+  { file: 'Grace_house.png', label: 'Residence' },
+  { file: 'Jack_house.png', label: 'Residence' },
+  { file: 'Leo_house.png', label: 'Residence' },
+  { file: 'Lily_house.png', label: 'Residence' },
+  { file: 'Lucy_house.png', label: 'Residence' },
+  { file: 'Mike_house.png', label: 'Residence' },
+  { file: 'Sarah_house.png', label: 'Residence' },
+  { file: 'Tom_house.png', label: 'Residence' },
+  { file: 'cafe.webp', label: 'Cafe' },
+  { file: 'garden.webp', label: 'Garden' },
+  { file: 'school.webp', label: 'School' },
+  { file: 'supermarket.webp', label: 'Supermarket' }
+];
 
 function preloadAssets() {
-  hospitalImg = loadImage('icon/BUILDING/hospital.png');
-  armoryImg = loadImage('icon/BUILDING/arms.png');
-  
-  gameCoverImg = loadImage('icon/game_cover.png');
-  startBtnImg = loadImage('icon/start.png');
-  exitBtnImg = loadImage('icon/exit.png');
-  shopBtnImg = loadImage('icon/basic/store_mainpage.png');
-  shopBoardImg = loadImage('icon/shop_board.png');
-  victoryImg = null;
-  defeatImg = null;
-  settingIconImg = loadImage('icon/basic/setting.png');
-  helpIconImg = loadImage('icon/basic/help.png');
-  bulletIconImg = loadImage('icon/basic/bullet.png');
-  controlKeyImgs = {
-    W: loadImage('icon/basic/keyboard_W.png'),
-    A: loadImage('icon/basic/keyboard_A.png'),
-    S: loadImage('icon/basic/keyboard_S.png'),
-    D: loadImage('icon/basic/keyboard_D.png'),
-    X: loadImage('icon/basic/keyboard_X.png'),
-    UP: loadImage('icon/basic/keyboard_up.png'),
-    DOWN: loadImage('icon/basic/keyboard_down.png'),
-    LEFT: loadImage('icon/basic/keyboard_left.png'),
-    RIGHT: loadImage('icon/basic/keyboard_right.png')
-  };
-  images.weaponShop = {
-    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.png'),
-    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.png'),
-    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.png'),
-    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.png'),
-    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.png'),
-    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.png'),
-    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.png'),
-    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.png')
-  };
-  
-  // Load terrain and environment assets
+  // Keep boot-time requests minimal: only map base textures are required to render
+  // the initial world buffer. UI, shop, gameplay props, and ending videos load later.
   images.grass = loadImage('icon/grass_1.png');
   images.grassAlt1 = loadImage('icon/Grass.png');
   images.asphalt = loadImage('icon/asphalt.png');
@@ -4085,8 +4497,80 @@ function preloadAssets() {
   images.tCross2 = loadImage('icon/road_t_cross_2.png');
   images.tCross3 = loadImage('icon/road_t_cross_3.png');
   images.tCross4 = loadImage('icon/road_t_cross_4.png');
-  
-  // Obstacles
+
+  images.grassVariants = [images.grass, images.grassAlt1];
+  images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
+  images.roadVVariants = [images.roadV, images.roadV, images.roadVAlt];
+  images.roadHVariants = [images.roadH, images.roadH, images.roadHAlt];
+}
+
+function isDataSaverEnabled() {
+  return !!(navigator.connection && navigator.connection.saveData);
+}
+
+function createMutedVideoAsset(path, preloadMode = 'metadata') {
+  let video = createVideo(path);
+  video.volume(0);
+  video.elt.muted = true;
+  video.elt.playsInline = true;
+  video.elt.preload = preloadMode;
+  video.hide();
+  video.elt.load();
+  return video;
+}
+
+function ensureCoverMedia() {
+  if (!gameCoverVideo) {
+    gameCoverVideo = createMutedVideoAsset('icon/game_cover_video.mp4', 'auto');
+  }
+}
+
+function loadDeferredMenuVisualAssets() {
+  if (deferredMenuVisualsRequested) return;
+  deferredMenuVisualsRequested = true;
+  gameCoverImg = loadImage('icon/game_cover.webp');
+  startBtnImg = loadImage('icon/start.webp');
+  exitBtnImg = loadImage('icon/exit.webp');
+  shopBtnImg = loadImage('icon/basic/store_mainpage.webp');
+  settingIconImg = loadImage('icon/basic/setting.webp');
+  helpIconImg = loadImage('icon/basic/help.webp');
+}
+
+
+function loadShopSupportAssets() {
+  if (shopSupportAssetsRequested) return;
+  shopSupportAssetsRequested = true;
+  shopBoardImg = loadImage('icon/shop_board.webp');
+  bulletIconImg = loadImage('icon/basic/bullet.webp');
+  controlKeyImgs = {
+    W: loadImage('icon/basic/keyboard_W.png'),
+    A: loadImage('icon/basic/keyboard_A.png'),
+    S: loadImage('icon/basic/keyboard_S.png'),
+    D: loadImage('icon/basic/keyboard_D.png'),
+    X: loadImage('icon/basic/keyboard_X.png'),
+    UP: loadImage('icon/basic/keyboard_up.png'),
+    DOWN: loadImage('icon/basic/keyboard_down.png'),
+    LEFT: loadImage('icon/basic/keyboard_left.png'),
+    RIGHT: loadImage('icon/basic/keyboard_right.png')
+  };
+  images.weaponShop = {
+    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.webp'),
+    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.webp'),
+    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.webp'),
+    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.webp'),
+    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.webp'),
+    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.webp'),
+    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.webp'),
+    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.webp')
+  };
+}
+
+function loadGameplayAssets() {
+  if (gameplayAssetsRequested) return;
+  gameplayAssetsRequested = true;
+  loadShopSupportAssets();
+  hospitalImg = loadImage('icon/BUILDING/hospital.webp');
+  armoryImg = loadImage('icon/BUILDING/arms.webp');
   images.tree1 = loadImage('icon/tree_1.png');
   images.tree2 = loadImage('icon/tree 2.png');
   images.tree3 = loadImage('icon/tree 3.png');
@@ -4108,39 +4592,21 @@ function preloadAssets() {
   images.bush6 = loadImage('icon/bush_6.png');
   images.bush7 = loadImage('icon/bush_7.png');
   images.bush8 = loadImage('icon/bush_8.png');
-
-  images.police = loadImage('icon/BUILDING/police_dept.png');
-  images.police = loadImage('icon/BUILDING/police_dept.png');
+  images.police = loadImage('icon/BUILDING/police_dept.webp');
   images.cityBuildings = [];
-  let buildingFiles = [
-    { file: 'Anna_house.png', label: 'Residence' },
-    { file: 'Ben_house.png', label: 'Residence' },
-    { file: 'David_house.png', label: 'Residence' },
-    { file: 'Emma_house.png', label: 'Residence' },
-    { file: 'Grace_house.png', label: 'Residence' },
-    { file: 'Jack_house.png', label: 'Residence' },
-    { file: 'Leo_house.png', label: 'Residence' },
-    { file: 'Lily_house.png', label: 'Residence' },
-    { file: 'Lucy_house.png', label: 'Residence' },
-    { file: 'Mike_house.png', label: 'Residence' },
-    { file: 'Sarah_house.png', label: 'Residence' },
-    { file: 'Tom_house.png', label: 'Residence' },
-    { file: 'cafe.png', label: 'Cafe' },
-    { file: 'garden.png', label: 'Garden' },
-    { file: 'school.png', label: 'School' },
-    { file: 'supermarket.png', label: 'Supermarket' }
-  ];
-  for (let f of buildingFiles) {
-      images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
+  for (let f of CITY_BUILDING_FILES) {
+    images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
   }
-
-  images.grassVariants = [images.grass, images.grassAlt1];
-  images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
-  images.roadVVariants = [images.roadV, images.roadV, images.roadVAlt];
-  images.roadHVariants = [images.roadH, images.roadH, images.roadHAlt];
   images.trees = [images.tree1, images.tree2, images.tree3, images.tree4, images.tree5, images.pine1, images.pine2];
   images.rocks = [images.rock1, images.rock2, images.rock3, images.rock4, images.rock5, images.rock6];
   images.bushes = [images.bush1, images.bush2, images.bush3, images.bush4, images.bush5, images.bush6, images.bush7, images.bush8];
+}
+
+function loadEndingVideos() {
+  if (endingVideosRequested) return;
+  endingVideosRequested = true;
+  defeatVideo = createMutedVideoAsset('icon/basic/defeat.mp4', 'metadata');
+  victoryVideo = createMutedVideoAsset('icon/basic/victory.mp4', 'metadata');
 }
 
 function isMapTextureReady(img) {
@@ -4158,6 +4624,31 @@ function areMapBaseTexturesReady() {
   );
 }
 
+function areMenuVisualAssetsReady() {
+  return (
+    isMapTextureReady(gameCoverImg) &&
+    isMapTextureReady(startBtnImg) &&
+    isMapTextureReady(exitBtnImg) &&
+    isMapTextureReady(shopBtnImg)
+  );
+}
+
+function isCoverVideoReadyForMenu() {
+  if (!gameCoverVideo || !gameCoverVideo.elt) return false;
+  let el = gameCoverVideo.elt;
+  if (el.videoWidth <= 0 || el.readyState < 3) return false;
+  if (!ensureVideoPlayable(gameCoverVideo)) return false;
+  return !el.paused && !el.seeking && el.currentTime > 0.05;
+}
+
+function isBootLoadingComplete() {
+  let elapsed = millis() - bootLoadingStartedAt;
+  if (elapsed < BOOT_LOADING_MIN_MS) return false;
+  if (!areMapBaseTexturesReady() || !areMenuVisualAssetsReady()) return false;
+  if (isCoverVideoReadyForMenu()) return true;
+  return elapsed >= BOOT_LOADING_MAX_MS;
+}
+
 // Global Offset for Iso Map centering
 let mapOffsetX, mapOffsetY;
 
@@ -4168,6 +4659,7 @@ function setup() {
   gameHeight = windowHeight - statusHeight;
   
   createCanvas(gameWidth, gameHeight + statusHeight);
+  bootLoadingStartedAt = millis();
   textAlign(CENTER, CENTER);
   rectMode(CENTER);
   imageMode(CENTER);
@@ -4193,27 +4685,8 @@ function setup() {
   if (authUI.isLoggedIn()) {
       refreshUserProgress();
   }
-
-  gameCoverVideo = createVideo('icon/game_cover_video.mp4');
-  gameCoverVideo.volume(0);
-  gameCoverVideo.elt.muted = true;
-  gameCoverVideo.elt.playsInline = true;
-  gameCoverVideo.loop();
-  gameCoverVideo.hide();
-  defeatVideo = createVideo('icon/basic/defeat.mp4');
-  defeatVideo.volume(0);
-  defeatVideo.elt.muted = true;
-  defeatVideo.elt.playsInline = true;
-  defeatVideo.elt.preload = 'auto';
-  defeatVideo.elt.load();
-  defeatVideo.hide();
-  victoryVideo = createVideo('icon/basic/victory.mp4');
-  victoryVideo.volume(0);
-  victoryVideo.elt.muted = true;
-  victoryVideo.elt.playsInline = true;
-  victoryVideo.elt.preload = 'auto';
-  victoryVideo.elt.load();
-  victoryVideo.hide();
+  ensureCoverMedia();
+  loadDeferredMenuVisualAssets();
   updateGameplayViewport();
 }
 
@@ -4273,6 +4746,10 @@ function projectIsoVector(x, y) {
 
 function resetGame(keepProgress = false) {
   let oldPlayer = player;
+
+  if (typeof clearSpecialWeaponEffects === 'function') {
+      clearSpecialWeaponEffects();
+  }
   
   player = new Player(mapWidth / 2, mapHeight / 2); // Start in middle of large map
   
@@ -4280,6 +4757,8 @@ function resetGame(keepProgress = false) {
       player.coins = oldPlayer.coins;
       player.bonusMaxHp = oldPlayer.bonusMaxHp;
       player.bonusMaxAmmo = oldPlayer.bonusMaxAmmo;
+      player.bonusTopSpeed = oldPlayer.bonusTopSpeed || 0;
+      player.bonusAcceleration = oldPlayer.bonusAcceleration || 0;
       player.currentWeapon = oldPlayer.currentWeapon;
       player.ownedWeapons = Array.isArray(oldPlayer.ownedWeapons) ? [...oldPlayer.ownedWeapons] : [WEAPON_TYPES.PISTOL];
       player.ownedCars = Array.isArray(oldPlayer.ownedCars) ? [...oldPlayer.ownedCars] : ['starter'];
@@ -4771,6 +5250,43 @@ function generateCity() {
 }
 
 function draw() {
+  if (gameState === 'BOOT_LOADING') {
+      background(15, 20, 25);
+      
+      if (isBootLoadingComplete()) {
+          gameState = 'MENU';
+          return;
+      }
+      
+      push();
+      translate(width / 2, height / 2);
+      
+      // Outer rotating ring
+      noFill();
+      stroke(255, 196, 70, 150);
+      strokeWeight(4);
+      let angle = millis() * 0.003;
+      arc(0, 0, 60, 60, angle, angle + PI + QUARTER_PI);
+      
+      // Inner rotating ring
+      stroke(255, 80, 80, 200);
+      strokeWeight(2);
+      let angle2 = -millis() * 0.004;
+      arc(0, 0, 40, 40, angle2, angle2 + PI + HALF_PI);
+      
+      // Loading Text
+      fill(255, 200);
+      noStroke();
+      textAlign(CENTER, CENTER);
+      textSize(18);
+      let dots = '';
+      let t = floor(millis() / 400) % 4;
+      for (let i = 0; i < t; i++) dots += '.';
+      text("LOADING" + dots, 0, 60);
+      pop();
+      return;
+  }
+
   // 0. Menu Handling (Full Screen, No Camera/Status Bar Offset)
   if (gameState === 'MENU') {
       if (defeatVideo) defeatVideo.pause();
@@ -4936,10 +5452,10 @@ function draw() {
 
   drawStatusBar();
   
-  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || (gameState === 'SHOP' && !isBuildingInteractionOpen()) || gameState === 'MAP_SELECT') {
       drawMiniMap();
   }
-  if (gameState === 'PLAY' || gameState === 'PAUSED' || gameState === 'SHOP' || gameState === 'MAP_SELECT' || gameState === 'MISSILE_CONTROL') {
+  if (gameState === 'PLAY' || gameState === 'PAUSED' || (gameState === 'SHOP' && !isBuildingInteractionOpen()) || gameState === 'MAP_SELECT' || gameState === 'MISSILE_CONTROL') {
       drawControlGuidePanel();
   }
 }
@@ -5432,6 +5948,9 @@ function getCoverRect(viewW = width, viewH = height, sourceOverride = null, forc
 function drawCoverBackground(dimValue = 255) {
   let rect = getCoverRect();
   lastCoverRect = rect;
+
+  // Clear the whole canvas first so previous gameplay UI cannot bleed into menu side margins.
+  background(0);
   
   if (rect.source) {
       imageMode(CORNER);
@@ -5463,6 +5982,169 @@ function getMenuButtonLayout() {
   let labelOffsetX = 100;
   
   return { shopX, shopY, startX, startY, exitX, exitY, iconSize, hoverRadius, labelOffsetX };
+}
+
+function getMenuAccountLayout() {
+  let rect = lastCoverRect || getCoverRect();
+  let iconSize = 64;
+  let margin = 32;
+  let iconX = rect.x + rect.w - margin - iconSize / 2;
+  let iconY = rect.y + margin + iconSize / 2;
+  let popupW = 320;
+  let popupH = authUI && authUI.isLoggedIn() ? 240 : 180;
+  let popupX = iconX - popupW + iconSize / 2;
+  let popupY = iconY + iconSize / 2 + 16;
+  return { iconX, iconY, iconSize, popupX, popupY, popupW, popupH };
+}
+
+async function openMenuLoginDialog() {
+    gameState = 'AUTH';
+    authUI.state = 'login';
+    authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
+    authUI.onLoginSuccess = async () => {
+        let loaded = await refreshUserProgress();
+        if (!loaded) {
+            setStartGateMessage('Unable to load profile data. Please login again.');
+            gameState = 'MENU';
+            return;
+        }
+        menuAccountOpen = false;
+        gameState = 'MENU';
+    };
+}
+
+function drawMenuAccountPanel() {
+  let layout = getMenuAccountLayout();
+  let isHover = dist(mouseX, mouseY, layout.iconX, layout.iconY) <= layout.iconSize / 2;
+  let isLoggedIn = authUI && authUI.isLoggedIn();
+  let user = authUI && authUI.user ? authUI.user : null;
+  let initials = '?';
+  if (isLoggedIn && user && user.username) initials = String(user.username).trim().charAt(0).toUpperCase() || 'U';
+  else if (isLoggedIn && user && user.email) initials = String(user.email).trim().charAt(0).toUpperCase() || 'U';
+
+  menuAccountIconRect = { x: layout.iconX - layout.iconSize / 2, y: layout.iconY - layout.iconSize / 2, w: layout.iconSize, h: layout.iconSize };
+  menuAccountPopupRect = null;
+  menuAccountPrimaryButtonRect = null;
+  menuAccountSecondaryButtonRect = null;
+
+  // Draw Avatar Icon
+  push();
+  // Outer glow
+  drawingContext.shadowBlur = isHover || menuAccountOpen ? 25 : 12;
+  drawingContext.shadowColor = isLoggedIn ? 'rgba(70, 150, 255, 0.6)' : 'rgba(0,0,0,0.5)';
+  
+  // Background circle
+  fill(isLoggedIn ? color(35, 45, 60, 245) : color(45, 50, 55, 245));
+  stroke(isLoggedIn ? color(100, 170, 255, 200) : color(120, 130, 140, 200));
+  strokeWeight(3);
+  ellipse(layout.iconX, layout.iconY, layout.iconSize, layout.iconSize);
+  
+  // Inner avatar styling
+  drawingContext.shadowBlur = 0;
+  noStroke();
+  if (isLoggedIn) {
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      textSize(28);
+      text(initials, layout.iconX, layout.iconY + 2);
+  } else {
+      // Draw a simple user silhouette
+      fill(180);
+      ellipse(layout.iconX, layout.iconY - 6, 18, 18);
+      arc(layout.iconX, layout.iconY + 16, 36, 24, PI, 0, CHORD);
+  }
+  pop();
+
+  if (!menuAccountOpen) return;
+
+  let buttonW = layout.popupW - 40;
+  let buttonH = 44;
+  let primaryY = layout.popupY + layout.popupH - 64;
+  let secondaryY = primaryY - 56;
+  menuAccountPopupRect = { x: layout.popupX, y: layout.popupY, w: layout.popupW, h: layout.popupH };
+
+  // Draw Popup Background
+  push();
+  rectMode(CORNER);
+  drawingContext.shadowBlur = 30;
+  drawingContext.shadowColor = 'rgba(0,0,0,0.6)';
+  fill(25, 30, 38, 250);
+  stroke(60, 75, 90, 220);
+  strokeWeight(2);
+  rect(layout.popupX, layout.popupY, layout.popupW, layout.popupH, 16);
+  drawingContext.shadowBlur = 0;
+
+  // Popup Header
+  fill(35, 45, 60, 250);
+  noStroke();
+  // Draw header rect with top rounded corners
+  rect(layout.popupX, layout.popupY, layout.popupW, 46, 14, 14, 0, 0);
+  
+  fill(255);
+  textAlign(LEFT, CENTER);
+  textStyle(BOLD);
+  textSize(16);
+  text('ACCOUNT INFO', layout.popupX + 20, layout.popupY + 23);
+
+  // Content Area
+  fill(200);
+  textStyle(NORMAL);
+  textSize(14);
+  let emailText = isLoggedIn && user && user.email ? user.email : 'Guest User';
+  let userText = isLoggedIn && user && user.username ? user.username : 'Not logged in';
+  
+  textAlign(LEFT, TOP);
+  if (isLoggedIn) {
+      text(`Email:`, layout.popupX + 20, layout.popupY + 62);
+      fill(255);
+      textStyle(BOLD);
+      text(`${emailText}`, layout.popupX + 70, layout.popupY + 62);
+      
+      fill(200);
+      textStyle(NORMAL);
+      text(`User:`, layout.popupX + 20, layout.popupY + 86);
+      fill(255);
+      textStyle(BOLD);
+      text(`${userText}`, layout.popupX + 70, layout.popupY + 86);
+  } else {
+      textAlign(CENTER, TOP);
+      text('You are currently playing as a Guest.\nLogin to save your progress!', layout.popupX + layout.popupW/2, layout.popupY + 65);
+  }
+
+  // Draw Buttons
+  let isPrimaryHover = mouseX >= layout.popupX + 20 && mouseX <= layout.popupX + 20 + buttonW && mouseY >= primaryY && mouseY <= primaryY + buttonH;
+  let isSecondaryHover = isLoggedIn && mouseX >= layout.popupX + 20 && mouseX <= layout.popupX + 20 + buttonW && mouseY >= secondaryY && mouseY <= secondaryY + buttonH;
+
+  if (isLoggedIn) {
+      menuAccountSecondaryButtonRect = { x: layout.popupX + 20, y: secondaryY, w: buttonW, h: buttonH };
+      fill(isSecondaryHover ? color(80, 95, 110) : color(60, 75, 90));
+      rect(menuAccountSecondaryButtonRect.x, menuAccountSecondaryButtonRect.y, buttonW, buttonH, 10);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textStyle(BOLD);
+      textSize(14);
+      text('CLOSE', menuAccountSecondaryButtonRect.x + buttonW / 2, menuAccountSecondaryButtonRect.y + buttonH / 2);
+  }
+
+  menuAccountPrimaryButtonRect = { x: layout.popupX + 20, y: primaryY, w: buttonW, h: buttonH };
+  
+  if (isLoggedIn) {
+      fill(isPrimaryHover ? color(220, 80, 80) : color(190, 60, 60)); // Red for logout
+  } else {
+      fill(isPrimaryHover ? color(60, 180, 100) : color(45, 150, 80)); // Green for login
+  }
+  
+  rect(menuAccountPrimaryButtonRect.x, menuAccountPrimaryButtonRect.y, buttonW, buttonH, 10);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  textStyle(BOLD);
+  textSize(15);
+  text(isLoggedIn ? 'LOGOUT' : 'LOGIN TO ACCOUNT', menuAccountPrimaryButtonRect.x + buttonW / 2, menuAccountPrimaryButtonRect.y + buttonH / 2);
+  pop();
 }
 
 function drawMainMenu() {
@@ -5511,9 +6193,6 @@ function drawMainMenu() {
           fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
           text("START", startX + labelOffsetX, startY);
       }
-  } else {
-      fill(0, 255, 0); rect(startX, startY, 150, 60, 10);
-      fill(0); textAlign(CENTER, CENTER); text("START", startX, startY);
   }
   
   if (exitBtnImg) {
@@ -5530,9 +6209,6 @@ function drawMainMenu() {
           fill(255); noStroke(); textAlign(LEFT, CENTER); textSize(32); textStyle(BOLD);
           text("EXIT", exitX + labelOffsetX, exitY);
       }
-  } else {
-      fill(255, 0, 0); rect(exitX, exitY, 150, 60, 10);
-      fill(255); text("EXIT", exitX, exitY);
   }
 
   if (startGatePending || millis() < startGateMessageUntil) {
@@ -5543,6 +6219,8 @@ function drawMainMenu() {
       let msg = startGatePending ? 'Checking backend service...' : startGateMessage;
       text(msg, width / 2, height - 50);
   }
+
+  drawMenuAccountPanel();
 }
 
 function drawDifficultySelect() {
@@ -5793,6 +6471,9 @@ function playGame() {
   let remaining = survivalTime - elapsed;
   
   if (remaining <= 0) {
+    if (typeof clearSpecialWeaponEffects === 'function') {
+        clearSpecialWeaponEffects();
+    }
     gameState = 'WIN';
   }
 
@@ -5800,7 +6481,8 @@ function playGame() {
         if (authUI && authUI.isLoggedIn()) {
             let data = {
                 coins: player.coins,
-                unlockedWeapons: player.unlockedSpecialWeapons,
+                unlockedWeapons: Array.isArray(player.ownedWeapons) ? player.ownedWeapons : [WEAPON_TYPES.PISTOL],
+                unlockedSpecialWeapons: Array.isArray(player.unlockedSpecialWeapons) ? player.unlockedSpecialWeapons : [],
                 upgradeState: {
                     maxHp: player.bonusMaxHp,
                     maxAmmo: player.bonusMaxAmmo,
@@ -5909,26 +6591,19 @@ function playGame() {
 
   drawGameObjects();
   
-  // Interactions check for 'F' key
-  if (!isPlayerControlLocked() && keyIsDown(70)) { // F key
-      for (let b of buildings) {
-          if (b.isInteractable() && p5.Vector.dist(player.pos, b.pos) < b.w) {
-              gameState = 'SHOP';
-              pauseStartTime = millis();
-              shopBuilding = b;
-              break;
-          }
-      }
-  }
 }
 
 function drawGameObjects() {
   let shouldUpdate = gameState === 'PLAY' || gameState === 'MISSILE_CONTROL';
   let playerLocked = shouldUpdate && isPlayerControlLocked();
+  let hideBuildingLabels = isBuildingInteractionOpen();
   // Draw Buildings
   for (let b of buildings) {
     b.display();
-    b.showTooltip(player); // Show tooltip if close
+    if (!hideBuildingLabels) {
+      b.showNameLabel();
+      b.showTooltip(player); // Show tooltip if close
+    }
   }
 
   // Update & Display Particles
@@ -5981,6 +6656,10 @@ function drawGameObjects() {
 
       if (p.isDead()) {
           projectiles.splice(i, 1);
+          continue;
+      }
+
+      if (p.isLaserBeam) {
           continue;
       }
       
@@ -6086,10 +6765,12 @@ function drawGameObjects() {
             let p = projectiles[j];
             if (p.checkCollision(e)) {
                 let config = WEAPON_CONFIG[p.type];
-                let dmg = config ? config.damage : 1;
+                let dmg = config ? (p.isLaserBeam ? (config.damagePerFrame || config.damage || 1) : config.damage) : 1;
                 
                 e.hp -= dmg;
-                createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 5);
+                if (!p.isLaserBeam) {
+                    createExplosion(e.pos.x, e.pos.y, color(255, 0, 0), 5);
+                }
                 
                 if (e.hp <= 0) {
                     createExplosion(e.pos.x, e.pos.y, color(255, 50, 0), 15);
@@ -6098,8 +6779,10 @@ function drawGameObjects() {
                     shakeAmount = 5;
                 } else {
                     // Knockback?
-                    let push = p5.Vector.sub(e.pos, p.pos).normalize().mult(2);
-                    e.pos.add(push);
+                    if (!p.isLaserBeam) {
+                        let push = p5.Vector.sub(e.pos, p.pos).normalize().mult(2);
+                        e.pos.add(push);
+                    }
                 }
                 
                 if (!config || !config.penetrates && !p.isFireArea) {
@@ -6128,6 +6811,9 @@ function drawGameObjects() {
                 player.hp--;
                 enemies.splice(i, 1); 
                 if (player.hp <= 0) {
+                  if (typeof clearSpecialWeaponEffects === 'function') {
+                      clearSpecialWeaponEffects();
+                  }
                   gameState = 'GAMEOVER';
                 }
               }
@@ -6206,11 +6892,28 @@ async function continueStartAfterAuth() {
         return;
     }
     authUI.hide();
+    loadGameplayAssets();
     gameState = 'DIFFICULTY_SELECT';
+}
+
+async function prepareGameplayStartFromDifficultySelect() {
+    if (!authUI || !authUI.isLoggedIn()) {
+        setStartGateMessage('Please login before starting the game.');
+        return false;
+    }
+
+    let loaded = await refreshUserProgress();
+    if (!loaded) {
+        setStartGateMessage('Unable to reach backend or load profile. Cannot start game now.');
+        return false;
+    }
+
+    return true;
 }
 
 async function beginMenuShopFlow() {
     ensurePlayerProfile();
+    loadShopSupportAssets();
     let backendOk = await isBackendAvailable();
     if (!backendOk) {
         setStartGateMessage('Backend unavailable. Please start login service first.');
@@ -6226,7 +6929,11 @@ async function beginMenuShopFlow() {
         return;
     }
     gameState = 'AUTH';
+    authUI.state = 'login';
     authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
     authUI.onLoginSuccess = async () => {
         let loaded = await refreshUserProgress();
         if (!loaded) {
@@ -6255,13 +6962,18 @@ async function beginStartFlow() {
             startGatePending = false;
             return;
         }
+        loadGameplayAssets();
         gameState = 'DIFFICULTY_SELECT';
         startGatePending = false;
         return;
     }
 
     gameState = 'AUTH';
+    authUI.state = 'login';
     authUI.show();
+    authUI.onCloseRequested = () => {
+        gameState = 'MENU';
+    };
     authUI.onLoginSuccess = async () => {
         await continueStartAfterAuth();
     };
@@ -6315,7 +7027,246 @@ function drawShopMenu() {
 }
 
 function drawShop() {
+    if (shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory')) {
+        drawBuildingInteractionPanel(gameWidth, gameHeight, 0, 0, gameViewX, statusHeight + gameViewY);
+        return;
+    }
     shopUI.draw(gameWidth, gameHeight, 0, 0, gameViewX, statusHeight + gameViewY);
+}
+
+function isBuildingInteractionOpen() {
+    return gameState === 'SHOP' && !!shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory');
+}
+
+function openBuildingInteraction(building) {
+    if (!building || !building.isInteractable()) return false;
+    gameState = 'SHOP';
+    pauseStartTime = millis();
+    shopBuilding = building;
+    return true;
+}
+
+function tryOpenNearbyBuildingInteraction() {
+    if (gameState !== 'PLAY' || !player || isPlayerControlLocked()) return false;
+
+    let nearestBuilding = null;
+    let nearestDistance = Infinity;
+    for (let b of buildings) {
+        if (!b.isPlayerInRange(player)) continue;
+        let center = typeof b.getInteractionCenter === 'function' ? b.getInteractionCenter() : b.getCollisionCenter();
+        let distanceToBuilding = dist(player.pos.x, player.pos.y, center.x, center.y);
+        if (distanceToBuilding < nearestDistance) {
+            nearestDistance = distanceToBuilding;
+            nearestBuilding = b;
+        }
+    }
+
+    return openBuildingInteraction(nearestBuilding);
+}
+
+function getBuildingInteractionDetails(building = shopBuilding) {
+    if (!building || !player) return null;
+    let config = BUILDING_INTERACTION_CONFIG[building.type];
+    if (!config) return null;
+
+    let currentValue = 0;
+    let maxValue = 0;
+    if (building.type === 'armory') {
+        currentValue = player.ammo || 0;
+        maxValue = player.maxAmmo || 0;
+    } else if (building.type === 'hospital') {
+        currentValue = player.hp || 0;
+        maxValue = player.maxHp || 0;
+    }
+
+    let missing = max(0, maxValue - currentValue);
+    let purchaseAmount = min(config.amount, missing);
+    let affordable = player.coins >= config.price;
+    let atMax = purchaseAmount <= 0;
+    let actionLabel = building.type === 'armory'
+        ? `Buy +${config.amount} Ammo`
+        : `Buy +${config.amount} HP`;
+    let statusText = '';
+
+    if (atMax) {
+        statusText = building.type === 'armory' ? 'Ammo is already full.' : 'Health is already full.';
+    } else if (!affordable) {
+        statusText = `Need ${config.price} coins.`;
+    } else {
+        statusText = `Spend ${config.price} coins for +${purchaseAmount}.`;
+    }
+
+    return {
+        building,
+        config,
+        currentValue,
+        maxValue,
+        purchaseAmount,
+        affordable,
+        atMax,
+        canBuy: !atMax && affordable,
+        actionLabel,
+        statusText
+    };
+}
+
+function purchaseBuildingInteraction() {
+    let details = getBuildingInteractionDetails();
+    if (!details || !details.canBuy) return false;
+
+    player.coins -= details.config.price;
+    if (details.building.type === 'armory') {
+        player.ammo = min(player.maxAmmo, player.ammo + details.purchaseAmount);
+    } else if (details.building.type === 'hospital') {
+        player.hp = min(player.maxHp, player.hp + details.purchaseAmount);
+    }
+
+    details.building.lastInteractionTime = millis();
+    return true;
+}
+
+function isPointInUiRect(px, py, rect) {
+    return !!rect && px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+}
+
+function drawInteractionHeartIcon(x, y, scaleFactor = 1) {
+    push();
+    translate(x, y);
+    scale(scaleFactor);
+    fill(255, 70, 70);
+    stroke(180, 0, 0);
+    strokeWeight(1);
+    beginShape();
+    vertex(0, 0);
+    bezierVertex(-5, -5, -10, 0, 0, 10);
+    bezierVertex(10, 0, 5, -5, 0, 0);
+    endShape(CLOSE);
+    pop();
+}
+
+function drawBuildingInteractionPanel(viewW, viewH, viewX = 0, viewY = 0, inputOffsetX = 0, inputOffsetY = 0) {
+    let details = getBuildingInteractionDetails();
+    if (!details) {
+        shopUI.draw(viewW, viewH, viewX, viewY, inputOffsetX, inputOffsetY);
+        return;
+    }
+
+    buildingInteractionUI.inputOffsetX = inputOffsetX;
+    buildingInteractionUI.inputOffsetY = inputOffsetY;
+
+    let panelW = min(540, viewW * 0.7);
+    let panelH = min(470, viewH * 0.78);
+    let panelX = viewX + (viewW - panelW) / 2;
+    let panelY = viewY + (viewH - panelH) / 2;
+    let accent = details.config.accent;
+    let closeSize = 34;
+    let closeX = panelX + panelW - closeSize - 18;
+    let closeY = panelY + 18;
+    let buttonW = min(280, panelW - 80);
+    let buttonH = 54;
+    let buttonX = panelX + (panelW - buttonW) / 2;
+    let cardY = panelY + 150;
+    let cardH = 110;
+    let priceY = cardY + cardH + 26;
+    let buttonY = priceY + 26;
+    let statusY = buttonY + buttonH + 24;
+    let escY = statusY + 36;
+    let actionHover = isPointInUiRect(mouseX - inputOffsetX, mouseY - inputOffsetY, { x: buttonX, y: buttonY, w: buttonW, h: buttonH });
+    let closeHover = isPointInUiRect(mouseX - inputOffsetX, mouseY - inputOffsetY, { x: closeX, y: closeY, w: closeSize, h: closeSize });
+
+    buildingInteractionUI.closeRect = { x: closeX, y: closeY, w: closeSize, h: closeSize };
+    buildingInteractionUI.actionRect = { x: buttonX, y: buttonY, w: buttonW, h: buttonH };
+
+    push();
+    rectMode(CORNER);
+    noStroke();
+    fill(0, 0, 0, 215);
+    rect(viewX, viewY, viewW, viewH, 20);
+
+    fill(48, 36, 28, 252);
+    stroke(accent[0], accent[1], accent[2]);
+    strokeWeight(3);
+    rect(panelX, panelY, panelW, panelH, 18);
+
+    noStroke();
+    fill(255, 244, 225);
+    textAlign(CENTER, TOP);
+    textSize(30);
+    text(details.config.title, panelX + panelW / 2, panelY + 24);
+
+    textSize(16);
+    fill(225, 214, 190);
+    text(details.config.description, panelX + panelW / 2, panelY + 70);
+
+    fill(255, 215, 120);
+    textSize(18);
+    text(`Coins: ${player.coins}`, panelX + panelW / 2, panelY + 116);
+
+    fill(94, 68, 48, 240);
+    rect(panelX + 40, cardY, panelW - 80, cardH, 14);
+    fill(255, 240, 215);
+    textSize(20);
+    text(details.config.itemLabel, panelX + panelW / 2, panelY + 170);
+
+    fill(230, 220, 205);
+    textSize(16);
+    if (details.building.type === 'armory') {
+        text(`Ammo: ${details.currentValue} / ${details.maxValue}`, panelX + panelW / 2, panelY + 210);
+    } else {
+        text(`Health: ${details.currentValue} / ${details.maxValue}`, panelX + panelW / 2, panelY + 210);
+        drawInteractionHeartIcon(panelX + panelW / 2, panelY + 240, 1.2);
+    }
+
+    fill(210, 196, 170);
+    textSize(15);
+    text(`Price: ${details.config.price} coins`, panelX + panelW / 2, priceY);
+
+    if (details.canBuy) {
+        fill(actionHover ? color(accent[0] + 20, accent[1] + 20, accent[2] + 20) : color(accent[0], accent[1], accent[2]));
+    } else {
+        fill(110, 110, 110);
+    }
+    noStroke();
+    rect(buttonX, buttonY, buttonW, buttonH, 12);
+
+    fill(30);
+    textSize(18);
+    textAlign(CENTER, CENTER);
+    text(`${details.actionLabel}  ($${details.config.price})`, buttonX + buttonW / 2, buttonY + buttonH / 2);
+
+    fill(details.canBuy ? 210 : 255, details.canBuy ? 225 : 170, details.canBuy ? 190 : 170);
+    textSize(14);
+    text(details.statusText, panelX + panelW / 2, statusY);
+
+    if (closeHover) fill(accent[0], accent[1], accent[2]);
+    else fill(156, 110, 78);
+    rect(closeX, closeY, closeSize, closeSize, 8);
+    stroke(35, 24, 15);
+    strokeWeight(2.5);
+    line(closeX + 9, closeY + 9, closeX + closeSize - 9, closeY + closeSize - 9);
+    line(closeX + closeSize - 9, closeY + 9, closeX + 9, closeY + closeSize - 9);
+    noStroke();
+
+    fill(235, 220, 200);
+    textAlign(CENTER, CENTER);
+    textSize(14);
+    text("Press ESC to Close", panelX + panelW / 2, escY);
+    pop();
+}
+
+function handleBuildingInteractionClick() {
+    let localX = mouseX - buildingInteractionUI.inputOffsetX;
+    let localY = mouseY - buildingInteractionUI.inputOffsetY;
+
+    if (isPointInUiRect(localX, localY, buildingInteractionUI.closeRect)) {
+        closeShopFromUI();
+        return true;
+    }
+    if (isPointInUiRect(localX, localY, buildingInteractionUI.actionRect)) {
+        purchaseBuildingInteraction();
+        return true;
+    }
+    return false;
 }
 
 function createExplosion(x, y, col, count) {
@@ -6360,7 +7311,7 @@ function applyPowerUp(p) {
 }
 
 function drawStatusBar() {
-  if (gameState === 'MENU' || gameState === 'DIFFICULTY_SELECT' || gameState === 'MENU_SHOP') return;
+  if (gameState === 'BOOT_LOADING' || gameState === 'MENU' || gameState === 'DIFFICULTY_SELECT' || gameState === 'MENU_SHOP') return;
 
   // Background
   fill(30);
@@ -6380,96 +7331,148 @@ function drawStatusBar() {
   }
   let elapsed = (currentMillis - startTime - totalPausedTime) / 1000;
   let remaining = max(0, survivalTime - elapsed);
+  let statusSections = [
+      { key: 'health', label: 'HEALTH', width: 250 },
+      { key: 'ammo', label: 'AMMO', width: 180 },
+      { key: 'coins', label: 'COINS', width: 130 },
+      { key: 'time', label: 'TIME', width: 120 },
+      { key: 'mode', label: 'MODE', width: 100 }
+  ];
+  if (player.hasShield) statusSections.push({ key: 'shield', label: 'SHIELD', width: 82 });
+  if (player.currentSpecialWeapon) statusSections.push({ key: 'special', label: 'SPECIAL', width: 88 });
+
+  let sectionGap = 16;
+  let iconReservedW = 150;
+  let layoutLeft = 20;
+  let layoutRight = width - iconReservedW;
+  let totalSectionW = statusSections.reduce((sum, section) => sum + section.width, 0) + sectionGap * (statusSections.length - 1);
+  let startX = max(layoutLeft, layoutLeft + (layoutRight - layoutLeft - totalSectionW) / 2);
+  let sectionMap = {};
+  let cursorX = startX;
+  for (let section of statusSections) {
+      sectionMap[section.key] = {
+          x: cursorX,
+          w: section.width,
+          cx: cursorX + section.width / 2
+      };
+      cursorX += section.width + sectionGap;
+  }
 
   // --- Interactive Icons ---
   drawInteractiveStatusIcon(width - 110, statusHeight / 2, 50, helpIconImg, 'HELP');
   drawInteractiveStatusIcon(width - 50, statusHeight / 2, 50, settingIconImg, 'GEAR');
   
-  // --- Left Section: HP ---
-  textAlign(LEFT, CENTER);
+  // --- Health ---
+  let healthSection = sectionMap.health;
   fill(200);
   textSize(16);
   noStroke();
-  text("HEALTH", 30, 25);
+  textAlign(CENTER, CENTER);
+  text("HEALTH", healthSection.cx, 25);
   
-  // Heart Icons
-  for (let i = 0; i < player.hp; i++) {
-      push();
-      translate(40 + i * 30, 55);
-      scale(1.5); 
-      fill(255, 50, 50);
-      stroke(200, 0, 0);
-      strokeWeight(1);
-      beginShape();
-      vertex(0, 0);
-      bezierVertex(-5, -5, -10, 0, 0, 10);
-      bezierVertex(10, 0, 5, -5, 0, 0);
-      endShape(CLOSE);
-      pop();
+  let heartCols = 6;
+  let heartSpacingX = 38;
+  let heartSpacingY = 28;
+  let heartBaseY = 52;
+  let heartScale = 1.35;
+  let totalHearts = max(0, floor(player.hp));
+  let heartRows = max(1, ceil(totalHearts / heartCols));
+  for (let row = 0; row < heartRows; row++) {
+      let heartsInRow = min(heartCols, totalHearts - row * heartCols);
+      let rowStartX = healthSection.cx - ((heartsInRow - 1) * heartSpacingX) / 2;
+      for (let col = 0; col < heartsInRow; col++) {
+          push();
+          translate(rowStartX + col * heartSpacingX, heartBaseY + row * heartSpacingY);
+          scale(heartScale);
+          fill(255, 50, 50);
+          stroke(200, 0, 0);
+          strokeWeight(1);
+          beginShape();
+          vertex(0, 0);
+          bezierVertex(-5, -5, -10, 0, 0, 10);
+          bezierVertex(10, 0, 5, -5, 0, 0);
+          endShape(CLOSE);
+          pop();
+      }
   }
 
-  // --- Middle Left: Ammo ---
+  // --- Ammo ---
+  let ammoSection = sectionMap.ammo;
   fill(200);
   noStroke();
-  text("AMMO", 250, 25);
+  textAlign(CENTER, CENTER);
+  text("AMMO", ammoSection.cx, 25);
   
-  // Bullet Icons
-  let maxCols = 10;
-  for (let i = 0; i < player.ammo; i++) {
-      let col = i % maxCols;
-      let row = floor(i / maxCols);
-      
-      push();
-      translate(260 + col * 15, 55 + row * 25);
-      fill(255, 215, 0); // Gold
-      stroke(200, 150, 0);
-      strokeWeight(1);
-      rect(0, 0, 8, 20, 2);
-      pop();
+  let ammoCols = 10;
+  let ammoSpacingX = 15;
+  let ammoSpacingY = 25;
+  let ammoBaseY = 52;
+  let totalAmmo = max(0, floor(player.ammo));
+  let ammoRows = max(1, ceil(totalAmmo / ammoCols));
+  for (let row = 0; row < ammoRows; row++) {
+      let bulletsInRow = min(ammoCols, totalAmmo - row * ammoCols);
+      let rowStartX = ammoSection.cx - ((bulletsInRow - 1) * ammoSpacingX) / 2;
+      for (let col = 0; col < bulletsInRow; col++) {
+          push();
+          translate(rowStartX + col * ammoSpacingX, ammoBaseY + row * ammoSpacingY);
+          fill(255, 215, 0);
+          stroke(200, 150, 0);
+          strokeWeight(1);
+          rect(0, 0, 8, 20, 2);
+          pop();
+      }
   }
   
-  // --- Middle Right: COINS ---
+  // --- Coins ---
+  let coinsSection = sectionMap.coins;
   fill(200);
   noStroke();
-  text("COINS", 500, 25);
+  textAlign(CENTER, CENTER);
+  text("COINS", coinsSection.cx, 25);
   
   fill(255, 215, 0);
   textSize(32);
-  text(player.coins, 500, 55);
+  text(player.coins, coinsSection.cx, 55);
 
-  // --- Right Section: Time ---
+  // --- Time ---
+  let timeSection = sectionMap.time;
   fill(200);
   textSize(16);
-  text("TIME", 700, 25);
+  text("TIME", timeSection.cx, 25);
   
   fill(255);
   textSize(32);
-  text(nf(remaining, 0, 1), 700, 55);
+  text(nf(remaining, 0, 1), timeSection.cx, 55);
   
-  // Level Indicator
-  fill(255, 255, 0);
+  // --- Mode ---
+  let modeSection = sectionMap.mode;
+  fill(200);
   textSize(14);
-  textAlign(RIGHT, TOP);
-  text("DIFFICULTY: " + difficulty, gameWidth - 10, 10);
+  text("MODE", modeSection.cx, 25);
+  fill(255, 255, 0);
+  textSize(22);
+  text(difficulty, modeSection.cx, 55);
   
-  // Shield Status
+  // --- Shield ---
   if (player.hasShield) {
+      let shieldSection = sectionMap.shield;
       fill(0, 255, 255);
       textSize(14);
       textAlign(CENTER, CENTER);
-      text("SHIELD", 820, 25);
+      text("SHIELD", shieldSection.cx, 25);
       
       noFill();
       stroke(0, 255, 255);
       strokeWeight(2);
-      ellipse(820, 55, 40, 40);
+      ellipse(shieldSection.cx, 55, 40, 40);
       fill(0, 255, 255, 100);
       noStroke();
-      ellipse(820, 55, 30, 30);
+      ellipse(shieldSection.cx, 55, 30, 30);
   }
   
-  // Special Weapon Status
+  // --- Special Weapon ---
   if (player.currentSpecialWeapon) {
+      let specialSection = sectionMap.special;
       let label = "SPECIAL";
       if (player.currentSpecialWeapon === WEAPON_TYPES.DONGFENG) label = "MISSILE";
       else if (player.currentSpecialWeapon === WEAPON_TYPES.LOITERING) label = "DRONE";
@@ -6478,32 +7481,32 @@ function drawStatusBar() {
       fill(255, 100, 0);
       textSize(14);
       textAlign(CENTER, CENTER);
-      text(label, 900, 25);
+      text(label, specialSection.cx, 25);
       
       noFill();
       stroke(255, 100, 0);
       strokeWeight(2);
-      rect(900, 55, 50, 50, 5);
+      rect(specialSection.cx, 55, 50, 50, 5);
       
       let icon = images && images.weaponShop ? images.weaponShop[player.currentSpecialWeapon] : null;
       if (icon && icon.width > 0) {
           imageMode(CENTER);
           // Fit within 40x40 box
           let ratio = min(40 / icon.width, 40 / icon.height);
-          image(icon, 900, 55, icon.width * ratio, icon.height * ratio);
+          image(icon, specialSection.cx, 55, icon.width * ratio, icon.height * ratio);
       } else {
           fill(255, 100, 0);
           textSize(20);
           textStyle(BOLD);
           noStroke();
-          text("X", 900, 55);
+          text("X", specialSection.cx, 55);
           textStyle(NORMAL);
       }
       
       fill(255, 180, 80);
       textSize(14);
       noStroke();
-      text("x" + (player.specialWeaponCount || 0), 900, 90);
+      text("x" + (player.specialWeaponCount || 0), specialSection.cx, 90);
   }
 
 }
@@ -6565,6 +7568,7 @@ function drawControlGuidePanel() {
 }
 
 function drawGameOver() {
+  loadEndingVideos();
   push();
   let videoReady = ensureVideoPlayable(defeatVideo);
   let source = videoReady ? defeatVideo : (defeatImg ? defeatImg : gameCoverImg);
@@ -6606,6 +7610,7 @@ function drawGameOver() {
 }
 
 function drawWin() {
+  loadEndingVideos();
   push();
   let videoReady = ensureVideoPlayable(victoryVideo);
   let source = videoReady ? victoryVideo : (victoryImg ? victoryImg : gameCoverImg);
@@ -6680,6 +7685,7 @@ function togglePause() {
 }
 
 function enterGameplayStateAfterReset() {
+    loadGameplayAssets();
     if (tutorialSystem && tutorialSystem.activeTutorial === 'intro') {
         gameState = 'TUTORIAL';
         pauseStartTime = millis();
@@ -6733,6 +7739,10 @@ function keyPressed() {
                totalPausedTime += millis() - pauseStartTime;
            }
        }
+  } else if (key === 'f' || key === 'F') {
+      if (gameState === 'PLAY') {
+          tryOpenNearbyBuildingInteraction();
+      }
   } else if (keyCode === ESCAPE) {
       if (gameState === 'PLAY' || gameState === 'PAUSED') {
           togglePause();
@@ -6740,6 +7750,12 @@ function keyPressed() {
           gameState = 'MENU';
       } else if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
           closeShopFromUI();
+      } else if (gameState === 'AUTH') {
+          if (authUI && typeof authUI.requestClose === 'function') authUI.requestClose();
+          else {
+              gameState = 'MENU';
+              if (authUI) authUI.hide();
+          }
       }
   } else if (key === 'x' || key === 'X') {
       if (gameState === 'PLAY') {
@@ -6760,20 +7776,14 @@ function keyPressed() {
           enterGameplayStateAfterReset();
       }
   }
-
-  if (gameState === 'SHOP' || gameState === 'MENU_SHOP' || gameState === 'AUTH') {
-      if (gameState === 'SHOP' && keyCode === 70) {
-          closeShopFromUI();
-      }
-      if (gameState === 'AUTH' && keyCode === ESCAPE) {
-          gameState = 'MENU';
-          authUI.hide();
-      }
-  }
 }
 
 async function mousePressed() {
     if (gameState === 'SHOP' || gameState === 'MENU_SHOP') {
+        if (gameState === 'SHOP' && shopBuilding && (shopBuilding.type === 'hospital' || shopBuilding.type === 'armory')) {
+            handleBuildingInteractionClick();
+            return;
+        }
         shopUI.handleClick();
         return;
     }
@@ -6783,7 +7793,44 @@ async function mousePressed() {
         return;
     }
     
+    if (gameState === 'BOOT_LOADING') {
+        return;
+    }
+    
     if (gameState === 'MENU') {
+        if (menuAccountIconRect && mouseX >= menuAccountIconRect.x && mouseX <= menuAccountIconRect.x + menuAccountIconRect.w && mouseY >= menuAccountIconRect.y && mouseY <= menuAccountIconRect.y + menuAccountIconRect.h) {
+            menuAccountOpen = !menuAccountOpen;
+            return;
+        }
+        if (menuAccountOpen) {
+            let inPopup = menuAccountPopupRect &&
+                mouseX >= menuAccountPopupRect.x && mouseX <= menuAccountPopupRect.x + menuAccountPopupRect.w &&
+                mouseY >= menuAccountPopupRect.y && mouseY <= menuAccountPopupRect.y + menuAccountPopupRect.h;
+            if (menuAccountPrimaryButtonRect &&
+                mouseX >= menuAccountPrimaryButtonRect.x && mouseX <= menuAccountPrimaryButtonRect.x + menuAccountPrimaryButtonRect.w &&
+                mouseY >= menuAccountPrimaryButtonRect.y && mouseY <= menuAccountPrimaryButtonRect.y + menuAccountPrimaryButtonRect.h) {
+                if (authUI && authUI.isLoggedIn()) {
+                    menuAccountOpen = false;
+                    authUI.logout();
+                } else {
+                    menuAccountOpen = false;
+                    await openMenuLoginDialog();
+                }
+                return;
+            }
+            if (menuAccountSecondaryButtonRect &&
+                mouseX >= menuAccountSecondaryButtonRect.x && mouseX <= menuAccountSecondaryButtonRect.x + menuAccountSecondaryButtonRect.w &&
+                mouseY >= menuAccountSecondaryButtonRect.y && mouseY <= menuAccountSecondaryButtonRect.y + menuAccountSecondaryButtonRect.h) {
+                menuAccountOpen = false;
+                return;
+            }
+            if (inPopup) {
+                return;
+            }
+            menuAccountOpen = false;
+            return;
+        }
+
         let layout = getMenuButtonLayout();
         let shopX = layout.shopX;
         let shopY = layout.shopY;
@@ -6821,17 +7868,12 @@ async function mousePressed() {
             
             // Check click on difficulty button
             if (abs(mouseX - width/2) < 140 && abs(mouseY - btnY) < 30) {
-                let backendOk = await isBackendAvailable();
-                if (!backendOk) {
-                    setStartGateMessage('Backend unavailable. Cannot start game now.');
+                if (difficultyStartPending) return;
+                difficultyStartPending = true;
+                let ready = await prepareGameplayStartFromDifficultySelect();
+                difficultyStartPending = false;
+                if (!ready) {
                     return;
-                }
-                if (authUI && authUI.isLoggedIn()) {
-                    let loaded = await refreshUserProgress();
-                    if (!loaded) {
-                        setStartGateMessage('Unable to load profile data. Please login again.');
-                        return;
-                    }
                 }
                 difficulty = d;
                 resetGame(true);
@@ -6915,9 +7957,11 @@ async function mousePressed() {
 
         if (gameState === 'PLAY') {
             if (mouseX >= gameViewX && mouseX <= gameViewX + gameWidth && mouseY >= statusHeight + gameViewY && mouseY <= statusHeight + gameViewY + gameHeight) {
-                if (!isPlayerControlLocked() && player.canFire()) {
+                if (!isPlayerControlLocked()) {
                     let target = getMouseWorldPos();
-                    player.fire(target.x, target.y);
+                    if (WEAPON_CONFIG[player.currentWeapon] && player.ammo >= WEAPON_CONFIG[player.currentWeapon].ammoCost) {
+                        player.fire(target.x, target.y);
+                    }
                 }
             }
         }
@@ -7277,3 +8321,4 @@ function drawInteractiveStatusIcon(x, y, size, img, type) {
     drawingContext.shadowBlur = 0;
     pop();
 }
+

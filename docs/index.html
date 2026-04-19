@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script defer src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js" crossorigin></script>
+    <script defer src="p5.min.js?v=20260416b"></script>
     <script>
       window.addEventListener('error', function (event) {
         var box = document.getElementById('boot-error-box');
@@ -44,22 +44,35 @@
         box.textContent = 'Promise Rejection: ' + (event.reason && event.reason.message ? event.reason.message : String(event.reason));
       });
     </script>
+    <script>
+      (function () {
+        try {
+          var savedApiBaseUrl = localStorage.getItem('apiBaseUrl');
+          if (!savedApiBaseUrl) return;
+          var savedUrl = new URL(savedApiBaseUrl, window.location.origin);
+          var currentHost = window.location.hostname;
+          var isCurrentLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+          if (!isCurrentLocal && savedUrl.hostname !== currentHost) {
+            localStorage.removeItem('apiBaseUrl');
+          }
+        } catch (err) {
+          localStorage.removeItem('apiBaseUrl');
+        }
+      })();
+    </script>
     
     
     
     <link rel="stylesheet" type="text/css" href="style.css">
-    <link rel="preconnect" href="//8.208.77.85" crossorigin>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
     <meta charset="utf-8" />
 
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js" as="script" crossorigin>
-    <link rel="preload" href="bundle.min.js?v=20260310e" as="script" crossorigin>
+    <link rel="preload" href="p5.min.js?v=20260416b" as="script">
+    <link rel="preload" href="bundle.min.js?v=20260416ae" as="script">
     <link rel="preload" href="style.css" as="style">
   </head>
   <body>
     <main>
     </main>
-    <script defer src="bundle.min.js?v=20260310e"></script>
+    <script defer src="bundle.min.js?v=20260416ae"></script>
   </body>
 </html>

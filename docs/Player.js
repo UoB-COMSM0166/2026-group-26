@@ -55,6 +55,10 @@ class Player extends Vehicle {
         projectiles.push(new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon));
         // Schedule remaining shots
         this.startBurst(config.count - 1, config.burstDelay);
+    } else if (this.currentWeapon === WEAPON_TYPES.LASER) {
+        let laser = new Projectile(this.pos.x, this.pos.y, this.heading, this.currentWeapon);
+        laser.attachToEntity(this, this.length * 0.55);
+        projectiles.push(laser);
     } else if (this.currentWeapon === WEAPON_TYPES.MOLOTOV) {
         // Calculate velocity to reach target
         // tx, ty are World Coordinates (not Screen)
@@ -309,6 +313,7 @@ class Player extends Vehicle {
   
   display() {
     super.display();
+    this.drawHealthHearts();
     if (this.hasShield) {
         push();
         let isoPos = projectIso(this.pos.x, this.pos.y);
@@ -336,5 +341,33 @@ class Player extends Vehicle {
         
         pop();
     }
+  }
+
+  drawHealthHearts() {
+    push();
+    let isoPos = projectIso(this.pos.x, this.pos.y);
+    translate(isoPos.x, isoPos.y);
+
+    let heartCount = max(0, floor(this.hp));
+    let spacing = 14;
+    let startX = -((heartCount - 1) * spacing) / 2;
+    let yOffset = -(this.width || 20) / 2 - 24;
+
+    for (let i = 0; i < heartCount; i++) {
+      push();
+      translate(startX + i * spacing, yOffset);
+      scale(0.8);
+      fill(255, 50, 50);
+      stroke(200, 0, 0);
+      strokeWeight(1);
+      beginShape();
+      vertex(0, 0);
+      bezierVertex(-5, -5, -10, 0, 0, 10);
+      bezierVertex(10, 0, 5, -5, 0, 0);
+      endShape(CLOSE);
+      pop();
+    }
+
+    pop();
   }
 }

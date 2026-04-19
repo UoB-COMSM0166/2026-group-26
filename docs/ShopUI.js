@@ -621,6 +621,121 @@ class ShopUI {
         rect(btnX, btnY, btnW, btnH, 8);
     }
   }
+
+  drawHeartPreview(x, y, scaleFactor = 1.8) {
+      push();
+      translate(x, y);
+      scale(scaleFactor);
+      fill(255, 70, 70);
+      stroke(180, 0, 0);
+      strokeWeight(1.2);
+      beginShape();
+      vertex(0, 0);
+      bezierVertex(-5, -5, -10, 0, 0, 10);
+      bezierVertex(10, 0, 5, -5, 0, 0);
+      endShape(CLOSE);
+      pop();
+  }
+
+  drawSpeedometerPreview(x, y, previewW, previewH) {
+      let radius = min(previewW, previewH) * 0.28;
+      push();
+      translate(x, y + 8);
+      noFill();
+      stroke(255, 215, 90);
+      strokeWeight(5);
+      arc(0, 0, radius * 2, radius * 2, PI, TWO_PI);
+
+      for (let i = 0; i <= 4; i++) {
+          let angle = map(i, 0, 4, PI, TWO_PI);
+          let x1 = cos(angle) * radius * 0.72;
+          let y1 = sin(angle) * radius * 0.72;
+          let x2 = cos(angle) * radius * 0.94;
+          let y2 = sin(angle) * radius * 0.94;
+          stroke(255, 235, 170);
+          strokeWeight(2);
+          line(x1, y1, x2, y2);
+      }
+
+      stroke(255, 90, 90);
+      strokeWeight(4);
+      let needleAngle = TWO_PI - 0.55;
+      line(0, 0, cos(needleAngle) * radius * 0.8, sin(needleAngle) * radius * 0.8);
+      noStroke();
+      fill(255, 90, 90);
+      ellipse(0, 0, 10, 10);
+      pop();
+  }
+
+  drawAccelerationPreview(x, y, previewW) {
+      let trailW = min(14, previewW * 0.08);
+      push();
+      translate(x, y);
+      noStroke();
+      fill(255, 170, 70, 160);
+      rectMode(CENTER);
+      rect(-24, 0, trailW, 10, 4);
+      rect(-10, 0, trailW + 4, 14, 4);
+      fill(255, 215, 90);
+      beginShape();
+      vertex(-8, -18);
+      vertex(18, -18);
+      vertex(18, -30);
+      vertex(42, 0);
+      vertex(18, 30);
+      vertex(18, 18);
+      vertex(-8, 18);
+      endShape(CLOSE);
+      pop();
+  }
+
+  drawUpgradePreview(x, y, item, previewW, previewH) {
+      if (item.id === 'maxHp') {
+          this.drawHeartPreview(x, y + 2, 2.1);
+          return;
+      }
+
+      if (item.id === 'maxAmmo') {
+          if (typeof bulletIconImg !== 'undefined' && bulletIconImg && bulletIconImg.width > 0) {
+              push();
+              imageMode(CENTER);
+              let maxW = max(24, previewW * 0.32);
+              let ratio = min(maxW / bulletIconImg.width, (previewH * 0.58) / bulletIconImg.height);
+              image(bulletIconImg, x, y, bulletIconImg.width * ratio, bulletIconImg.height * ratio);
+              pop();
+          } else {
+              push();
+              translate(x, y);
+              rectMode(CENTER);
+              noStroke();
+              fill(212, 170, 88);
+              rect(0, 0, 18, 42, 8);
+              fill(255, 225, 120);
+              rect(0, -14, 18, 12, 6);
+              fill(120, 70, 30);
+              rect(0, 15, 18, 8, 3);
+              pop();
+          }
+          return;
+      }
+
+      if (item.id === 'topSpeed') {
+          this.drawSpeedometerPreview(x, y, previewW, previewH);
+          return;
+      }
+
+      if (item.id === 'acceleration') {
+          this.drawAccelerationPreview(x, y, previewW);
+          return;
+      }
+
+      fill(255, 215, 0);
+      ellipse(x, y, 28, 28);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      textSize(18);
+      text("+", x, y);
+  }
   
   drawItemPreview(x, y, item, type, previewW = 0, previewH = 0) {
       if (type === 'vehicle') {
@@ -656,12 +771,7 @@ class ShopUI {
           rect(0, 9, 9, 9);
           pop();
       } else {
-          fill(255, 215, 0);
-          ellipse(x, y, 28, 28);
-          fill(0);
-          textAlign(CENTER, CENTER);
-          textSize(18);
-          text("+", x, y);
+          this.drawUpgradePreview(x, y, item, previewW, previewH);
       }
   }
 
@@ -685,8 +795,8 @@ class ShopUI {
               damage = `Damage: ${cfg.damage} x${cfg.count} burst`;
               attack = "Attack: Burst fire, medium-long range";
           } else if (item.id === WEAPON_TYPES.LASER) {
-              damage = `Damage: ${cfg.damage}`;
-              attack = "Attack: Piercing beam, long range";
+              damage = `Damage: ${cfg.damage}/s`;
+              attack = "Attack: Sustained beam, blocked by cover";
           } else if (item.id === WEAPON_TYPES.MOLOTOV) {
               damage = `Damage: ${cfg.damage}/tick, radius ${cfg.areaRadius}`;
               attack = "Attack: Throw + area fire burn";

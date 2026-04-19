@@ -57,11 +57,20 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function normalizeProgress(payload) {
-  const coins = Number.isInteger(payload.coins) && payload.coins >= 0 ? payload.coins : 0;
-  const unlockedWeapons = Array.isArray(payload.unlockedWeapons) ? payload.unlockedWeapons : ['pistol'];
-  const unlockedSpecialWeapons = Array.isArray(payload.unlockedSpecialWeapons) ? payload.unlockedSpecialWeapons : [];
-  const upgradeStateRaw = payload.upgradeState && typeof payload.upgradeState === 'object' ? payload.upgradeState : {};
+function normalizeProgress(payload, existingRow = null) {
+  const existingProgress = existingRow ? progressToClient(existingRow) : null;
+  const coins = Number.isInteger(payload.coins) && payload.coins >= 0
+    ? payload.coins
+    : (existingProgress ? existingProgress.coins : 0);
+  const unlockedWeapons = Array.isArray(payload.unlockedWeapons)
+    ? payload.unlockedWeapons
+    : (existingProgress ? existingProgress.unlockedWeapons : ['pistol']);
+  const unlockedSpecialWeapons = Array.isArray(payload.unlockedSpecialWeapons)
+    ? payload.unlockedSpecialWeapons
+    : (existingProgress ? existingProgress.unlockedSpecialWeapons : []);
+  const upgradeStateRaw = payload.upgradeState && typeof payload.upgradeState === 'object'
+    ? payload.upgradeState
+    : (existingProgress ? existingProgress.upgradeState : {});
   const upgradeState = {
     maxHp: Math.max(0, Math.min(2, Number(upgradeStateRaw.maxHp) || 0)),
     maxAmmo: Math.max(0, Math.min(5, Number(upgradeStateRaw.maxAmmo) || 0)),
@@ -583,7 +592,12 @@ app.get('/api/progress', authMiddleware, async (req, res) => {
 
 app.put('/api/progress', authMiddleware, async (req, res) => {
   try {
-    const normalized = normalizeProgress(req.body || {});
+    const existingRow = await getUserProgressRow(req.user.userId);
+    if (!existingRow) {
+      res.status(404).json({ error: '未找到进度' });
+      return;
+    }
+    const normalized = normalizeProgress(req.body || {}, existingRow);
     await run(
       "UPDATE player_progress SET coins = ?, unlocked_weapons = ?, unlocked_special_weapons = ?, upgrade_state = ?, updated_at = datetime('now') WHERE user_id = ?",
       [

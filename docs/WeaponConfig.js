@@ -47,21 +47,27 @@ const WEAPON_CONFIG = {
     color: [255, 200, 0],
     lifespan: 70,
     spread: 0.05,
-    count: 3, // Burst count
+    count: 5, // Burst count
     burstDelay: 5, // Frames between burst shots
-    description: "Fires 3-round bursts rapidly. Excellent for mid-range combat."
+    description: "Fires 5-round bursts rapidly. Excellent for mid-range combat."
   },
   [WEAPON_TYPES.LASER]: {
     name: 'Laser Gun',
     type: 'basic',
-    damage: 2, // Higher damage?
-    speed: 25,
-    cooldown: 1000,
+    damage: 12, // Displayed as per-second beam damage
+    damagePerFrame: 0.2,
+    speed: 0,
+    cooldown: 2000,
     ammoCost: 1,
-    color: [0, 255, 255],
-    lifespan: 60,
+    color: [90, 200, 255],
+    lifespan: 120,
+    duration: 120,
+    beamWidth: 26,
+    growFrames: 6,
+    fadeFrames: 12,
+    maxLength: 2200,
     penetrates: true,
-    description: "Fires a high-energy beam that pierces through multiple enemies."
+    description: "Projects a sustained blue laser beam for 2 seconds. Damages enemies continuously until cover blocks it."
   },
   [WEAPON_TYPES.MOLOTOV]: {
     name: 'Molotov',

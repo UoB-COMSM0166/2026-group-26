@@ -6,6 +6,7 @@ class AuthUI {
     this.token = localStorage.getItem('authToken');
     this.user = JSON.parse(localStorage.getItem('user') || 'null');
     this.pendingVerificationEmail = '';
+    this.onCloseRequested = null;
   }
 
   resolveApiBaseUrl() {
@@ -65,6 +66,13 @@ class AuthUI {
     }
   }
 
+  requestClose() {
+    this.hide();
+    if (typeof this.onCloseRequested === 'function') {
+      this.onCloseRequested();
+    }
+  }
+
   render() {
     if (!this.container) return;
     this.container.html('');
@@ -72,6 +80,12 @@ class AuthUI {
     let box = createDiv('');
     box.parent(this.container);
     box.addClass('auth-box');
+    box.style('position', 'relative');
+
+    let closeBtn = createButton('✕');
+    closeBtn.parent(box);
+    closeBtn.addClass('auth-close-btn');
+    closeBtn.mousePressed(() => this.requestClose());
 
     let title = createElement('h2', this.getTitle());
     title.parent(box);

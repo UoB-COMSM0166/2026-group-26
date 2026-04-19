@@ -51,6 +51,16 @@ class Building {
     return { x: this.pos.x, y: this.pos.y };
   }
 
+  getInteractionCenter() {
+    let displayImg = this.getDisplayImage();
+    if (displayImg) {
+      let drawSize = this.getImageDrawSize(displayImg);
+      // Interactions should happen near the building footprint rather than the roof center.
+      return { x: this.pos.x, y: this.pos.y + drawSize.h * 0.08 };
+    }
+    return { x: this.pos.x, y: this.pos.y };
+  }
+
   display() {
     push();
     let isoPos = projectIso(this.pos.x, this.pos.y);
@@ -362,6 +372,18 @@ class Building {
       return this.type === 'hospital' || this.type === 'armory';
   }
 
+  getInteractionRange(player) {
+      let size = this.getCollisionSize();
+      let playerRadius = player && Number.isFinite(player.r) ? player.r : 20;
+      return max(size.w, size.h) * 0.6 + playerRadius + 36;
+  }
+
+  isPlayerInRange(player) {
+      if (!player || !this.isInteractable()) return false;
+      let center = this.getInteractionCenter();
+      return dist(player.pos.x, player.pos.y, center.x, center.y) <= this.getInteractionRange(player);
+  }
+
   getDisplayName() {
       if (this.label) return this.label;
       if (this.type === 'hospital') return 'Hospital';
@@ -370,21 +392,51 @@ class Building {
       return 'Residence';
   }
 
+  showNameLabel() {
+      let size = this.getCollisionSize();
+      let center = this.getCollisionCenter();
+      let label = this.getDisplayName();
+      if (!label) return;
+
+      push();
+      let isoPos = projectIso(center.x, center.y);
+      let offset = max(size.w, size.h) * 0.6 + 8;
+      translate(isoPos.x, isoPos.y - offset);
+      rectMode(CENTER);
+      textAlign(CENTER, CENTER);
+      textSize(12);
+
+      let paddingX = 14;
+      let boxW = max(96, textWidth(label) + paddingX * 2);
+      fill(0, 0, 0, 170);
+      noStroke();
+      rect(0, 0, boxW, 24, 6);
+
+      fill(255);
+      text(label, 0, 1);
+      pop();
+  }
+
   showTooltip(player) {
+      if (!player || !this.isPlayerInRange(player)) return;
       let size = this.getCollisionSize();
       push();
       let center = this.getCollisionCenter();
       let isoPos = projectIso(center.x, center.y);
-      let offset = max(size.w, size.h) * 0.6 + 10;
+      let offset = max(size.w, size.h) * 0.6 + 36;
       translate(isoPos.x, isoPos.y - offset);
       fill(0, 0, 0, 200);
       noStroke();
       rectMode(CENTER);
-      let lines = [this.getDisplayName()];
+      let lines = [];
       if (this.isInteractable()) {
           lines.push("Press F to Interact");
       }
-      let boxH = lines.length === 1 ? 24 : 40;
+      if (lines.length === 0) {
+          pop();
+          return;
+      }
+      let boxH = 24;
       rect(0, 0, 160, boxH, 5);
       
       fill(255);
