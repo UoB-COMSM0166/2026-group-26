@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const sourceDir = path.join('docs', 'scripts', 'src');
+const distDir = path.join('docs', 'scripts', 'dist');
+
 const files = [
   'utils.js',
   'WeaponConfig.js',
@@ -20,10 +23,11 @@ const files = [
 
 let bundleContent = '';
 for (const file of files) {
-  bundleContent += fs.readFileSync(path.join('docs', file), 'utf8') + '\n';
+  bundleContent += fs.readFileSync(path.join(sourceDir, file), 'utf8') + '\n';
 }
 
-fs.writeFileSync(path.join('docs', 'bundle.js'), bundleContent);
-fs.writeFileSync(path.join('docs', 'bundle.min.js'), bundleContent); // Just copy for now, or minified if needed
+fs.mkdirSync(distDir, { recursive: true });
+fs.writeFileSync(path.join(distDir, 'bundle.js'), bundleContent);
+fs.writeFileSync(path.join(distDir, 'bundle.min.js'), bundleContent); // Just copy for now, or minified if needed
 
 console.log('Bundle created successfully!');

@@ -4450,53 +4450,53 @@ const BOOT_LOADING_MIN_MS = 1600;
 const BOOT_LOADING_MAX_MS = 30000;
 
 const CITY_BUILDING_FILES = [
-  { file: 'Anna_house.png', label: 'Residence' },
-  { file: 'Ben_house.png', label: 'Residence' },
-  { file: 'David_house.png', label: 'Residence' },
-  { file: 'Emma_house.png', label: 'Residence' },
-  { file: 'Grace_house.png', label: 'Residence' },
-  { file: 'Jack_house.png', label: 'Residence' },
-  { file: 'Leo_house.png', label: 'Residence' },
-  { file: 'Lily_house.png', label: 'Residence' },
-  { file: 'Lucy_house.png', label: 'Residence' },
-  { file: 'Mike_house.png', label: 'Residence' },
-  { file: 'Sarah_house.png', label: 'Residence' },
-  { file: 'Tom_house.png', label: 'Residence' },
-  { file: 'cafe.webp', label: 'Cafe' },
-  { file: 'garden.webp', label: 'Garden' },
-  { file: 'school.webp', label: 'School' },
-  { file: 'supermarket.webp', label: 'Supermarket' }
+  { file: 'Anna_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Ben_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'David_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Emma_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Grace_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Jack_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Leo_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Lily_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Lucy_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Mike_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Sarah_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'Tom_house.png', label: 'Residence', folder: 'residential' },
+  { file: 'cafe.webp', label: 'Cafe', folder: '' },
+  { file: 'garden.webp', label: 'Garden', folder: '' },
+  { file: 'school.webp', label: 'School', folder: '' },
+  { file: 'supermarket.webp', label: 'Supermarket', folder: '' }
 ];
 
 function preloadAssets() {
   // Keep boot-time requests minimal: only map base textures are required to render
   // the initial world buffer. UI, shop, gameplay props, and ending videos load later.
-  images.grass = loadImage('icon/grass_1.png');
-  images.grassAlt1 = loadImage('icon/Grass.png');
-  images.asphalt = loadImage('icon/asphalt.png');
-  images.pavement = loadImage('icon/pavement_tile_1.png');
-  images.pavementAlt = loadImage('icon/pavement.png');
+  images.grass = loadImage('icon/terrain/grass_1.png');
+  images.grassAlt1 = loadImage('icon/terrain/Grass.png');
+  images.asphalt = loadImage('icon/terrain/asphalt.png');
+  images.pavement = loadImage('icon/terrain/pavement_tile_1.png');
+  images.pavementAlt = loadImage('icon/terrain/pavement.png');
   
-  images.sand = loadImage('icon/sand.png'); 
+  images.sand = loadImage('icon/terrain/sand.png'); 
   
   // Road Tiles (Autotiling)
-  images.roadV = loadImage('icon/road_1.png'); 
-  images.roadH = loadImage('icon/road_2.png');
-  images.roadVAlt = loadImage('icon/road_crosswalk_1.png');
-  images.roadHAlt = loadImage('icon/road_crosswalk_2.png');
-  images.cross = loadImage('icon/road_cross.png');
+  images.roadV = loadImage('icon/roads/road_1.png'); 
+  images.roadH = loadImage('icon/roads/road_2.png');
+  images.roadVAlt = loadImage('icon/roads/road_crosswalk_1.png');
+  images.roadHAlt = loadImage('icon/roads/road_crosswalk_2.png');
+  images.cross = loadImage('icon/roads/road_cross.png');
   
   // Turns
-  images.turnD = loadImage('icon/road_turn_d.png');
-  images.turnL = loadImage('icon/road_turn_l.png');
-  images.turnR = loadImage('icon/road_turn_r.png');
-  images.turnU = loadImage('icon/road_turn_up.png');
+  images.turnD = loadImage('icon/roads/road_turn_d.png');
+  images.turnL = loadImage('icon/roads/road_turn_l.png');
+  images.turnR = loadImage('icon/roads/road_turn_r.png');
+  images.turnU = loadImage('icon/roads/road_turn_up.png');
   
   // T-Junctions
-  images.tCross1 = loadImage('icon/road_t_cross_1.png');
-  images.tCross2 = loadImage('icon/road_t_cross_2.png');
-  images.tCross3 = loadImage('icon/road_t_cross_3.png');
-  images.tCross4 = loadImage('icon/road_t_cross_4.png');
+  images.tCross1 = loadImage('icon/roads/road_t_cross_1.png');
+  images.tCross2 = loadImage('icon/roads/road_t_cross_2.png');
+  images.tCross3 = loadImage('icon/roads/road_t_cross_3.png');
+  images.tCross4 = loadImage('icon/roads/road_t_cross_4.png');
 
   images.grassVariants = [images.grass, images.grassAlt1];
   images.pavementVariants = [images.pavement, images.pavementAlt, images.asphalt];
@@ -4521,47 +4521,47 @@ function createMutedVideoAsset(path, preloadMode = 'metadata') {
 
 function ensureCoverMedia() {
   if (!gameCoverVideo) {
-    gameCoverVideo = createMutedVideoAsset('icon/game_cover_video.mp4', 'auto');
+    gameCoverVideo = createMutedVideoAsset('icon/videos/game_cover_video.mp4', 'auto');
   }
 }
 
 function loadDeferredMenuVisualAssets() {
   if (deferredMenuVisualsRequested) return;
   deferredMenuVisualsRequested = true;
-  gameCoverImg = loadImage('icon/game_cover.webp');
-  startBtnImg = loadImage('icon/start.webp');
-  exitBtnImg = loadImage('icon/exit.webp');
-  shopBtnImg = loadImage('icon/basic/store_mainpage.webp');
-  settingIconImg = loadImage('icon/basic/setting.webp');
-  helpIconImg = loadImage('icon/basic/help.webp');
+  gameCoverImg = loadImage('icon/ui/game_cover.webp');
+  startBtnImg = loadImage('icon/ui/start.webp');
+  exitBtnImg = loadImage('icon/ui/exit.webp');
+  shopBtnImg = loadImage('icon/ui/store_mainpage.webp');
+  settingIconImg = loadImage('icon/ui/setting.webp');
+  helpIconImg = loadImage('icon/ui/help.webp');
 }
 
 
 function loadShopSupportAssets() {
   if (shopSupportAssetsRequested) return;
   shopSupportAssetsRequested = true;
-  shopBoardImg = loadImage('icon/shop_board.webp');
-  bulletIconImg = loadImage('icon/basic/bullet.webp');
+  shopBoardImg = loadImage('icon/ui/shop_board.webp');
+  bulletIconImg = loadImage('icon/ui/bullet.webp');
   controlKeyImgs = {
-    W: loadImage('icon/basic/keyboard_W.png'),
-    A: loadImage('icon/basic/keyboard_A.png'),
-    S: loadImage('icon/basic/keyboard_S.png'),
-    D: loadImage('icon/basic/keyboard_D.png'),
-    X: loadImage('icon/basic/keyboard_X.png'),
-    UP: loadImage('icon/basic/keyboard_up.png'),
-    DOWN: loadImage('icon/basic/keyboard_down.png'),
-    LEFT: loadImage('icon/basic/keyboard_left.png'),
-    RIGHT: loadImage('icon/basic/keyboard_right.png')
+    W: loadImage('icon/controls/keyboard_W.png'),
+    A: loadImage('icon/controls/keyboard_A.png'),
+    S: loadImage('icon/controls/keyboard_S.png'),
+    D: loadImage('icon/controls/keyboard_D.png'),
+    X: loadImage('icon/controls/keyboard_X.png'),
+    UP: loadImage('icon/controls/keyboard_up.png'),
+    DOWN: loadImage('icon/controls/keyboard_down.png'),
+    LEFT: loadImage('icon/controls/keyboard_left.png'),
+    RIGHT: loadImage('icon/controls/keyboard_right.png')
   };
   images.weaponShop = {
-    [WEAPON_TYPES.PISTOL]: loadImage('icon/WEAPON/pistol.webp'),
-    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/WEAPON/short_gun.webp'),
-    [WEAPON_TYPES.RIFLE]: loadImage('icon/WEAPON/assault_rifle.webp'),
-    [WEAPON_TYPES.LASER]: loadImage('icon/WEAPON/laser_gun.webp'),
-    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/WEAPON/molotov.webp'),
-    [WEAPON_TYPES.DONGFENG]: loadImage('icon/WEAPON/DF.webp'),
-    [WEAPON_TYPES.LOITERING]: loadImage('icon/WEAPON/drone.webp'),
-    [WEAPON_TYPES.ATOMIC]: loadImage('icon/WEAPON/nuke.webp')
+    [WEAPON_TYPES.PISTOL]: loadImage('icon/weapons/pistol.webp'),
+    [WEAPON_TYPES.SHOTGUN]: loadImage('icon/weapons/short_gun.webp'),
+    [WEAPON_TYPES.RIFLE]: loadImage('icon/weapons/assault_rifle.webp'),
+    [WEAPON_TYPES.LASER]: loadImage('icon/weapons/laser_gun.webp'),
+    [WEAPON_TYPES.MOLOTOV]: loadImage('icon/weapons/molotov.webp'),
+    [WEAPON_TYPES.DONGFENG]: loadImage('icon/weapons/DF.webp'),
+    [WEAPON_TYPES.LOITERING]: loadImage('icon/weapons/drone.webp'),
+    [WEAPON_TYPES.ATOMIC]: loadImage('icon/weapons/nuke.webp')
   };
 }
 
@@ -4569,33 +4569,35 @@ function loadGameplayAssets() {
   if (gameplayAssetsRequested) return;
   gameplayAssetsRequested = true;
   loadShopSupportAssets();
-  hospitalImg = loadImage('icon/BUILDING/hospital.webp');
-  armoryImg = loadImage('icon/BUILDING/arms.webp');
-  images.tree1 = loadImage('icon/tree_1.png');
-  images.tree2 = loadImage('icon/tree 2.png');
-  images.tree3 = loadImage('icon/tree 3.png');
-  images.tree4 = loadImage('icon/tree_4.png');
-  images.tree5 = loadImage('icon/tree_5.png');
-  images.pine1 = loadImage('icon/Pine.png');
-  images.pine2 = loadImage('icon/Pine_2.png');
-  images.rock1 = loadImage('icon/stone_1.png');
-  images.rock2 = loadImage('icon/stone_2.png');
-  images.rock3 = loadImage('icon/stone_3.png');
-  images.rock4 = loadImage('icon/stone_4.png');
-  images.rock5 = loadImage('icon/stone_5.png');
-  images.rock6 = loadImage('icon/stone_6.png');
-  images.bush1 = loadImage('icon/bush_1.png');
-  images.bush2 = loadImage('icon/bush_2.png');
-  images.bush3 = loadImage('icon/bush_3.png');
-  images.bush4 = loadImage('icon/bush_4.png');
-  images.bush5 = loadImage('icon/bush_5.png');
-  images.bush6 = loadImage('icon/bush_6.png');
-  images.bush7 = loadImage('icon/bush_7.png');
-  images.bush8 = loadImage('icon/bush_8.png');
-  images.police = loadImage('icon/BUILDING/police_dept.webp');
+  hospitalImg = loadImage('icon/buildings/hospital.webp');
+  armoryImg = loadImage('icon/buildings/arms.webp');
+  images.tree1 = loadImage('icon/nature/trees/tree_1.png');
+  images.tree2 = loadImage('icon/nature/trees/tree_2.png');
+  images.tree3 = loadImage('icon/nature/trees/tree_3.png');
+  images.tree4 = loadImage('icon/nature/trees/tree_4.png');
+  images.tree5 = loadImage('icon/nature/trees/tree_5.png');
+  images.pine1 = loadImage('icon/nature/trees/Pine.png');
+  images.pine2 = loadImage('icon/nature/trees/Pine_2.png');
+  images.rock1 = loadImage('icon/nature/rocks/stone_1.png');
+  images.rock2 = loadImage('icon/nature/rocks/stone_2.png');
+  images.rock3 = loadImage('icon/nature/rocks/stone_3.png');
+  images.rock4 = loadImage('icon/nature/rocks/stone_4.png');
+  images.rock5 = loadImage('icon/nature/rocks/stone_5.png');
+  images.rock6 = loadImage('icon/nature/rocks/stone_6.png');
+  images.bush1 = loadImage('icon/nature/bushes/bush_1.png');
+  images.bush2 = loadImage('icon/nature/bushes/bush_2.png');
+  images.bush3 = loadImage('icon/nature/bushes/bush_3.png');
+  images.bush4 = loadImage('icon/nature/bushes/bush_4.png');
+  images.bush5 = loadImage('icon/nature/bushes/bush_5.png');
+  images.bush6 = loadImage('icon/nature/bushes/bush_6.png');
+  images.bush7 = loadImage('icon/nature/bushes/bush_7.png');
+  images.bush8 = loadImage('icon/nature/bushes/bush_8.png');
+  images.police = loadImage('icon/buildings/police_dept.webp');
   images.cityBuildings = [];
   for (let f of CITY_BUILDING_FILES) {
-    images.cityBuildings.push({ img: loadImage('icon/BUILDING/' + f.file), label: f.label });
+    let basePath = 'icon/buildings/';
+    let relativePath = f.folder ? (f.folder + '/' + f.file) : f.file;
+    images.cityBuildings.push({ img: loadImage(basePath + relativePath), label: f.label });
   }
   images.trees = [images.tree1, images.tree2, images.tree3, images.tree4, images.tree5, images.pine1, images.pine2];
   images.rocks = [images.rock1, images.rock2, images.rock3, images.rock4, images.rock5, images.rock6];
@@ -4605,8 +4607,8 @@ function loadGameplayAssets() {
 function loadEndingVideos() {
   if (endingVideosRequested) return;
   endingVideosRequested = true;
-  defeatVideo = createMutedVideoAsset('icon/basic/defeat.mp4', 'metadata');
-  victoryVideo = createMutedVideoAsset('icon/basic/victory.mp4', 'metadata');
+  defeatVideo = createMutedVideoAsset('icon/videos/defeat.mp4', 'metadata');
+  victoryVideo = createMutedVideoAsset('icon/videos/victory.mp4', 'metadata');
 }
 
 function isMapTextureReady(img) {
