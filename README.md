@@ -99,7 +99,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 
 ## Evaluation
 
-### **Heuristic Evaluation**
+### **Heuristic Evaluation** (week7)
 | **Interface** | **Issue** | **Heuristics** | **Frequency 0 (rare) to 4 (common)** | **Impact 0 (easy) to difficult (4)** | **Persistence (once) to 4 (repeated)** | **Severity** |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Game play interface** | Vehicle color contrast could be more noticeable, and drift trajectory highlighted | Visibility of system status | 2 | 1 | 3 | 2 |
@@ -135,7 +135,7 @@ Essential interactive elements like player vehicles and shields blend into the b
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for all players.
 
 
-### Quantitative Evaluation (as of week8)
+### Quantitative Evaluation (week8)
 |                     | User 1  | User 2  | User 3  | User 4  | User 5  | User 6 | User 7  | Average  |
 | ------------------- | ------- | ------- | ------- | ------- | ------- | ------ | ------- | -------- |
 | easy SUS score      | 55      | 50      | 62.5    | 95      | 55      | 50     | 52.5    | 60       |
