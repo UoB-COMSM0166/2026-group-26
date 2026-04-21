@@ -108,6 +108,11 @@ The shop flow follows the same layered pattern. Once the player opens the shop, 
 <p align="center">
 <img width="1407" height="1059" alt="Sequence Diagram" src="https://github.com/user-attachments/assets/7bdca271-2d6f-4175-a46c-c3c77585ced4" />
 
+---
+
+### Implementation
+
+
 
 ### Evaluation
 
@@ -238,17 +243,17 @@ GROUP PHOTO.
 <img width="1707" height="1280" alt="image" src="https://github.com/user-attachments/assets/ac7c8d00-a52d-4c9e-89f2-0bc5ce44d51c" />
 
 
--Meb1：Li Ka Fai; Email: gavins092590@gmail.com; Role：
+-Meb1：Li Ka Fai; Email: gavins092590@gmail.com; Role：Game Designer
 
--Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：
+-Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：Project Manager
 
--Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：
+-Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：Writer
 
--Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：
+-Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：Coder
 
--Meb5：FuQiuting; Email：rm25551@bristol.ac.uk; Role：
+-Meb5：FuQiuting; Email：rm25551@bristol.ac.uk; Role：Tester
 
--Meb6：Jizhe Jin; Email：hy25163@bristol.ac.uk;  Role：
+-Meb6：Jizhe Jin; Email：hy25163@bristol.ac.uk;  Role：Visual Designer
 
 ## Project Report
 
@@ -266,7 +271,6 @@ GROUP PHOTO.
 
 - 15% ~750 words 
 - System architecture. Class diagrams, behavioural diagrams.
-
 
 ### Implementation
 
