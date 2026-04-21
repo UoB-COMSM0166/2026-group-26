@@ -1,5 +1,3 @@
-<img width="2665" height="2684" alt="Class Diagram" src="https://github.com/user-attachments/assets/3223f853-aaba-44d9-98dd-210809908ac1" />Play the game here: https://uob-comsm0166.github.io/2026-group-26/
-
 # 2026-group-26
 2026 COMSM0166 group 26
 
