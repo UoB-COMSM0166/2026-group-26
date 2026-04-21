@@ -43,7 +43,7 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 | Early stage diagram design |
 | :---: |
-| <img width="793" height="414" alt="UCD" src="https://github.com/user-attachments/assets/5b7ae93f-2a12-4ed0-8b65-44d195c51a46" />|
+| <img width="1737" height="906" alt="img" src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" />|
 
 
 #### List of Stakeholders
