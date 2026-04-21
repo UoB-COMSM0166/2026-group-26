@@ -54,7 +54,38 @@ async function ensureColumn(tableName, columnName, columnDef) {
   }
 }
 
-async function initDb() {
+async function ensureMigrationsTable() {
+  await run(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+}
+
+async function hasMigration(version) {
+  const row = await get('SELECT version FROM schema_migrations WHERE version = ?', [version]);
+  return Boolean(row);
+}
+
+async function applyMigration(version, name, action) {
+  const alreadyApplied = await hasMigration(version);
+  if (alreadyApplied) {
+    return;
+  }
+  await run('BEGIN');
+  try {
+    await action();
+    await run('INSERT INTO schema_migrations (version, name) VALUES (?, ?)', [version, name]);
+    await run('COMMIT');
+  } catch (error) {
+    await run('ROLLBACK');
+    throw error;
+  }
+}
+
+async function createCoreTables() {
   await run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,12 +121,6 @@ async function initDb() {
     )
   `);
 
-  await ensureColumn('player_progress', 'owned_weapons', `TEXT NOT NULL DEFAULT '["pistol"]'`);
-  await ensureColumn('player_progress', 'owned_cars', `TEXT NOT NULL DEFAULT '["starter"]'`);
-  await ensureColumn('player_progress', 'current_weapon', `TEXT NOT NULL DEFAULT 'pistol'`);
-  await ensureColumn('player_progress', 'car_type', `TEXT NOT NULL DEFAULT 'starter'`);
-  await ensureColumn('player_progress', 'unlocked_special_weapons', `TEXT NOT NULL DEFAULT '[]'`);
-
   await run(`
     CREATE TABLE IF NOT EXISTS shop_catalog (
       id TEXT PRIMARY KEY,
@@ -106,7 +131,17 @@ async function initDb() {
       sort_order INTEGER NOT NULL DEFAULT 0
     )
   `);
+}
 
+async function migratePlayerProgressColumns() {
+  await ensureColumn('player_progress', 'owned_weapons', `TEXT NOT NULL DEFAULT '["pistol"]'`);
+  await ensureColumn('player_progress', 'owned_cars', `TEXT NOT NULL DEFAULT '["starter"]'`);
+  await ensureColumn('player_progress', 'current_weapon', `TEXT NOT NULL DEFAULT 'pistol'`);
+  await ensureColumn('player_progress', 'car_type', `TEXT NOT NULL DEFAULT 'starter'`);
+  await ensureColumn('player_progress', 'unlocked_special_weapons', `TEXT NOT NULL DEFAULT '[]'`);
+}
+
+async function seedShopCatalog() {
   const shopSeeds = [
     ['pistol', 'weapon', 'basic', 'Pistol', 0, 1],
     ['shotgun', 'weapon', 'basic', 'Shotgun', 80, 2],
@@ -133,6 +168,22 @@ async function initDb() {
     );
   }
   await run("DELETE FROM shop_catalog WHERE id = 'shieldDuration'");
+}
+
+async function addPerformanceIndexes() {
+  await run('CREATE INDEX IF NOT EXISTS idx_email_tokens_token_type ON email_tokens(token, type)');
+  await run('CREATE INDEX IF NOT EXISTS idx_email_tokens_user_type_used ON email_tokens(user_id, type, used_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_email_tokens_expires_at ON email_tokens(expires_at)');
+  await run('CREATE INDEX IF NOT EXISTS idx_shop_catalog_sort_order ON shop_catalog(sort_order)');
+}
+
+async function initDb() {
+  await run('PRAGMA foreign_keys = ON');
+  await ensureMigrationsTable();
+  await applyMigration(1, 'create_core_tables', createCoreTables);
+  await applyMigration(2, 'migrate_player_progress_columns', migratePlayerProgressColumns);
+  await applyMigration(3, 'seed_shop_catalog', seedShopCatalog);
+  await applyMigration(4, 'add_performance_indexes', addPerformanceIndexes);
 }
 
 module.exports = {
