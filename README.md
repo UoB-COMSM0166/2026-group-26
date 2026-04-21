@@ -112,7 +112,21 @@ The shop flow follows the same layered pattern. Once the player opens the shop, 
 
 ### Implementation
 
+The core of our game was implemented using a split client-server architecture. The front-end, entirely powered by the **p5.js** library, is responsible for the game loop, canvas rendering, physics calculations, and user input. The back-end, built with **Node.js, Express, and SQLite**, handles user authentication, persistent player progress, and shop inventories. We separated the implementation into discrete phases: establishing basic movement, implementing map collisions, adding enemy AI and combat, and finally integrating the shop and progression systems.
 
+#### Technical Challenge 1: Physics Engine, Collision Logic, and Weapon Mechanics
+Implementing smooth, responsive, yet weighty vehicle mechanics was our primary technical hurdle. The movement logic required simulating momentum, acceleration, and handling. Initially, cars felt either too "floaty" or too rigid. We had to implement custom physics functions to calculate vectors for velocity and friction to ensure driving felt engaging. Additionally, we implemented dynamic drift trajectory effects, which required storing and drawing fading coordinate histories behind the car, adding a layer of visual complexity to the canvas rendering without dropping the frame rate.
+
+Tied into movement was the collision logic. Developing a robust collision system between the player, enemies, map boundaries, and interactive buildings required precise coordinate mapping and bounding-box calculations. Early on, players could clip through walls, or enemies would stack on top of one another. We resolved this by implementing rigid boundary checks and separation behaviors. 
+
+Combat implementation introduced further complexity. We had to carefully program weapon flight speeds, projectile lifetimes, and damage values. A notable bug arose where a missile flying indefinitely out of the map boundaries locked player control; we resolved this by implementing strict garbage collection for out-of-bounds projectiles. Furthermore, ensuring that different weapons had distinct visual effects (e.g., explosive radius vs. rapid-fire lasers) required creating a modular `Projectile` class that dynamically loaded different sprite sheets and particle effects upon impact.
+
+#### Technical Challenge 2: Asset Loading, State Management, and Game Balancing
+Because our game features numerous  UI elements, and  users experienced significant delays and broken renders during their first play session when the browser cache was empty. To resolve this, we optimized our asset management pipeline. We utilized `p5.preload()` to enforce asynchronous preloading of all heavy assets, combined with a custom visual loading screen, ensuring that the game loop only initiated once all resources were fully loaded into memory.
+
+Another significant challenge within this area was state management—specifically, unintended bugs caused by the interaction of the survival timer and shop mechanics. Initially, the timer would continue ticking while the player was browsing the weapon shop, leading to unfair game-overs. We had to restructure the front-end controller to strictly pause the `PlayState` and halt the global delta-time when the `ShopUI` overlay was active.
+
+Finally, we struggled with game balancing and user experience. Players' subjective expectations often conflicted with our initial system design, making it difficult to create an intuitive experience for first-time players without relying heavily on text tutorials. We spent extensive time tuning the spawn algorithms for randomly generated map items—determining optimal drop rates and numeric benefits for health and shields—to ensure the game felt challenging but fair. 
 
 ### Evaluation
 
