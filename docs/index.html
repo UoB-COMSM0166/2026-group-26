@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <script src="p5.min.js?v=20260310"></script>
+    <script defer src="scripts/vendor/p5.min.js?v=20260416b"></script>
     <script>
       window.addEventListener('error', function (event) {
         var box = document.getElementById('boot-error-box');
@@ -44,29 +44,35 @@
         box.textContent = 'Promise Rejection: ' + (event.reason && event.reason.message ? event.reason.message : String(event.reason));
       });
     </script>
+    <script>
+      (function () {
+        try {
+          var savedApiBaseUrl = localStorage.getItem('apiBaseUrl');
+          if (!savedApiBaseUrl) return;
+          var savedUrl = new URL(savedApiBaseUrl, window.location.origin);
+          var currentHost = window.location.hostname;
+          var isCurrentLocal = currentHost === 'localhost' || currentHost === '127.0.0.1';
+          if (!isCurrentLocal && savedUrl.hostname !== currentHost) {
+            localStorage.removeItem('apiBaseUrl');
+          }
+        } catch (err) {
+          localStorage.removeItem('apiBaseUrl');
+        }
+      })();
+    </script>
     
     
     
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="styles/style.css">
     <meta charset="utf-8" />
 
+    <link rel="preload" href="scripts/vendor/p5.min.js?v=20260416b" as="script">
+    <link rel="preload" href="scripts/dist/bundle.min.js?v=20260416ae" as="script">
+    <link rel="preload" href="styles/style.css" as="style">
   </head>
   <body>
     <main>
     </main>
-    <script src="Vehicle.js?v=20260310"></script>
-    <script src="Player.js?v=20260310"></script>
-    <script src="Enemy.js?v=20260310"></script>
-    <script src="PowerUp.js?v=20260310"></script>
-    <script src="Particle.js?v=20260310"></script>
-    <script src="Building.js?v=20260310"></script>
-    <script src="WeaponConfig.js?v=20260310"></script>
-    <script src="Projectile.js?v=20260310"></script>
-  <script src="utils.js?v=20260310"></script>
-  <script src="special_weapons.js?v=20260310"></script>
-  <script src="AuthUI.js?v=20260310"></script>
-  <script src="ShopUI.js?v=20260310"></script>
-  <script src="TutorialSystem.js?v=20260310"></script>
-    <script src="sketch.js?v=20260310c"></script>
+    <script defer src="scripts/dist/bundle.min.js?v=20260416ae"></script>
   </body>
 </html>
