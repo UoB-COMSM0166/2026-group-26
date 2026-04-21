@@ -297,35 +297,36 @@ GROUP PHOTO.
 - System architecture. Class diagrams, behavioural diagrams.
 
 #### 1. System Architecture
-
-The system uses a layered architecture that separates real-time gameplay from transactional services. At the outer layer, the player interacts with a browser-based `p5.js` client, which is responsible for rendering, input capture, and immediate feedback. This client deals with the continuous visual and interaction demands of play, including movement, pursuit, collisions, projectiles, and visual effects that need to update every frame. Under this, a front-end controller coordinates the running game as a lightweight application layer rather than part of the domain model. It manages the game loop, camera, map generation, and global state machine, so the presentation side stays responsive while gameplay progression remains clearly controlled.
-
+ 
+The system uses a layered architecture that separates real-time gameplay from transactional services. At the outer layer, the player interacts with a browser-based `p5.js` client, which is responsible for rendering and input capture. Under this, a front-end controller coordinates the running game as a lightweight application layer rather than part of the domain model. It manages the game loop, camera, map generation, and global state machine, so the presentation side stays responsive while gameplay progression remains clearly controlled.
+ 
 In deployment, a reverse proxy acts as the public entry point, serves static game assets, and forwards protected requests to the backend API. Behind it, an Express service manages account operations, shop behaviour, and progress persistence, while a local SQLite database stores durable user and progression data. This arrangement matches the workload of the system: frame-by-frame gameplay logic runs on the client, while authentication, equipment ownership, currency deduction, and persistent progress are handled through authoritative server-side validation. In practice, this keeps the game responsive without weakening consistency in identity and progression.
-
+ 
 #### 2. Class Design
-
+ 
 The class design follows the same division of responsibility as the architecture. On the gameplay side, the front-end controller is the main coordinating object, and it organises the simulation through a wide set of states rather than treating the game as a single play screen. Menu, authentication, difficulty selection, active play, pause, help, tutorial overlays, shop interaction, defeat, victory, and special-weapon targeting are all represented explicitly. These states decide what should be updated, what should be rendered, and whether survival time should continue to advance. During active play, the controller updates entities, spawns enemies and drops, and keeps the camera centred on the player. In pause, tutorial, shop, and targeting states, the simulation is partly or fully suspended while the presentation layer remains active.
-
-The relationships between gameplay and UI classes are organised around this controller-led structure. The controller manages transitions from menu login to difficulty choice, from building interaction to the shop interface, and from special-weapon activation to map-selection or remote-guidance modes. Around this core, map rendering is precomposed as an isometric world, while the status display, minimap, and overlay panels sit above it as presentation-focused components. This keeps the world simulation separate from the surrounding interface. The controller forms the boundary between the two, while overlays and panels are used to present information rather than define gameplay rules.
-
-#### 3. Behavioural Design
-
-The behavioural design uses a controlled interaction flow to connect account-related operations, gameplay progression, and interface transitions. The system begins outside active survival play, moving through menu login and authentication before reaching difficulty selection. The player then enters the main play state, where the controller manages continuous entity updates, enemy and drop spawning, camera centring, and survival timing. Behaviour changes when the player moves into other states. If a building interaction opens the shop interface, the system leaves active survival progression so transactional operations can take place in a dedicated context. In the same way, when the player opens tutorial, help, pause, or targeting interfaces, the simulation is partly or fully suspended while the surrounding presentation is preserved. The player therefore moves through a structured set of interaction modes rather than a single uninterrupted game loop.
-
-This behaviour also matches the distinction between client responsiveness and server authority in the wider system design. Authentication, equipment ownership, currency deduction, and progress persistence are not treated as purely local events, but as backend-validated operations handled through the service layer. Shop interaction therefore links the live play session with persistent account state, while progress loading and saving maintain continuity across sessions through durable storage. State transitions ensure that transactional actions happen in explicit contexts instead of being mixed directly into frame-by-frame play logic. Observed gameplay followed this design closely: the menu flow, tutorial gating, pause behaviour, special-weapon targeting, and win and lose screens all matched the intended state-based model.
-
-#### 4. Design Summary
-
-The design combines a layered architecture with explicit behavioural control to support responsive gameplay and reliable progression management. Client rendering, controller coordination, backend services, reverse-proxy access, and persistent storage each have a distinct role, which makes the structure easier to maintain. At the same time, the state-based gameplay model keeps authentication, shop interaction, targeting, pause, overlays, and end conditions in clearly defined contexts. This gives the implemented gameplay experience a clear and manageable structure.
-
+ 
+The relationships between gameplay and UI classes are organised around this controller-led structure. The controller manages transitions from menu login to difficulty choice, from building interaction to the shop interface, and from special-weapon activation to map-selection or remote-guidance modes. This keeps the world simulation separate from the surrounding interface. At the object level, `Vehicle` acts as the common superclass for `Player` and `Enemy`, while `Projectile`, `PowerUp`, and `Building` model associated world entities, and `AuthUI`, `ShopUI`, and `TutorialSystem` support interface, persistence, and guided interaction rather than core movement behaviour.
+ 
 #### Class Diagram
 <p align="center">
 <img width="2665" height="2684" alt="Class Diagram" src="https://github.com/user-attachments/assets/4a0b90a7-6f39-4209-8e22-0cabbccd43d1" />
-
-
+</p>
+ 
+#### 3. Behavioural Design
+ 
+The behavioural design uses a controlled interaction flow to connect account-related operations, gameplay progression, and interface transitions. The system begins outside active survival play, moving through menu login and authentication before reaching difficulty selection. The player then enters the main play state, where the controller manages continuous entity updates, enemy and drop spawning, camera centring, and survival timing. Behaviour changes when the player moves into other states. If a building interaction opens the shop interface, the system leaves active survival progression so transactional operations can take place in a dedicated context. In the same way, when the player opens tutorial, help, pause, or targeting interfaces, the simulation is partly or fully suspended while the surrounding presentation is preserved.
+ 
+A representative interaction sequence is the login flow, in which the player submits credentials, the backend validates the account, returns a signed token, and then serves persistent progress through a protected request before gameplay begins. This behaviour also matches the distinction between client responsiveness and server authority in the wider system design. Authentication, equipment ownership, currency deduction, and progress persistence are not treated as purely local events, but as backend-validated operations handled through the service layer. Shop interaction therefore links the live play session with persistent account state, while progress loading and saving maintain continuity across sessions through durable storage. State transitions ensure that transactional actions happen in explicit contexts instead of being mixed directly into frame-by-frame play logic. Observed gameplay followed this design closely: the menu flow, tutorial gating, pause behaviour, special-weapon targeting, and win and lose screens all matched the intended state-based model.
+ 
 #### Sequence Diagram
 <p align="center">
 <img width="3858" height="2502" alt="Sequence Diagram" src="https://github.com/user-attachments/assets/0828154c-7509-474b-97ab-c98003b5339e" />
+</p>
+ 
+#### 4. Design Summary
+ 
+The design combines a layered architecture with explicit behavioural control to support responsive gameplay and reliable progression management. Client rendering, controller coordination, backend services, reverse-proxy access, and persistent storage each have a distinct role, which makes the structure easier to maintain. At the same time, the state-based gameplay model keeps authentication, shop interaction, targeting, pause, overlays, and end conditions in clearly defined contexts. This gives the implemented gameplay experience a clear and manageable structure.
 
 
 ### Implementation
