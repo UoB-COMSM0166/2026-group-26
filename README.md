@@ -6,32 +6,22 @@ Play the game here: https://uob-comsm0166.github.io/2026-group-26/
 # COMSM0166 Project Template
 A project template for the Software Engineering Discipline and Practice module (COMSM0166).
 
-## Info
-
-This is the template for your group project repo/report. We'll be setting up your repo and assigning you to it after the group forming activity. You can delete this info section, but please keep the rest of the repo structure intact.
-
-You will be developing your game using [P5.js](https://p5js.org) a javascript library that provides you will all the tools you need to make your game. However, we won't be teaching you javascript, this is a chance for you and your team to learn a (friendly) new language and framework quickly, something you will almost certainly have to do with your summer project and in future. There is a lot of documentation online, you can start with:
-
-- [P5.js tutorials](https://p5js.org/tutorials/) 
-- [Coding Train P5.js](https://thecodingtrain.com/tracks/code-programming-with-p5-js) course - go here for enthusiastic video tutorials from Dan Shiffman (recommended!)
-
-
-## Introduction
+### Introduction
 
 Our game is a top-down vehicle survival game in which the player controls an evader and must stay alive until the timer ends. The game combines fast-paced driving, enemy avoidance, combat, and resource management within an interactive urban map. Players can enter buildings such as hospitals and weapon shops to restore health, buy weapons, and unlock new attack options. The game also includes easy, normal, and difficult modes to support different levels of challenge.
 
 What makes our game novel is its combination of timed survival driving with meaningful map interaction. Buildings are not just background objects, but strategic spaces that shape player decisions. This turns the game from a simple evasion experience into a layered survival loop built around movement, upgrades, and risk-reward choice.
 
-### *The game is based on.*
+#### *The game is based on.*
 
 Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
 - Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
 - Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
 
-## Requirements
+### Requirements
 
-### Ideation and concept selection
+#### Ideation and concept selection
 
 At the beginning of the project, our team explored four possible game directions: a text-based adventure, a simulation/construction game, a top-down stealth game, and a chase-and-evasion game. These ideas reflected different design priorities, ranging from narrative depth to strategy and fast-paced action. After discussion, we became most interested in the chase-and-evasion direction because it offered a clear core gameplay loop, immediate player feedback, and strong potential for tension and replayability.
 <img width="1419" height="752" alt="IMG_3753" src="https://github.com/user-attachments/assets/54fcde26-e1c3-443b-b8ef-9622ee8b4ec1" />
@@ -40,9 +30,7 @@ At the beginning of the project, our team explored four possible game directions
 Our early goal was to create a game that was easy to understand at a basic level but still allowed for strategic decision-making during play. Compared with the other three ideas, the chase-and-evasion concept seemed the most suitable for this because it combined simple controls with opportunities for map design, item systems, and escalating challenge. It also matched the team's interest in building a game centred on movement, pressure, and survival rather than narrative or construction mechanics.
 
 
-
-
-### Paper prototyping and early design decisions
+#### Paper prototyping and early design decisions
 
 We then developed two paper prototype ideas. The first was a top-down vehicle survival game focused on evasion, movement control, and power-ups. The second was a multiplayer ricochet space shooter based on bouncing projectiles and shrinking play areas. Although both ideas were promising, the vehicle survival prototype was chosen as the stronger foundation for further development.
 
@@ -60,7 +48,7 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 | <img width="793" height="414" alt="UCD" src="https://github.com/user-attachments/assets/5b7ae93f-2a12-4ed0-8b65-44d195c51a46" />|
 
 
-### List of Stakeholders
+#### List of Stakeholders
 
 - The primary stakeholder group is **players**, who require a game that is understandable, responsive, fair, and engaging over repeated play sessions. Their needs directly shaped decisions such as adding difficulty settings, improving interaction clarity, and introducing meaningful choices through buildings and upgrades.
 
@@ -68,7 +56,7 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 <img width="936" height="889" alt="Onion" src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" />
 
-### Core functional requirements
+#### Core functional requirements
 
 From the ideation and prototyping stages, we identified the following core functional requirements:
 
@@ -80,7 +68,7 @@ From the ideation and prototyping stages, we identified the following core funct
 - The weapon shop must allow the player to purchase or unlock new attack options.
 - The game must provide multiple difficulty levels: easy, normal, and difficult.
 
-### User stories
+#### User stories
 
 - As a player, I want to control the vehicle smoothly, so that movement feels responsive and survival depends on skill.
 - As a player, I want a clear survival timer and health display, so that I can understand my current progress and risk.
@@ -91,15 +79,39 @@ From the ideation and prototyping stages, we identified the following core funct
 - As a player, I want feedback when interacting with buildings, so that I understand available actions.
 
 
-### Acceptance criteria
+#### Acceptance criteria
 
 These user stories were translated into practical acceptance criteria during development. For example, the vehicle controls needed to be stable and learnable, buildings needed to trigger an interaction menu when entered, and the game needed to end consistently in either victory (timer completed) or defeat (health depleted). Similarly, difficulty modes needed to produce observable differences in challenge rather than acting as cosmetic labels only.
 
 Overall, the requirements process helped us move from a broad concept to a more realistic and implementable game. It also helped us identify where reducing scope improved quality, particularly in the decision to focus on one playable role and a stronger core survival experience.
 
-## Evaluation
 
-### **Heuristic Evaluation** (week7)
+### Design
+
+#### System Architecture
+The implemented design follows a layered client-server architecture in which the browser-based p5.js front end owns all latency-sensitive gameplay, while server-side components own identity, persistence, and transaction integrity. At the presentation layer, the game runs as a single-page canvas application with DOM overlays for account and shop interaction. A central front-end controller coordinates rendering, input dispatch, camera updates, map generation, and transitions between menu, authentication, difficulty selection, play, tutorial, pause, map-targeting, shop, defeat, and victory states.
+This controller sits behind a reverse proxy that serves static assets and forwards API traffic to an Express service. The service layer concentrates low-frequency business logic, including login, email verification, password reset, catalog retrieval, equipment selection, purchase validation, and progress storage. A SQLite database forms the persistence layer, storing users, mail tokens, persistent player progress, and the seeded shop catalog. This division is appropriate for the game because movement, collision, aiming, enemy pursuit, and projectile simulation remain responsive in the client, while ownership, authentication, and persistent progression remain authoritative on the server.
+
+#### Class Structure
+The object model is centred on a compact gameplay hierarchy. Vehicle acts as the shared base class for moving actors and encapsulates position, velocity, acceleration, heading, skid effects, and boundary handling. Player and Enemy both extend this abstraction, but specialise it for different responsibilities. Player adds health, ammunition, coins, vehicle selection, weapon ownership, special-weapon state, and firing logic, whereas Enemy adds pursuit and separation behaviours so that police vehicles chase the player while avoiding unrealistic overlap.
+Around this core, Projectile models weapon effects with autonomous motion and collision handling, and PowerUp represents collectible resources such as health, shield, speed boosts, coins, and special drops. Building serves as an interactive environmental object with display, collision, and interaction affordances, while AuthUI, ShopUI, and TutorialSystem operate as boundary and control classes. These user-interface classes do not simulate combat directly; instead, they mediate between the player, the front-end controller, and persistent backend state.
+
+#### Class Diagram
+<p align="center">
+<img width="1416" height="779" alt="Class Diagram" src="https://github.com/user-attachments/assets/e73900dc-7d9a-4d96-9401-99404790e68f" />
+
+#### Behavioural Design
+Behaviour is organised around explicit state transitions and message passing across layers. The login flow begins when the player attempts to start the game or access the shop. The front end first checks service availability, presents the authentication overlay, submits credentials, stores the returned token, and then requests persistent progress before enabling gameplay or menu shopping. This process ensures that the local play state is synchronised with authenticated server-side data before any persistent interaction occurs.
+The shop flow follows the same layered pattern. Once the player opens the shop, the client loads the server catalog, submits an authenticated purchase or selection request, and applies the returned progress snapshot to the active player state. On the server, JWT verification guards protected routes, database reads reconstruct the player’s balance and ownership state, and validated writes return an updated progress view to the client. Difficulty selection introduces another behavioural branch by adjusting survival time and key gameplay parameters, with the implemented modes yielding 60, 90, and 120 second targets and a harder configuration that reduces player speed while increasing enemy speed.
+
+#### Sequence Diagram
+<p align="center">
+<img width="1407" height="1059" alt="Sequence Diagram" src="https://github.com/user-attachments/assets/7bdca271-2d6f-4175-a46c-c3c77585ced4" />
+
+
+### Evaluation
+
+#### **Heuristic Evaluation** (week7)
 | **Interface** | **Issue** | **Heuristics** | **Frequency 0 (rare) to 4 (common)** | **Impact 0 (easy) to difficult (4)** | **Persistence (once) to 4 (repeated)** | **Severity** |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Game play interface** | Vehicle color contrast could be more noticeable, and drift trajectory highlighted | Visibility of system status | 2 | 1 | 3 | 2 |
@@ -110,7 +122,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 | **Game interface design** | The aesthetics of the game interface design could be improved | Aesthetic and minimalist design | 1 | 2 | 2 | 4 |
 
 ---
-### Findings of User's Evaluation
+#### Findings of User's Evaluation
 
 - **Visual Feedback & System Status (Visibility of system status / Aesthetic design):** The color contrast of the vehicles is too weak, and the drifting trajectory needs to be highlighted. Additionally, crucial power-ups lack visibility. The overall interface aesthetics could also be improved.
 
@@ -123,7 +135,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 - **System Flexibility:** The game currently lacks a difficulty selection system, failing to accommodate players of different skill levels.
 ---
 
-### Qualitative Evaluation
+#### Qualitative Evaluation
 
 - **Misalignment in Core Objective Communication:** 
 Despite the asymmetric "Chase & Evasion" design, the UI fails to convey these rules. Players experience a steep learning curve due to confusion over victory conditions and NPC interaction logic. Mandatory movement and objective prompts must be integrated directly into the HUD.
@@ -135,7 +147,7 @@ Essential interactive elements like player vehicles and shields blend into the b
 The current loop is too shallow. To enhance strategic depth, the game requires a level progression system featuring randomized building styles and positions upon completing a stage. Combat variety must be expanded with new weapon types. Crucially, the implementation of at least two difficulty tiers—achieved by altering game speed, enemy toughness, or power-up availability—is necessary to sustain long-term engagement for all players.
 
 
-### Quantitative Evaluation (week8)
+#### Quantitative Evaluation (week8)
 |                     | User 1  | User 2  | User 3  | User 4  | User 5  | User 6 | User 7  | Average  |
 | ------------------- | ------- | ------- | ------- | ------- | ------- | ------ | ------- | -------- |
 | easy SUS score      | 55      | 50      | 62.5    | 95      | 55      | 50     | 52.5    | 60       |
@@ -163,34 +175,34 @@ Result: W test statistic=1 (number of non-tied pairs=6).
 So the null hypothesis was not rejected at a 95% confidence interval. This meant the test result is **not statistically significant.**
 
 
-### Findings of Quantitative Evaluation
+#### Findings of Quantitative Evaluation
 
 The low average SUS score and NASA TLX score demonstrate the **necesscity for us to improve overall user experience in all aspects.** While the NASA TLX score for hard being higher than easy difficulty shows that there is a clear learning effect within the data, and that the suggestion to add a tutorial to the game (by one test user) is an excellent way to enhance user experience. On the other hand, both Wilcoxon Signed-Rank Tests shows no statistically significant differences, meaning that the easy difficulty and the hard difficulty are too similar, **so the 3 difficulties should be readjusted.**
 
 
-### Technical challenges
+#### Technical challenges
 
 1. Unintended bugs caused by the interaction of the timer and shop mechanics
 
 2. Missile flying out of the map indefinitely (which locks player control) bug.
 
-## Process 
+### Process 
 
-### *Overall Approach*
+#### *Overall Approach*
 Our team followed an iterative and highly collaborative development process throughout the project. In the early stages, our priority was not to impose a rigid structure immediately, but to build a shared understanding of what kind of game we wanted to make and what could realistically be delivered within the time available. We began by discussing several possible ideas and comparing them in terms of gameplay potential, technical feasibility, and scope. As the project became more clearly defined, we converged on a top-down vehicle survival game focused on movement, evasion, combat, and map interaction. We also made an important scoping decision during this stage: rather than trying to pursue every early feature idea, we chose to prioritise a smaller set of mechanics that could be implemented to a higher standard. 
 
-### *Communication and Shared Documentation*
+#### *Communication and Shared Documentation*
 Our main communication platform was WeChat, which we used for everyday discussion, arranging meetings, reporting progress, and raising issues as soon as they appeared. Alongside this, we kept a shared Google Doc that functioned as a common space for recording ideas, bugs, usability concerns, and development notes. This was particularly useful because it meant that when someone noticed a problem during coding or playtesting, it did not have to wait until the next meeting to be remembered. Instead, it could be written down immediately and then revisited as a team. In practice, this gave our process a good balance between fast informal communication and a persistent written record of what still needed attention. 
 
-### *Meetings and Task Coordination*
+#### *Meetings and Task Coordination*
 Our meetings were organised around the actual pace of development rather than following a fixed timetable. In general, we met once every one to two weeks, depending on how smoothly development was progressing and whether there were enough open issues to justify a longer discussion. Meeting times were arranged in the WeChat group based on when everyone was available. These meetings were used to review what had already been completed, identify short-term priorities, and decide what should be tackled next. This rhythm worked well because it gave the team regular checkpoints without creating unnecessary formal overhead. It also reduced the risk that members would become too isolated in their own tasks, which was especially important in a project like ours where gameplay, balancing, interface design, and technical implementation all influenced one another.
 
-### *Roles and Collaborative Development*
+#### *Roles and Collaborative Development*
 Although our process remained group-centred throughout, some roles became clearer over time. One member took primary responsibility for overall task coordination and GitHub/report management, another contributed substantially to report writing, one member focused mainly on core implementation, and other members contributed through testing, review, feedback, and sections of the written report. However, we did not treat the project as a set of fully separate individual components. Instead, we worked with a flexible structure in which responsibilities could shift when necessary. This was helpful in the early stages, because it allowed the team to adapt quickly while the game concept was still evolving. At the same time, it also showed us one of the limitations of a highly flexible process: when responsibilities are not fully defined from the beginning, some areas can come to depend more heavily on particular members. Looking back, we think this flexible approach suited ideation and early development well, but slightly clearer ownership of major systems would have improved efficiency later in the project.
 
 For version control, we used GitHub with a branch-based workflow. Each member worked on their own branch and merged into the main branch only after the relevant work had been checked. In practice, when someone finished a task, they would usually notify the group in WeChat so that other members could take a quick look before the responsible person merged the changes. This was not a fully formal code review process, but it provided a useful level of visibility and reduced the risk of unstable or conflicting changes being introduced into the shared codebase. It also allowed multiple people to work in parallel without constantly interfering with one another’s progress. Combined with Google Docs for collaborative writing, this meant that code development, testing, and report writing could all move forward together rather than becoming bottlenecked at the end.
 
-### *Problem Solving, Evaluation, and Reflection*
+#### *Problem Solving, Evaluation, and Reflection*
 A major strength of our process was the way we handled emerging problems. Many of the most difficult issues were not isolated bugs inside a single feature, but integration problems created by the interaction of several systems. For example, feedback and testing highlighted problems such as the timer continuing while the player was inside the shop, missiles flying indefinitely when leaving the map, police cars stacking together, unclear controls, unclear win conditions, and insufficient distinction between difficulty levels. More generally, we also had to make repeated adjustments to collision logic, movement behaviour, weapon balance, and the visibility of interactive elements. Because these issues affected both technical stability and user experience, they could not be solved well through isolated work alone. Our usual approach was to record the problem immediately, discuss it in the group, decide whether it was a priority for the next round of development, and then test the revised behaviour again after changes were made. This made our problem-solving process relatively efficient and helped us respond quickly when the game did not behave as intended or when players found mechanics confusing.
 
 Another valuable aspect of our process was that evaluation genuinely fed back into development. User review and testing did not function as a final-stage formality, but as an input to further refinement. Feedback pointed to several recurring issues, including weak visual contrast, missing interaction prompts, unclear objectives, and difficulty settings that did not feel sufficiently different. These findings made it clear that implementing a mechanic was not enough on its own; the mechanic also had to be understandable, visible, and meaningful to players. As a result, our process became increasingly user-centred over time. We paid more attention not only to whether the game technically worked, but also to whether players could understand how to play it and why particular design choices mattered.
@@ -198,7 +210,7 @@ Another valuable aspect of our process was that evaluation genuinely fed back in
 Overall, our development process was practical, communicative, and adaptable. We did not rely on complex formal management methods, but on frequent communication, shared visibility of issues, and a willingness to adjust our plans when necessary. This worked particularly well for a project where gameplay ideas, technical implementation, and evaluation results were all evolving at the same time. At the same time, the project also showed us that flexibility alone is not always enough. If we were to repeat the project, we would keep the same strengths of open communication, shared documentation, and branch-based collaboration, but we would define ownership of major systems earlier and plan integration testing more explicitly. The main lesson from our process is that effective teamwork in software development depends not just on dividing work, but on maintaining clear communication, recording issues systematically, and adapting quickly when design or technical challenges emerge.
 
 
-## AI statement 
+### AI statement 
 
 Our team used AI as a supporting tool in a limited and targeted way during this project. Its main use was in the preparation and refinement of visual assets for the game interface and environment, including icons, animated visual elements, weapon models, and parts of the map. Our usual workflow was to first search online for reference materials or source assets that we felt were suitable, and then use AI-assisted tools to adjust aspects such as orientation, viewing angle, placement, and overall visual style so that the materials better matched the look and feel of our game. This was particularly helpful because our team does not have specialist UI or visual design experience, so AI provided practical support in improving consistency and presentation.
 
@@ -206,7 +218,7 @@ AI was also used occasionally during development to help identify the possible c
 
 Importantly, all AI-assisted outputs were reviewed, selected, and integrated manually by the team. Final decisions about which assets to use, how they should appear in the game, and how technical issues should be resolved were made by us. AI was therefore used as an assistive tool to support visual refinement and debugging, while the overall design, implementation, testing, and report writing remained the team’s own work.
 
-### Sample AI Assets
+#### Sample AI Assets
 
 |  |  |  |
 |---|---|---|
@@ -214,6 +226,10 @@ Importantly, all AI-assisted outputs were reviewed, selected, and integrated man
 | <img src="https://github.com/user-attachments/assets/95348988-5c3c-4732-9eb1-b20a748a5dc0" width="180"> | <img src="https://github.com/user-attachments/assets/3b930309-6309-40ce-81af-74888e6974c1" width="180"> | <img src="https://github.com/user-attachments/assets/a568b880-f1bd-4460-8f0a-073e4a6f0e3e" width="180"> |
 | <img src="https://github.com/user-attachments/assets/f3f7c0c5-a9b7-4196-a34d-b2793d2fe8d9" width="180"> | <img src="https://github.com/user-attachments/assets/8d1e3d7c-5237-452b-8e78-319095294052" width="180"> | <img src="https://github.com/user-attachments/assets/f7270953-c3f6-4ec9-aaa9-6c51176cce14" width="180"> |
 | <img src="https://github.com/user-attachments/assets/92d85539-3005-453c-b58a-b415abb7f72f" width="180"> | <img src="https://github.com/user-attachments/assets/efd22639-da4e-4a4a-a022-3252e26ef59b" width="180"> | <img src="https://github.com/user-attachments/assets/37aea2a5-4f84-41ac-97c9-06d635444f42" width="180"> |
+
+
+
+### Conclusion 
 
 
 ## Your Group
@@ -251,25 +267,6 @@ GROUP PHOTO.
 - 15% ~750 words 
 - System architecture. Class diagrams, behavioural diagrams.
 
-#### System Architecture
-The implemented design follows a layered client-server architecture in which the browser-based p5.js front end owns all latency-sensitive gameplay, while server-side components own identity, persistence, and transaction integrity. At the presentation layer, the game runs as a single-page canvas application with DOM overlays for account and shop interaction. A central front-end controller coordinates rendering, input dispatch, camera updates, map generation, and transitions between menu, authentication, difficulty selection, play, tutorial, pause, map-targeting, shop, defeat, and victory states.
-This controller sits behind a reverse proxy that serves static assets and forwards API traffic to an Express service. The service layer concentrates low-frequency business logic, including login, email verification, password reset, catalog retrieval, equipment selection, purchase validation, and progress storage. A SQLite database forms the persistence layer, storing users, mail tokens, persistent player progress, and the seeded shop catalog. This division is appropriate for the game because movement, collision, aiming, enemy pursuit, and projectile simulation remain responsive in the client, while ownership, authentication, and persistent progression remain authoritative on the server.
-
-#### Class Structure
-The object model is centred on a compact gameplay hierarchy. Vehicle acts as the shared base class for moving actors and encapsulates position, velocity, acceleration, heading, skid effects, and boundary handling. Player and Enemy both extend this abstraction, but specialise it for different responsibilities. Player adds health, ammunition, coins, vehicle selection, weapon ownership, special-weapon state, and firing logic, whereas Enemy adds pursuit and separation behaviours so that police vehicles chase the player while avoiding unrealistic overlap.
-Around this core, Projectile models weapon effects with autonomous motion and collision handling, and PowerUp represents collectible resources such as health, shield, speed boosts, coins, and special drops. Building serves as an interactive environmental object with display, collision, and interaction affordances, while AuthUI, ShopUI, and TutorialSystem operate as boundary and control classes. These user-interface classes do not simulate combat directly; instead, they mediate between the player, the front-end controller, and persistent backend state.
-
-#### Class Diagram
-<p align="center">
-<img width="1416" height="779" alt="Class Diagram" src="https://github.com/user-attachments/assets/e73900dc-7d9a-4d96-9401-99404790e68f" />
-
-#### Behavioural Design
-Behaviour is organised around explicit state transitions and message passing across layers. The login flow begins when the player attempts to start the game or access the shop. The front end first checks service availability, presents the authentication overlay, submits credentials, stores the returned token, and then requests persistent progress before enabling gameplay or menu shopping. This process ensures that the local play state is synchronised with authenticated server-side data before any persistent interaction occurs.
-The shop flow follows the same layered pattern. Once the player opens the shop, the client loads the server catalog, submits an authenticated purchase or selection request, and applies the returned progress snapshot to the active player state. On the server, JWT verification guards protected routes, database reads reconstruct the player’s balance and ownership state, and validated writes return an updated progress view to the client. Difficulty selection introduces another behavioural branch by adjusting survival time and key gameplay parameters, with the implemented modes yielding 60, 90, and 120 second targets and a harder configuration that reduces player speed while increasing enemy speed.
-
-#### Sequence Diagram
-<p align="center">
-<img width="1407" height="1059" alt="Sequence Diagram" src="https://github.com/user-attachments/assets/7bdca271-2d6f-4175-a46c-c3c77585ced4" />
 
 ### Implementation
 
