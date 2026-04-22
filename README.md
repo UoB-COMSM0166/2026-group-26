@@ -272,6 +272,10 @@ The immediate next steps for the current game focus on clarity and balance. We p
 **Future Work: Sequel Development**
 If we had the opportunity to develop a sequel, we would expand the project toward a deeper structural design. The most promising direction involves an advanced progression system featuring multiple stages or districts, greater map variety, expanded enemy and weapon types, and richer long-term strategic choices. We would also consider revisiting ideas that were cut during early scoping, such as broader asymmetric role designs (e.g., a playable chaser), but only after ensuring the core experience remains consistently clear and balanced.
 
+
+### Contribution Statement
+
+
 ## Your Group
 ---
 GROUP PHOTO. 
