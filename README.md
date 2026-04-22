@@ -236,9 +236,11 @@ Another valuable aspect of our process was that evaluation genuinely fed back in
 
 Overall, our development process was practical, communicative, and adaptable. We did not rely on complex formal management methods, but on frequent communication, shared visibility of issues, and a willingness to adjust our plans when necessary. This worked particularly well for a project where gameplay ideas, technical implementation, and evaluation results were all evolving at the same time. At the same time, the project also showed us that flexibility alone is not always enough. If we were to repeat the project, we would keep the same strengths of open communication, shared documentation, and branch-based collaboration, but we would define ownership of major systems earlier and plan integration testing more explicitly. The main lesson from our process is that effective teamwork in software development depends not just on dividing work, but on maintaining clear communication, recording issues systematically, and adapting quickly when design or technical challenges emerge.
 
-|  |  |
+| [Our Kanban Link](https://samuel88913-1776174836623.atlassian.net/jira/software/projects/KAN/boards/1) | [Our Google Docs Link](https://docs.google.com/document/d/13TsGkyWaULcPZaSbJa6dbB54RRgPPovsB3XJL-yhKzo/edit?usp=sharing) |
 | :---: | :---: |
 |<img width="743" height="811" alt="image" src="https://github.com/user-attachments/assets/322eec62-c860-48b4-9749-c60d5e11a4f4" />|<img width="720" height="869" alt="image" src="https://github.com/user-attachments/assets/e697b4dc-a1bf-4750-b147-530134cc8113" />|
+
+
 ### Sustainability
 ---
 
