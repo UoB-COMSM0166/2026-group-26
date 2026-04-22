@@ -55,11 +55,10 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 - A second stakeholder group is the **development team**, who needed requirements that were feasible within the time and technical constraints of the module. This influenced our decision to reduce scope, prioritise a single polished gameplay loop, and focus on features that could be realistically implemented and tested.
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" alt="Stakeholders" width="550" style="display: block; margin: auto;">
-  <span style="display: block; font-weight: bold; font-style: italic; font-size: 0.9em; color: gray; margin-top: 10px;">
-    Figure : Stakeholder</span>
-</p>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" width="550">
+  <p><b>Figure: Stakeholder</b></p>
+</div>
 
 #### Core functional requirements
 
