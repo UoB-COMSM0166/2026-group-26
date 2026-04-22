@@ -118,7 +118,8 @@ The design combines a layered architecture with explicit behavioural control to 
 
 ### Implementation
 ---
-
+| :---: |
+|<img width="1491" height="1055" alt="Workflow" src="https://github.com/user-attachments/assets/03883ea1-f5e1-4a54-ac6f-fa4613b615a0" />|
 The core of our game was implemented using a split client-server architecture. The front-end, built with p5.js, is responsible for the main game loop, canvas rendering, player input, and moment-to-moment gameplay simulation. The back-end, built with Node.js, Express, and SQLite, handles user authentication through JWT-based token verification, persistent player progress, and server-side shop data. Development progressed iteratively, beginning with vehicle movement and map interaction, then expanding into enemy AI and combat systems, and finally integrating the backend-supported account, shop, and progression features. Communication between the client and server is performed through asynchronous REST API requests so that gameplay rendering remains responsive while data is loaded or saved.
 
 #### Technical Challenge 1: Vehicle Physics, Collision Handling, and Weapon Systems
