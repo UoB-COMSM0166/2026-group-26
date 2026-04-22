@@ -57,7 +57,8 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" alt="Stakeholders" width="550" style="display: block; margin: auto;">
-  <span style="display: block; font-weight: bold; font-style: italic; font-size: 0.9em; color: gray; margin-top: 10px;">Figure : Stakeholder</span>
+  <span style="display: block; font-weight: bold; font-style: italic; font-size: 0.9em; color: gray; margin-top: 10px;">
+    Figure : Stakeholder</span>
 </p>
 
 #### Core functional requirements
