@@ -281,17 +281,21 @@ Importantly, all AI-assisted outputs were reviewed, selected, and integrated man
 ### Conclusion
 ---
 ***Project Reflection & Lessons Learnt***
+
 This project took us from a broad chase-and-evasion idea to a playable top-down vehicle survival game with driving, combat, interactive buildings, difficulty modes, and persistent progression. Looking back, the most important outcome was succeeding in turning an initially broad concept into a focused, coherent gameplay loop. Early in the project, we made a critical scoping decision to concentrate on a single playable evader role rather than attempting multiple roles or complex multiplayer interactions. In retrospect, this disciplined scope control was one of our most valuable choices, allowing us to invest more effort into core mechanics: movement, survival pressure, map interaction, and progression. 
 
 However, our evaluation taught us that implementing mechanics is not enough on its own; a system may function technically while still being unclear or frustrating to the user. Qualitative feedback highlighted issues with onboarding, weak visual hierarchy, and insufficient cues for map boundaries. Quantitative results also suggested that the differences between difficulty levels were not consistently perceived. These findings reinforced a key lesson: in game development, success depends not only on whether a feature works, but on whether players can immediately understand and use it meaningfully. 
 
 ***Teamwork & Challenges***
+
 We learned several practical lessons about collaborative software development. First, integration issues often pose greater challenges than isolated feature bugs, as evidenced by cross-system conflicts like the timer continuing during shop interactions and out-of-bound projectiles locking player controls. While our communication was frequent and evaluation loops were active, a highly flexible team structure showed its limits. It sometimes led to unclear ownership of major systems and delayed the discovery of cross-system issues. While adaptability was beneficial during ideation, establishing clearer responsibility assignment and enforcing explicit integration testing earlier in development would have significantly improved efficiency and mitigated later systemic problems.
 
 ***Future Work: Immediate Next Steps***
+
 The immediate next steps for the current game focus on clarity and balance. We plan to improve onboarding by adding stronger HUD prompts, clearer win-condition communication, and explicit interaction instructions. Furthermore, we will rebalance the difficulty settings to ensure each mode delivers a distinct experience. Visual feedback will be refined through stronger contrast, prominent power-up visibility, and earlier warnings near map boundaries. In parallel, we will polish combat balance to ensure the survival loop feels fair and satisfying over repeated play sessions.
 
 ***Future Work: Sequel Development***
+
 If we had the opportunity to develop a sequel, we would expand the project toward a deeper structural design. The most promising direction involves an advanced progression system featuring multiple stages or districts, greater map variety, expanded enemy and weapon types, and richer long-term strategic choices. We would also consider revisiting ideas that were cut during early scoping, such as broader asymmetric role designs (e.g., a playable chaser), but only after ensuring the core experience remains consistently clear and balanced.
 
 
