@@ -17,6 +17,7 @@ Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted.
 - ***Need for Speed*** This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
 | | |
+|:---:|:---:|
 |<img width="1448" height="1086" alt="PacMan" src="https://github.com/user-attachments/assets/aedb526f-5106-47e6-8b1e-513bae0b25f1" />|<img width="1672" height="941" alt="NFS" src="https://github.com/user-attachments/assets/f83a3125-b9d4-4cc6-964a-c5fded8e8b82" />|
 
 ### Requirements
