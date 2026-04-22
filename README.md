@@ -294,7 +294,7 @@ We learned several practical lessons about collaborative software development. F
 
 The immediate next steps for the current game focus on clarity and balance. We plan to improve onboarding by adding stronger HUD prompts, clearer win-condition communication, and explicit interaction instructions. Furthermore, we will rebalance the difficulty settings to ensure each mode delivers a distinct experience. Visual feedback will be refined through stronger contrast, prominent power-up visibility, and earlier warnings near map boundaries. In parallel, we will polish combat balance to ensure the survival loop feels fair and satisfying over repeated play sessions.
 
-***Future Work: Sequel Development:***f
+***Future Work: Sequel Development:***
 
 If we had the opportunity to develop a sequel, we would expand the project toward a deeper structural design. The most promising direction involves an advanced progression system featuring multiple stages or districts, greater map variety, expanded enemy and weapon types, and richer long-term strategic choices. We would also consider revisiting ideas that were cut during early scoping, such as broader asymmetric role designs (e.g., a playable chaser), but only after ensuring the core experience remains consistently clear and balanced.
 
