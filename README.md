@@ -10,16 +10,16 @@ Our game is a top-down vehicle survival game in which the player controls an eva
 
 What makes our game novel is its combination of timed survival driving with meaningful map interaction. Buildings are not just background objects, but strategic spaces that shape player decisions. This turns the game from a simple evasion experience into a layered survival loop built around movement, upgrades, and risk-reward choice.
 
-#### *The game is based on.*
+#### *The game is based on*
 
 Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
-- **Pac-Man**: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
-- **Need for Speed**: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
+- ***Pac-Man*** The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
+- ***Need for Speed*** This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
 
 ### Requirements
 ---
-#### Ideation and concept selection
+#### ***Ideation and concept selection***
 
 At the beginning of the project, our team explored four possible game directions: a text-based adventure, a simulation/construction game, a top-down stealth game, and a chase-and-evasion game. These ideas reflected different design priorities, ranging from narrative depth to strategy and fast-paced action. After discussion, we became most interested in the chase-and-evasion direction because it offered a clear core gameplay loop, immediate player feedback, and strong potential for tension and replayability.
 <img width="1419" height="752" alt="IMG_3753" src="https://github.com/user-attachments/assets/54fcde26-e1c3-443b-b8ef-9622ee8b4ec1" />
@@ -28,7 +28,7 @@ At the beginning of the project, our team explored four possible game directions
 Our early goal was to create a game that was easy to understand at a basic level but still allowed for strategic decision-making during play. Compared with the other three ideas, the chase-and-evasion concept seemed the most suitable for this because it combined simple controls with opportunities for map design, item systems, and escalating challenge. It also matched the team's interest in building a game centred on movement, pressure, and survival rather than narrative or construction mechanics.
 
 
-#### Paper prototyping and early design decisions
+#### ***Paper prototyping and early design decisions***
 
 We then developed two paper prototype ideas. The first was a top-down vehicle survival game focused on evasion, movement control, and power-ups. The second was a multiplayer ricochet space shooter based on bouncing projectiles and shrinking play areas. Although both ideas were promising, the vehicle survival prototype was chosen as the stronger foundation for further development.
 
@@ -56,7 +56,7 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 
 #### Core functional requirements
 
-From the ideation and prototyping stages, we identified the following core functional requirements:
+**From the ideation and prototyping stages, we identified the following core functional requirements:**
 
 - The player must be able to control a vehicle in a top-down environment.
 - The game must include a survival-based win condition linked to a countdown timer.
@@ -272,18 +272,18 @@ Importantly, all AI-assisted outputs were reviewed, selected, and integrated man
 
 ### Conclusion
 ---
-**Project Reflection & Lessons Learnt**
+***Project Reflection & Lessons Learnt***
 This project took us from a broad chase-and-evasion idea to a playable top-down vehicle survival game with driving, combat, interactive buildings, difficulty modes, and persistent progression. Looking back, the most important outcome was succeeding in turning an initially broad concept into a focused, coherent gameplay loop. Early in the project, we made a critical scoping decision to concentrate on a single playable evader role rather than attempting multiple roles or complex multiplayer interactions. In retrospect, this disciplined scope control was one of our most valuable choices, allowing us to invest more effort into core mechanics: movement, survival pressure, map interaction, and progression. 
 
 However, our evaluation taught us that implementing mechanics is not enough on its own; a system may function technically while still being unclear or frustrating to the user. Qualitative feedback highlighted issues with onboarding, weak visual hierarchy, and insufficient cues for map boundaries. Quantitative results also suggested that the differences between difficulty levels were not consistently perceived. These findings reinforced a key lesson: in game development, success depends not only on whether a feature works, but on whether players can immediately understand and use it meaningfully. 
 
-**Teamwork & Challenges**
+***Teamwork & Challenges***
 We learned several practical lessons about collaborative software development. First, integration issues often pose greater challenges than isolated feature bugs, as evidenced by cross-system conflicts like the timer continuing during shop interactions and out-of-bound projectiles locking player controls. While our communication was frequent and evaluation loops were active, a highly flexible team structure showed its limits. It sometimes led to unclear ownership of major systems and delayed the discovery of cross-system issues. While adaptability was beneficial during ideation, establishing clearer responsibility assignment and enforcing explicit integration testing earlier in development would have significantly improved efficiency and mitigated later systemic problems.
 
-**Future Work: Immediate Next Steps**
+***Future Work: Immediate Next Steps***
 The immediate next steps for the current game focus on clarity and balance. We plan to improve onboarding by adding stronger HUD prompts, clearer win-condition communication, and explicit interaction instructions. Furthermore, we will rebalance the difficulty settings to ensure each mode delivers a distinct experience. Visual feedback will be refined through stronger contrast, prominent power-up visibility, and earlier warnings near map boundaries. In parallel, we will polish combat balance to ensure the survival loop feels fair and satisfying over repeated play sessions.
 
-**Future Work: Sequel Development**
+***Future Work: Sequel Development***
 If we had the opportunity to develop a sequel, we would expand the project toward a deeper structural design. The most promising direction involves an advanced progression system featuring multiple stages or districts, greater map variety, expanded enemy and weapon types, and richer long-term strategic choices. We would also consider revisiting ideas that were cut during early scoping, such as broader asymmetric role designs (e.g., a playable chaser), but only after ensuring the core experience remains consistently clear and balanced.
 
 
