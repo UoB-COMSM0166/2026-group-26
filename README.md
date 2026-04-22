@@ -13,8 +13,8 @@ What makes our game novel is its combination of timed survival driving with mean
 #### *The game is based on.*
 
 Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted." We drew inspiration from several classic and modern titles to define our core mechanics:
-- Pac-Man: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
-- Need for Speed: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
+- **Pac-Man**: The foundational concept of navigating a confined space while avoiding enemies. It taught us the importance of map layout and power-ups in changing the tide of the game.
+- **Need for Speed**: This served as our main reference for the Vehicle aspect. We analyzed how high-speed chases create tension and how the "Police vs. Racer" dynamic offers two distinct but equally fun experiences.
 
 
 ### Requirements
@@ -41,7 +41,7 @@ The main reason for this decision was that the vehicle prototype produced a clea
 During this stage, we also made an important scope decision. Earlier ideas included a playable chaser role, but we later narrowed the project to a single playable evader role. This allowed us to concentrate development effort on polishing the survival loop, improving map interaction, and implementing progression systems such as weapon unlocking and recovery options.
 
 
-| Early stage diagram design |
+| **Early stage diagram design** |
 | :---: |
 | <img width="1737" height="906" alt="img" src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" />|
 
@@ -236,7 +236,7 @@ Another valuable aspect of our process was that evaluation genuinely fed back in
 
 Overall, our development process was practical, communicative, and adaptable. We did not rely on complex formal management methods, but on frequent communication, shared visibility of issues, and a willingness to adjust our plans when necessary. This worked particularly well for a project where gameplay ideas, technical implementation, and evaluation results were all evolving at the same time. At the same time, the project also showed us that flexibility alone is not always enough. If we were to repeat the project, we would keep the same strengths of open communication, shared documentation, and branch-based collaboration, but we would define ownership of major systems earlier and plan integration testing more explicitly. The main lesson from our process is that effective teamwork in software development depends not just on dividing work, but on maintaining clear communication, recording issues systematically, and adapting quickly when design or technical challenges emerge.
 
-| [Our Kanban Link](https://samuel88913-1776174836623.atlassian.net/jira/software/projects/KAN/boards/1) | [Our Google Docs Link](https://docs.google.com/document/d/13TsGkyWaULcPZaSbJa6dbB54RRgPPovsB3XJL-yhKzo/edit?usp=sharing) |
+| [**Our Kanban Link**](https://samuel88913-1776174836623.atlassian.net/jira/software/projects/KAN/boards/1) | [**Our Google Docs Link**](https://docs.google.com/document/d/13TsGkyWaULcPZaSbJa6dbB54RRgPPovsB3XJL-yhKzo/edit?usp=sharing) |
 | :---: | :---: |
 |<img width="743" height="811" alt="image" src="https://github.com/user-attachments/assets/322eec62-c860-48b4-9749-c60d5e11a4f4" />|<img width="720" height="869" alt="image" src="https://github.com/user-attachments/assets/e697b4dc-a1bf-4750-b147-530134cc8113" />|
 
