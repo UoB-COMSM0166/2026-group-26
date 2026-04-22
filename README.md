@@ -290,11 +290,11 @@ However, our evaluation taught us that implementing mechanics is not enough on i
 
 We learned several practical lessons about collaborative software development. First, integration issues often pose greater challenges than isolated feature bugs, as evidenced by cross-system conflicts like the timer continuing during shop interactions and out-of-bound projectiles locking player controls. While our communication was frequent and evaluation loops were active, a highly flexible team structure showed its limits. It sometimes led to unclear ownership of major systems and delayed the discovery of cross-system issues. While adaptability was beneficial during ideation, establishing clearer responsibility assignment and enforcing explicit integration testing earlier in development would have significantly improved efficiency and mitigated later systemic problems.
 
-***Future Work: Immediate Next Steps:***
+***Future Work: Immediate Next Steps***
 
 The immediate next steps for the current game focus on clarity and balance. We plan to improve onboarding by adding stronger HUD prompts, clearer win-condition communication, and explicit interaction instructions. Furthermore, we will rebalance the difficulty settings to ensure each mode delivers a distinct experience. Visual feedback will be refined through stronger contrast, prominent power-up visibility, and earlier warnings near map boundaries. In parallel, we will polish combat balance to ensure the survival loop feels fair and satisfying over repeated play sessions.
 
-***Future Work: Sequel Development:***
+***Future Work: Sequel Development***
 
 If we had the opportunity to develop a sequel, we would expand the project toward a deeper structural design. The most promising direction involves an advanced progression system featuring multiple stages or districts, greater map variety, expanded enemy and weapon types, and richer long-term strategic choices. We would also consider revisiting ideas that were cut during early scoping, such as broader asymmetric role designs (e.g., a playable chaser), but only after ensuring the core experience remains consistently clear and balanced.
 
