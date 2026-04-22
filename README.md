@@ -129,14 +129,14 @@ The core of our game was implemented using a split client-server architecture. T
 | |
 | :---: |
 |<img width="1491" height="1055" alt="Workflow" src="https://github.com/user-attachments/assets/03883ea1-f5e1-4a54-ac6f-fa4613b615a0" />|
-#### Technical Challenge 1: Vehicle Physics, Collision Handling, and Weapon Systems
+#### ***Technical Challenge 1: Vehicle Physics, Collision Handling, and Weapon Systems***
 Implementing responsive yet weighty vehicle movement was one of our main technical challenges. We developed custom movement logic around acceleration, steering response, friction, and directional momentum so that vehicles felt controllable without becoming either too slippery or too rigid. To strengthen the drifting feedback visually, we implemented fading skid marks and smoke particle effects behind the car.
 
 Collision handling was tightly connected to movement. We needed to support interactions between the player, enemies, map boundaries, buildings, and solid obstacles. This was addressed through a combination of map-boundary checks, rectangular building bounds, circular vehicle collision checks, collision resolution, wall-sliding behaviour, and enemy separation logic. These changes prevented vehicles from clipping into structures and reduced the visual stacking of enemies during pursuit.
 
 Combat introduced additional complexity. Different weapons required different projectile speeds, lifetimes, collision responses, and visual effects. To support this, we built a modular Projectile system that handles multiple weapon behaviours, including standard bullets, spread shots, burst fire, continuous laser beams, and area-of-effect fire attacks. We also added explicit cleanup and termination logic for temporary projectile and missile states so that special weapon effects do not persist incorrectly or lock the player into unintended control states.
 
-#### Technical Challenge 2: Asset Loading, Front-End State Control, and Game Balancing
+#### ***Technical Challenge 2: Asset Loading, Front-End State Control, and Game Balancing***
 Because the game depends on a large number of visual assets, first-time loading could otherwise result in visible delays or incomplete rendering. To address this, we implemented a custom asset preloading pipeline together with a boot-loading screen that checks asset readiness before entering the main menu. This ensured that core visual resources were available before normal gameplay began.
 
 Another major challenge was front-end state control. Early in development, gameplay logic could continue running while certain overlays were open, which created unfair situations for the player. We resolved this by using explicit game states to separate menu, play, pause, tutorial, targeting, and shop behaviour. This allowed us to pause gameplay updates when needed while still rendering the correct background scene and interface.
