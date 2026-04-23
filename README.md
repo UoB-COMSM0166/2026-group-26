@@ -4,6 +4,9 @@
 # COMSM0166 Project Template
 A project template for the Software Engineering Discipline and Practice module (COMSM0166).
 
+[![Watch the video](https://img.youtube.com/vi/YG8GzO32Ovc/maxresdefault.jpg)](https://youtu.be/YG8GzO32Ovc)
+
+
 ### Introduction
 ---
 Our game is a top-down vehicle survival game in which the player controls an evader and must stay alive until the timer ends. The game combines fast-paced driving, enemy avoidance, combat, and resource management within an interactive urban map. Players can enter buildings such as hospitals and weapon shops to restore health, buy weapons, and unlock new attack options. The game also includes easy, normal, and difficult modes to support different levels of challenge.
