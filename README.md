@@ -286,7 +286,7 @@ GROUP PHOTO.
 
 -Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：Project Manager
 
--Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：Writer
+-Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：UX Researcher
 
 -Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：Coder
 
