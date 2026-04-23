@@ -4,9 +4,6 @@
 # COMSM0166 Project Template
 A project template for the Software Engineering Discipline and Practice module (COMSM0166).
 
-[![Watch the video](https://img.youtube.com/vi/YG8GzO32Ovc/maxresdefault.jpg)](https://youtu.be/YG8GzO32Ovc)
-Click the image to see our game's video :)
-
 
 ### Introduction
 ---
