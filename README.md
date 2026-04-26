@@ -1,6 +1,6 @@
-# Report Overview
+<h1 align="center">Group 26 Report</h1>
 
-## Table of Contents
+## Report Overview
 
 1. [Network Access Guidelines](#network-access-guidelines)
 2. [Introduction](#introduction)
