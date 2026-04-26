@@ -4,6 +4,8 @@
 # COMSM0166 Project Template
 A project template for the Software Engineering Discipline and Practice module (COMSM0166).
 
+[![Watch the video](https://img.youtube.com/vi/j5TUHfbsKxg/maxresdefault.jpg)](https://www.youtube.com/watch?v=j5TUHfbsKxg&t=25s)
+Click the image to visit our YouTube channel :)
 
 ### Introduction
 ---
@@ -315,7 +317,7 @@ GROUP PHOTO.
 
 -Meb2：Yanqing Peng; Email：ai25403@bristol.ac.uk; Role：Project Manager
 
--Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：Writer
+-Meb3：Ping Yu Sung; Email：yo25075@bristol.ac.uk; Role：UX Researcher
 
 -Meb4：Fan Lin; Email：zs25891@bristol.ac.uk; Role：Coder
 

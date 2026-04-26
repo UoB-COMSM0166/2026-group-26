@@ -4528,7 +4528,6 @@ function ensureCoverMedia() {
 function loadDeferredMenuVisualAssets() {
   if (deferredMenuVisualsRequested) return;
   deferredMenuVisualsRequested = true;
-  gameCoverImg = loadImage('icon/ui/game_cover.webp');
   startBtnImg = loadImage('icon/ui/start.webp');
   exitBtnImg = loadImage('icon/ui/exit.webp');
   shopBtnImg = loadImage('icon/ui/store_mainpage.webp');
@@ -4628,7 +4627,6 @@ function areMapBaseTexturesReady() {
 
 function areMenuVisualAssetsReady() {
   return (
-    isMapTextureReady(gameCoverImg) &&
     isMapTextureReady(startBtnImg) &&
     isMapTextureReady(exitBtnImg) &&
     isMapTextureReady(shopBtnImg)
@@ -4648,7 +4646,7 @@ function isBootLoadingComplete() {
   if (elapsed < BOOT_LOADING_MIN_MS) return false;
   if (!areMapBaseTexturesReady() || !areMenuVisualAssetsReady()) return false;
   if (isCoverVideoReadyForMenu()) return true;
-  return elapsed >= BOOT_LOADING_MAX_MS;
+  return false;
 }
 
 // Global Offset for Iso Map centering
@@ -4673,12 +4671,6 @@ function setup() {
   // Center the map in the render area
   mapOffsetX = mapWidth / 2;
   mapOffsetY = mapHeight / 4; // Start drawing from upper part
-  
-  // Generate the map
-  generateTileMap();
-  
-  // Create Visuals from TileMap
-  createMapGraphics();
 
   shopUI = new ShopUI();
   authUI = new AuthUI();
@@ -5900,10 +5892,6 @@ function getCoverRect(viewW = width, viewH = height, sourceOverride = null, forc
       source = gameCoverVideo;
       sourceW = gameCoverVideo.elt.videoWidth;
       sourceH = gameCoverVideo.elt.videoHeight;
-  } else if (gameCoverImg) {
-      source = gameCoverImg;
-      sourceW = gameCoverImg.width;
-      sourceH = gameCoverImg.height;
   }
 
   let rect = { x: 0, y: 0, w: viewW, h: viewH, source };
