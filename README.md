@@ -18,6 +18,10 @@ Please note that the system has now fully transitioned to domain-name access. Ac
 
 Additionally, due to the university's network security policies, access might be restricted on certain internal campus networks. If you encounter connectivity issues, it is recommended to switch to an alternative network environment, such as a mobile data hotspot, which has been verified to work reliably.
 
+---
+[![Watch the video](https://img.youtube.com/vi/j5TUHfbsKxg/maxresdefault.jpg)](https://www.youtube.com/watch?v=j5TUHfbsKxg&t=25s)
+Click the image to visit our YouTube channel :)
+
 ### Introduction
 ---
 Our game is a top-down vehicle survival game in which the player controls an evader and must stay alive until the timer ends. The game combines fast-paced driving, enemy avoidance, combat, and resource management within an interactive urban map. Players can enter buildings such as hospitals and weapon shops to restore health, buy weapons, and unlock new attack options. The game also includes easy, normal, and difficult modes to support different levels of challenge.
@@ -39,7 +43,11 @@ Our game design is deeply influenced by the primal thrill of "Hunter vs. Hunted.
 #### ***Ideation and concept selection***
 
 At the beginning of the project, our team explored four possible game directions: a text-based adventure, a simulation/construction game, a top-down stealth game, and a chase-and-evasion game. These ideas reflected different design priorities, ranging from narrative depth to strategy and fast-paced action. After discussion, we became most interested in the chase-and-evasion direction because it offered a clear core gameplay loop, immediate player feedback, and strong potential for tension and replayability.
-<img width="1419" height="752" alt="IMG_3753" src="https://github.com/user-attachments/assets/54fcde26-e1c3-443b-b8ef-9622ee8b4ec1" />
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/54fcde26-e1c3-443b-b8ef-9622ee8b4ec1" width="550">
+  <p><b>Voting</b></p>
+</div>
+
 
 
 Our early goal was to create a game that was easy to understand at a basic level but still allowed for strategic decision-making during play. Compared with the other three ideas, the chase-and-evasion concept seemed the most suitable for this because it combined simple controls with opportunities for map design, item systems, and escalating challenge. It also matched the team's interest in building a game centred on movement, pressure, and survival rather than narrative or construction mechanics.
@@ -70,8 +78,8 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 - A second stakeholder group is the **development team**, who needed requirements that were feasible within the time and technical constraints of the module. This influenced our decision to reduce scope, prioritise a single polished gameplay loop, and focus on features that could be realistically implemented and tested.
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" width="550">
-  <p><b>Figure: Stakeholder</b></p>
+  <img src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" width="550">
+  <p><b>Figure: Early stage diagram design</b></p>
 </div>
 
 #### Core functional requirements
@@ -119,7 +127,14 @@ The class design follows the same division of responsibility as the architecture
 The relationships between gameplay and UI classes are organised around this controller-led structure. The controller manages transitions from menu login to difficulty choice, from building interaction to the shop interface, and from special-weapon activation to map-selection or remote-guidance modes. This keeps the world simulation separate from the surrounding interface. At the object level, `Vehicle` acts as the common superclass for `Player` and `Enemy`, while `Projectile`, `PowerUp`, and `Building` model associated world entities, and `AuthUI`, `ShopUI`, and `TutorialSystem` support interface, persistence, and guided interaction rather than core movement behaviour.
  
 #### Class Diagram
-<img width="2665" height="2684" alt="Class Diagram" src="https://github.com/user-attachments/assets/4a0b90a7-6f39-4209-8e22-0cabbccd43d1" />
+
+<div align="center">
+
+<img src="https://github.com/user-attachments/assets/4a0b90a7-6f39-4209-8e22-0cabbccd43d1" alt="Class Diagram" width="550">
+
+<p><b>Figure: Class Diagram</b></p>
+
+</div>
 
 #### 3. Behavioural Design
 
@@ -128,7 +143,14 @@ The behavioural design uses a controlled interaction flow to connect account-rel
 A representative interaction sequence is the login flow, in which the player submits credentials, the backend validates the account, returns a signed token, and then serves persistent progress through a protected request before gameplay begins. This behaviour also matches the distinction between client responsiveness and server authority in the wider system design. Authentication, equipment ownership, currency deduction, and progress persistence are not treated as purely local events, but as backend-validated operations handled through the service layer. Shop interaction therefore links the live play session with persistent account state, while progress loading and saving maintain continuity across sessions through durable storage. State transitions ensure that transactional actions happen in explicit contexts instead of being mixed directly into frame-by-frame play logic. Observed gameplay followed this design closely: the menu flow, tutorial gating, pause behaviour, special-weapon targeting, and win and lose screens all matched the intended state-based model.
 
 #### Sequence Diagram
-<img width="3858" height="2502" alt="Sequence Diagram" src="https://github.com/user-attachments/assets/0828154c-7509-474b-97ab-c98003b5339e" />
+
+<div align="center">
+
+<img src="https://github.com/user-attachments/assets/0828154c-7509-474b-97ab-c98003b5339e" alt="Sequence Diagram" width="700">
+
+<p><b>Figure: Sequence Diagram</b></p>
+
+</div>
 
  
 #### 4. Design Summary
@@ -142,7 +164,7 @@ The design combines a layered architecture with explicit behavioural control to 
 The core of our game was implemented using a split client-server architecture. The front-end, built with p5.js, is responsible for the main game loop, canvas rendering, player input, and moment-to-moment gameplay simulation. The back-end, built with Node.js, Express, and SQLite, handles user authentication through JWT-based token verification, persistent player progress, and server-side shop data. Development progressed iteratively, beginning with vehicle movement and map interaction, then expanding into enemy AI and combat systems, and finally integrating the backend-supported account, shop, and progression features. Communication between the client and server is performed through asynchronous REST API requests so that gameplay rendering remains responsive while data is loaded or saved.
 | |
 | :---: |
-|<img width="1491" height="1055" alt="Workflow" src="https://github.com/user-attachments/assets/03883ea1-f5e1-4a54-ac6f-fa4613b615a0" />|
+|<img src="https://github.com/user-attachments/assets/03883ea1-f5e1-4a54-ac6f-fa4613b615a0" width="700">|
 #### ***Technical Challenge 1: Vehicle Physics, Collision Handling, and Weapon Systems***
 Implementing responsive yet weighty vehicle movement was one of our main technical challenges. We developed custom movement logic around acceleration, steering response, friction, and directional momentum so that vehicles felt controllable without becoming either too slippery or too rigid. To strengthen the drifting feedback visually, we implemented fading skid marks and smoke particle effects behind the car.
 
