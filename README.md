@@ -114,7 +114,7 @@ Overall, the requirements process helped us move from a broad concept to a more 
 
 
 ### Design
-
+---
 #### 1. System Architecture
  
 The system uses a layered architecture that separates real-time gameplay from transactional services. At the outer layer, the player interacts with a browser-based `p5.js` client, which is responsible for rendering and input capture. Under this, a front-end controller coordinates the running game as a lightweight application layer rather than part of the domain model. It manages the game loop, camera, map generation, and global state machine, so the presentation side stays responsive while gameplay progression remains clearly controlled.
