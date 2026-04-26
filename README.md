@@ -66,9 +66,10 @@ The main reason for this decision was that the vehicle prototype produced a clea
 During this stage, we also made an important scope decision. Earlier ideas included a playable chaser role, but we later narrowed the project to a single playable evader role. This allowed us to concentrate development effort on polishing the survival loop, improving map interaction, and implementing progression systems such as weapon unlocking and recovery options.
 
 
-| **Early stage diagram design** |
-| :---: |
-| <img width="1737" height="906" alt="img" src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" />|
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" width="550">
+  <p><b>Figure: Early stage diagram design</b></p>
+</div>
 
 
 #### List of Stakeholders
@@ -78,8 +79,8 @@ During this stage, we also made an important scope decision. Earlier ideas inclu
 - A second stakeholder group is the **development team**, who needed requirements that were feasible within the time and technical constraints of the module. This influenced our decision to reduce scope, prioritise a single polished gameplay loop, and focus on features that could be realistically implemented and tested.
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/11840186-9279-4097-a8e0-ffa6bf8541ac" width="550">
-  <p><b>Figure: Early stage diagram design</b></p>
+  <img src="https://github.com/user-attachments/assets/bad555d6-5995-4a3e-8695-bc7cae06c051" width="550">
+  <p><b>Figure: Stakeholder</b></p>
 </div>
 
 #### Core functional requirements
