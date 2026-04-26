@@ -1,11 +1,22 @@
-# 2026-group-26
-2026 COMSM0166 group 26
+# Report Overview
 
-# COMSM0166 Project Template
-A project template for the Software Engineering Discipline and Practice module (COMSM0166).
+1. [Introduction](#introduction)
+2. [Development Team](#development-team)
+3. [Requirements](#requirements)
+4. [Design](#design)
+5. [Implementation](#implementation)
+6. [Evaluation](#evaluation)
+7. [Process](#process)
+8. [Sustainability, Ethics, and Accessibility](#sustainability-ethics-and-accessibility)
+9. [Conclusion](#conclusion)
+10. [Contribution Statement](#contribution-statement)
+11. [AI Statement](#ai-statement)
 
-[![Watch the video](https://img.youtube.com/vi/j5TUHfbsKxg/maxresdefault.jpg)](https://www.youtube.com/watch?v=j5TUHfbsKxg&t=25s)
-Click the image to visit our YouTube channel :)
+## Network Access Guidelines
+
+Please note that the system has now fully transitioned to domain-name access. Accessing the system directly via its IP address may no longer be successful. 
+
+Additionally, due to the university's network security policies, access might be restricted on certain internal campus networks. If you encounter connectivity issues, it is recommended to switch to an alternative network environment, such as a mobile data hotspot, which has been verified to work reliably.
 
 ### Introduction
 ---
@@ -306,7 +317,6 @@ If we had the opportunity to develop a sequel, we would expand the project towar
 
 
 ## Your Group
----
 GROUP PHOTO. 
 <img width="1707" height="1280" alt="image" src="https://github.com/user-attachments/assets/ac7c8d00-a52d-4c9e-89f2-0bc5ce44d51c" />
 
