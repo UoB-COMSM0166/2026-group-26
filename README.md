@@ -1,6 +1,6 @@
-# Report Overview
+<h1 align="center">Group 26 Report</h1>
 
-## Table of Contents
+## Report Overview
 
 1. [Network Access Guidelines](#network-access-guidelines)
 2. [Introduction](#introduction)
@@ -16,10 +16,10 @@
 12. [Contribution Statement](#contribution-statement)
 
 ## Network Access Guidelines
-
-Please note that the system has now fully transitioned to domain-name access. Accessing the system directly via its IP address may no longer be successful. 
-
-Additionally, due to the university's network security policies, access might be restricted on certain internal campus networks. If you encounter connectivity issues, it is recommended to switch to an alternative network environment, such as a mobile data hotspot, which has been verified to work reliably.
+>
+> Please note that the system has now fully transitioned to domain-name access. Accessing the system directly via its IP address may no longer be successful.  
+>
+> Additionally, due to the university's network security policies, access might be restricted on certain internal campus networks. If you encounter connectivity issues, it is recommended to switch to an alternative network environment, such as a mobile data hotspot, which has been verified to work reliably.
 
 ---
 <div align="center">
