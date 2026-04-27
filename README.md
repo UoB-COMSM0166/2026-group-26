@@ -16,8 +16,9 @@
 12. [Contribution Statement](#contribution-statement)
 
 ## Network Access Guidelines
+>
 > Please note that the system has now fully transitioned to domain-name access. Accessing the system directly via its IP address may no longer be successful.  
-
+>
 > Additionally, due to the university's network security policies, access might be restricted on certain internal campus networks. If you encounter connectivity issues, it is recommended to switch to an alternative network environment, such as a mobile data hotspot, which has been verified to work reliably.
 
 ---
